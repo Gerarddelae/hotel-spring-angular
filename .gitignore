@@ -53,6 +53,7 @@ backend/.sts4-cache
 
 # IntelliJ IDEA
 backend/.idea
+backend/.run
 backend/*.iws
 backend/*.iml
 backend/*.ipr
