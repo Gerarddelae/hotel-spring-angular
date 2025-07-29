@@ -1,0 +1,14 @@
+<div class="layout">
+  <aside class="sidebar">
+    <h2>Hotel SPA</h2>
+    <nav>
+      <a routerLink="/dashboard" routerLinkActive="active-link">Dashboard</a>
+      <a routerLink="/reservations" routerLinkActive="active-link">Reservas</a>
+    </nav>
+    <button (click)="logout()">Cerrar sesión</button>
+  </aside>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+</div>
