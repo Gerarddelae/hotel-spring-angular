@@ -1,0 +1,95 @@
+# ===============================
+# FRONTEND - Angular
+# ===============================
+
+/frontend/node_modules/
+frontend/dist/
+frontend/tmp/
+frontend/out-tsc/
+frontend/bazel-out/
+frontend/.angular/cache
+frontend/.sass-cache/
+frontend/.vscode/*
+!frontend/.vscode/settings.json
+!frontend/.vscode/tasks.json
+!frontend/.vscode/launch.json
+!frontend/.vscode/extensions.json
+frontend/.idea/
+frontend/.project
+frontend/.classpath
+frontend/.settings/
+frontend/.c9/
+frontend/*.launch
+frontend/.sublime-workspace
+frontend/.history/
+frontend/npm-debug.log
+frontend/yarn-error.log
+frontend/coverage/
+frontend/libpeerconnection.log
+frontend/testem.log
+frontend/typings/
+frontend/.DS_Store
+frontend/Thumbs.db
+
+# ===============================
+# BACKEND - Spring Boot
+# ===============================
+
+/backend/target/
+/backend/.mvn/wrapper/maven-wrapper.jar
+/backend/.env
+
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# STS (Spring Tool Suite)
+backend/.apt_generated
+backend/.classpath
+backend/.factorypath
+backend/.project
+backend/.settings
+backend/.springBeans
+backend/.sts4-cache
+
+# IntelliJ IDEA
+backend/.idea
+backend/*.iws
+backend/*.iml
+backend/*.ipr
+
+# NetBeans
+/backend/nbproject/private/
+/backend/nbbuild/
+/backend/dist/
+/backend/nbdist/
+/backend/.nb-gradle/
+/backend/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ===============================
+# GLOBAL - General IDEs, OS files, logs
+# ===============================
+
+# Logs
+*.log
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misceláneos
+HELP.md
