@@ -45,6 +45,7 @@ public class AuthIntegrationTest {
 
         User user = User.builder()
                 .username("admin")
+                .email("admin@hotel.com")
                 .password(passwordEncoder.encode("admin"))
                 .role(Role.ADMIN)
                 .build();
@@ -84,6 +85,7 @@ public class AuthIntegrationTest {
         RegisterRequest request = new RegisterRequest();
         request.setUsername("testuser");
         request.setPassword("testpassword");
+        request.setEmail("test@email.com");
         request.setRole("USER");
 
         mockMvc.perform(post("/api/auth/register")
