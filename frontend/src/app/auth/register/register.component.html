@@ -6,39 +6,49 @@
     <div class="form-group">
       <label for="username">Nombre de usuario</label>
       <input id="username" type="text" formControlName="username" />
-      <p class="error" *ngIf="username?.touched && username?.invalid">
-        El nombre de usuario es obligatorio.
-      </p>
+      @if (username?.touched && username?.invalid) {
+        <p class="error">
+          El nombre de usuario es obligatorio.
+        </p>
+      }
     </div>
 
     <!-- Email -->
     <div class="form-group">
       <label for="email">Correo electrónico</label>
       <input id="email" type="email" formControlName="email" />
-      <p class="error" *ngIf="email?.touched && email?.invalid">
-        Ingresa un correo válido.
-      </p>
+      @if (email?.touched && email?.invalid) {
+        <p class="error">
+          Ingresa un correo válido.
+        </p>
+      }
     </div>
 
     <!-- Contraseña -->
     <div class="form-group">
       <label for="password">Contraseña</label>
       <input id="password" type="password" formControlName="password" />
-      <p class="error" *ngIf="password?.touched && password?.hasError('minlength')">
-        La contraseña debe tener al menos 6 caracteres.
-      </p>
-      <p class="error" *ngIf="password?.touched && password?.hasError('required')">
-        La contraseña es obligatoria.
-      </p>
+      @if (password?.touched && password?.hasError('minlength')) {
+        <p class="error">
+          La contraseña debe tener al menos 6 caracteres.
+        </p>
+      }
+      @if (password?.touched && password?.hasError('required')) {
+        <p class="error">
+          La contraseña es obligatoria.
+        </p>
+      }
     </div>
 
     <!-- Confirmar Contraseña -->
     <div class="form-group">
       <label for="confirmPassword">Confirmar Contraseña</label>
       <input id="confirmPassword" type="password" formControlName="confirmPassword" />
-      <p class="error" *ngIf="form.hasError('mismatch') && confirmPassword?.touched">
-        Las contraseñas no coinciden.
-      </p>
+      @if (form.hasError('mismatch') && confirmPassword?.touched) {
+        <p class="error">
+          Las contraseñas no coinciden.
+        </p>
+      }
     </div>
 
     <!-- Rol -->
