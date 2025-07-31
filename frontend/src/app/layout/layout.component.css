@@ -1,56 +1,73 @@
-.layout {
-  display: flex;
-  height: 100vh;
+/* Estilos adicionales si necesitas personalizaciones específicas */
+
+/* Scrollbar personalizado para la sidebar */
+aside::-webkit-scrollbar {
+  width: 4px;
 }
 
-.sidebar {
-  width: 220px;
-  background-color: #2c3e50;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
+aside::-webkit-scrollbar-track {
+  background-color: #f3f4f6; /* bg-gray-100 */
+}
+@media (prefers-color-scheme: dark) {
+aside::-webkit-scrollbar-thumb {
+  background-color: #d1d5db; /* bg-gray-300 */
+  border-radius: 9999px; /* rounded-full */
+}
+aside::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af; /* bg-gray-400 */
+}
+@media (prefers-color-scheme: dark) {
+  aside::-webkit-scrollbar-thumb:hover {
+    background-color: #6b7280; /* bg-gray-500 */
+  }
+}
+  }
+aside::-webkit-scrollbar-thumb {
+  background-color: #d1d5db; /* bg-gray-300 */
+  border-radius: 9999px; /* rounded-full */
+}
+@media (prefers-color-scheme: dark) {
+  aside::-webkit-scrollbar-thumb {
+    background-color: #4b5563; /* bg-gray-600 */
+  }
 }
 
-.sidebar h2 {
-  margin-bottom: 20px;
-  font-size: 20px;
+nav a.active-link {
+  background-color: #dbeafe; /* bg-blue-100 */
+  color: #2563eb; /* text-blue-600 */
+  border-right: 2px solid #2563eb; /* blue-600 */
+}
+@media (prefers-color-scheme: dark) {
+  nav a.active-link {
+    background-color: rgba(30, 64, 175, 0.5); /* bg-blue-900/50 */
+    color: #60a5fa; /* text-blue-400 */
+  }
+}
+/* Animación suave para el contenido principal */
+main {
+  transition: margin-left 0.3s ease-in-out;
 }
 
-.sidebar nav {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
+
+  @media (prefers-color-scheme: dark) {
+    nav a.active-link {
+      background-color: rgba(30, 64, 175, 0.5); /* bg-blue-900/50 */
+      color: #60a5fa; /* text-blue-400 */
+      border-right: 2px solid #2563eb; /* blue-600 */
+    }
 }
 
-.sidebar a {
-  color: #ecf0f1;
-  text-decoration: none;
-  margin-bottom: 10px;
-  padding: 10px;
-  border-radius: 4px;
-}
-
-.sidebar a.active-link {
-  background-color: #34495e;
-}
-
-.sidebar button {
-  background-color: #e74c3c;
-  border: none;
-  padding: 10px;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.sidebar button:hover {
-  background-color: #c0392b;
-}
-
-.content {
-  flex-grow: 1;
-  padding: 20px;
-  overflow-y: auto;
-  background-color: #f5f5f5;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  aside {
+    transform: translateX(-100%);
+  }
+  
+  aside.mobile-open {
+    transform: translateX(0);
+  }
+  
+  main {
+    margin-left: 0 !important;
+  }
 }

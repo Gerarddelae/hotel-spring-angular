@@ -5,13 +5,13 @@ import { LayoutComponent } from './layout/layout.component';
 import { authGuard } from './auth/auth.guard';
 
 export const routes: Routes = [
-    {
+  {
     path: 'auth/login',
-    component: LoginComponent
+    component: LoginComponent,
   },
   {
     path: 'auth/register',
-    component: RegisterComponent
+    component: RegisterComponent,
   },
   {
     path: '',
@@ -21,22 +21,36 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () =>
-          import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
+          import('./features/dashboard/dashboard.component').then(
+            (m) => m.DashboardComponent
+          ),
+        data: {
+          title: 'Dashboard',
+          subtitle: 'Bienvenido al sistema de gestión hotelera',
+          icon: 'pi-chart-line',
+        },
       },
       {
         path: 'reservations',
         loadComponent: () =>
-          import('./features/reservations/reservations.component').then(m => m.ReservationsComponent)
+          import('./features/reservations/reservations.component').then(
+            (m) => m.ReservationsComponent
+          ),
+        data: {
+          title: 'Reservas',
+          subtitle: 'Gestión de reservas y bookings',
+          icon: 'pi-calendar',
+        },
       },
       {
         path: '',
         redirectTo: 'dashboard',
-        pathMatch: 'full'
-      }
-    ]
+        pathMatch: 'full',
+      },
+    ],
   },
   {
     path: '**',
-    redirectTo: 'auth/login'
-  }
+    redirectTo: 'auth/login',
+  },
 ];

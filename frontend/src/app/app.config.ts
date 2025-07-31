@@ -10,9 +10,11 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(),
     providePrimeNG({
-            theme: {
-                preset: Aura
-            }
-        })
-  ]
+      theme: {
+        options: {
+          darkModeSelector: 'body.dark', // <-- Cambiado para que coincida con Tailwind
+        },
+      },
+    }),
+  ],
 };

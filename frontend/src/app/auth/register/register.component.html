@@ -1,66 +1,120 @@
-<div class="form-container">
-  <h2>Registro</h2>
+<div class="min-h-screen w-full overflow-x-hidden bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+  <div class="flex items-center justify-center py-8 px-4 sm:px-6 lg:px-4 w-full">
+    <div class="max-w-3xl w-full">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 transition-all duration-300">
+        <div class="flex flex-col md:flex-row w-full">
 
-  <form [formGroup]="form" (ngSubmit)="onSubmit()">
-    <!-- Usuario -->
-    <div class="form-group">
-      <label for="username">Nombre de usuario</label>
-      <input id="username" type="text" formControlName="username" />
-      @if (username?.touched && username?.invalid) {
-        <p class="error">
-          El nombre de usuario es obligatorio.
-        </p>
-      }
+          <!-- Form Section -->
+          <div class="w-full md:w-1/2 p-6 sm:p-8">
+            <div class="text-center mb-6">
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">Create Account</h1>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Sign up to get started</p>
+            </div>
+
+            <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
+
+              <!-- Username -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="pi pi-user text-gray-400 dark:text-gray-500 text-sm"></i>
+                  </div>
+                  <input
+                    formControlName="username"
+                    type="text"
+                    placeholder="Username"
+                    class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150"
+                  />
+                </div>
+              </div>
+
+              <!-- Email -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                <input
+                  formControlName="email"
+                  type="email"
+                  placeholder="email@example.com"
+                  class="block w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150"
+                />
+              </div>
+
+              <!-- Password -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="pi pi-lock text-gray-400 dark:text-gray-500 text-sm"></i>
+                  </div>
+                  <input
+                    formControlName="password"
+                    type="password"
+                    placeholder="******"
+                    class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150"
+                  />
+                </div>
+              </div>
+
+              <!-- Confirm Password -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
+                <input
+                  formControlName="confirmPassword"
+                  type="password"
+                  placeholder="******"
+                  class="block w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150"
+                />
+              </div>
+
+              <!-- Submit Button -->
+              <button
+                type="submit"
+                [disabled]="form.invalid"
+                class="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                <i class="pi pi-user-plus mr-2 text-sm"></i>
+                Register
+              </button>
+
+              <!-- Login Link -->
+              <div class="text-center text-sm">
+                <p class="text-gray-600 dark:text-gray-400">
+                  Already have an account?
+                  <a routerLink="login" class="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors duration-200">Log in</a>
+                </p>
+              </div>
+            </form>
+
+            <!-- Dark Mode Toggle -->
+            <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                (click)="toggleDarkMode()"
+                class="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition"
+              >
+                <i class="pi" [ngClass]="isDarkMode ? 'pi-sun' : 'pi-moon'"></i>
+                <span>{{ isDarkMode ? 'Light Mode' : 'Dark Mode' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Visual Section -->
+          <div class="hidden md:flex md:w-1/2 bg-gradient-to-br from-blue-600 to-purple-700 dark:from-gray-700 dark:to-gray-900 items-center justify-center p-6 relative overflow-hidden">
+            <!-- Pattern -->
+            <div class="absolute inset-0 opacity-10 pointer-events-none">
+              <div class="absolute inset-0" style="background-image: radial-gradient(circle at 25% 25%, white 2px, transparent 2px); background-size: 20px 20px;"></div>
+            </div>
+            <!-- Icon and message -->
+            <div class="relative text-center text-white text-sm">
+              <i class="pi pi-user-plus text-4xl opacity-90 mb-4"></i>
+              <h2 class="text-xl font-semibold mb-2">Welcome!</h2>
+              <p class="text-blue-100 dark:text-gray-300 leading-snug">Register and manage your hotel effortlessly.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
-
-    <!-- Email -->
-    <div class="form-group">
-      <label for="email">Correo electrónico</label>
-      <input id="email" type="email" formControlName="email" />
-      @if (email?.touched && email?.invalid) {
-        <p class="error">
-          Ingresa un correo válido.
-        </p>
-      }
-    </div>
-
-    <!-- Contraseña -->
-    <div class="form-group">
-      <label for="password">Contraseña</label>
-      <input id="password" type="password" formControlName="password" />
-      @if (password?.touched && password?.hasError('minlength')) {
-        <p class="error">
-          La contraseña debe tener al menos 6 caracteres.
-        </p>
-      }
-      @if (password?.touched && password?.hasError('required')) {
-        <p class="error">
-          La contraseña es obligatoria.
-        </p>
-      }
-    </div>
-
-    <!-- Confirmar Contraseña -->
-    <div class="form-group">
-      <label for="confirmPassword">Confirmar Contraseña</label>
-      <input id="confirmPassword" type="password" formControlName="confirmPassword" />
-      @if (form.hasError('mismatch') && confirmPassword?.touched) {
-        <p class="error">
-          Las contraseñas no coinciden.
-        </p>
-      }
-    </div>
-
-    <!-- Rol -->
-    <div class="form-group">
-      <label for="role">Rol</label>
-      <select id="role" formControlName="role">
-        <option value="USER">Usuario</option>
-        <option value="ADMIN">Administrador</option>
-      </select>
-    </div>
-
-    <!-- Botón -->
-    <button type="submit" [disabled]="form.invalid">Registrarse</button>
-  </form>
+  </div>
 </div>

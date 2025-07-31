@@ -1,30 +1,52 @@
 import { Component, OnInit } from '@angular/core';
-import { FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { AuthService } from '../auth.service';
-
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule],
-  templateUrl: './login.component.html'
+  imports: [
+    ReactiveFormsModule,
+    CommonModule,
+    RouterModule
+  ],
+  templateUrl: './login.component.html',
 })
 export class LoginComponent implements OnInit {
-
-  // Usamos un FormGroup tipado con FormControls
   form!: FormGroup<{
     username: FormControl<string>;
     password: FormControl<string>;
   }>;
 
+  isDarkMode = false;
+
   constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit(): void {
     this.form = new FormGroup({
-      username: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-      password: new FormControl('', { nonNullable: true, validators: [Validators.required] })
+      username: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required],
+      }),
+      password: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required],
+      }),
     });
+
+    // Restaurar tema guardado o detectar preferencia del sistema
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    this.isDarkMode = savedTheme === 'dark' || (!savedTheme && systemPrefersDark);
+    this.applyTheme();
   }
 
   onSubmit() {
@@ -32,10 +54,25 @@ export class LoginComponent implements OnInit {
 
     const { username, password } = this.form.getRawValue();
     this.authService.login({ username, password }).subscribe({
-      next: () => {console.log('Login exitoso');
+      next: () => {
+        console.log('Login exitoso');
         this.router.navigate(['/dashboard']);
       },
-      error: err => console.error('Error en login:', err)
+      error: (err) => console.error('Error en login:', err),
     });
+  }
+
+  toggleDarkMode(): void {
+    this.isDarkMode = !this.isDarkMode;
+    this.applyTheme();
+    localStorage.setItem('theme', this.isDarkMode ? 'dark' : 'light');
+  }
+
+  private applyTheme(): void {
+    if (this.isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }
 }
