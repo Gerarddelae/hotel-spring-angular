@@ -1,40 +1,59 @@
+<!-- layout.component.html -->
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+  
+  <!-- Mobile Backdrop -->
+  <div 
+    *ngIf="isMobileSidebarOpen" 
+    class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+    (click)="closeMobileSidebar()">
+  </div>
+
   <!-- Sidebar -->
-  <aside class="fixed top-0 left-0 z-40 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg transition-all duration-300"
-         [ngClass]="sidebarCollapsed ? 'w-16' : 'w-64'">
+  <aside 
+    class="fixed top-0 left-0 z-50 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg transition-transform duration-300 ease-in-out"
+    [class]="getSidebarClasses()">
     
     <!-- Logo Section -->
     <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-      <div class="flex items-center gap-3" [ngClass]="{'justify-center': sidebarCollapsed}">
+      <div class="flex items-center gap-3" [ngClass]="{'justify-center': isCollapsed}">
         <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
           <i class="pi pi-building text-white text-lg"></i>
         </div>
-        <div *ngIf="!sidebarCollapsed" class="transition-opacity duration-300">
+        <div *ngIf="!isCollapsed" class="transition-opacity duration-300">
           <h2 class="text-xl font-bold text-gray-900 dark:text-white">Hotel SPA</h2>
           <p class="text-xs text-gray-500 dark:text-gray-400">Management System</p>
         </div>
       </div>
       
-      <!-- Toggle Button -->
+      <!-- Close button for mobile -->
       <button 
-        (click)="toggleSidebar()"
-        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-        [ngClass]="{'hidden': sidebarCollapsed}">
-        <i class="pi pi-bars text-gray-600 dark:text-gray-400"></i>
+        *ngIf="isMobile"
+        (click)="closeMobileSidebar()"
+        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 lg:hidden">
+        <i class="pi pi-times text-gray-600 dark:text-gray-400"></i>
+      </button>
+      
+      <!-- Collapse button for desktop -->
+      <button 
+        *ngIf="!isMobile && !isCollapsed"
+        (click)="toggleDesktopSidebar()"
+        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 hidden lg:block">
+        <i class="pi pi-angle-left text-gray-600 dark:text-gray-400"></i>
       </button>
     </div>
 
     <!-- Navigation -->
-    <nav class="p-4">
+    <nav class="p-4 overflow-y-auto flex-1">
       <ul class="space-y-2">
         <!-- Dashboard -->
         <li>
           <a routerLink="/dashboard" 
              routerLinkActive="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 border-r-2 border-blue-600"
-             class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
-             [ngClass]="{'justify-center': sidebarCollapsed}">
-            <i class="pi pi-chart-line text-lg"></i>
-            <span *ngIf="!sidebarCollapsed" class="font-medium">Dashboard</span>
+             class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+             [ngClass]="{'justify-center': isCollapsed}"
+             (click)="onNavigate()">
+            <i class="pi pi-chart-line text-lg flex-shrink-0"></i>
+            <span *ngIf="!isCollapsed" class="font-medium">Dashboard</span>
           </a>
         </li>
 
@@ -42,55 +61,56 @@
         <li>
           <a routerLink="/reservations" 
              routerLinkActive="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 border-r-2 border-blue-600"
-             class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
-             [ngClass]="{'justify-center': sidebarCollapsed}">
-            <i class="pi pi-calendar text-lg"></i>
-            <span *ngIf="!sidebarCollapsed" class="font-medium">Reservas</span>
+             class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+             [ngClass]="{'justify-center': isCollapsed}"
+             (click)="onNavigate()">
+            <i class="pi pi-calendar text-lg flex-shrink-0"></i>
+            <span *ngIf="!isCollapsed" class="font-medium">Reservas</span>
           </a>
         </li>
 
-        <!-- Guests (ejemplo adicional) -->
+        <!-- Guests -->
         <li>
           <a href="#" 
-             class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
-             [ngClass]="{'justify-center': sidebarCollapsed}">
-            <i class="pi pi-users text-lg"></i>
-            <span *ngIf="!sidebarCollapsed" class="font-medium">Huéspedes</span>
+             class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+             [ngClass]="{'justify-center': isCollapsed}">
+            <i class="pi pi-users text-lg flex-shrink-0"></i>
+            <span *ngIf="!isCollapsed" class="font-medium">Huéspedes</span>
           </a>
         </li>
 
         <!-- Rooms -->
         <li>
           <a href="#" 
-             class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
-             [ngClass]="{'justify-center': sidebarCollapsed}">
-            <i class="pi pi-home text-lg"></i>
-            <span *ngIf="!sidebarCollapsed" class="font-medium">Habitaciones</span>
+             class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+             [ngClass]="{'justify-center': isCollapsed}">
+            <i class="pi pi-home text-lg flex-shrink-0"></i>
+            <span *ngIf="!isCollapsed" class="font-medium">Habitaciones</span>
           </a>
         </li>
 
         <!-- Settings -->
         <li>
           <a href="#" 
-             class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
-             [ngClass]="{'justify-center': sidebarCollapsed}">
-            <i class="pi pi-cog text-lg"></i>
-            <span *ngIf="!sidebarCollapsed" class="font-medium">Configuración</span>
+             class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+             [ngClass]="{'justify-center': isCollapsed}">
+            <i class="pi pi-cog text-lg flex-shrink-0"></i>
+            <span *ngIf="!isCollapsed" class="font-medium">Configuración</span>
           </a>
         </li>
       </ul>
     </nav>
 
     <!-- Bottom Section -->
-    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       <!-- Dark Mode Toggle -->
       <div class="mb-3">
         <button
           (click)="toggleDarkMode()"
           class="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
-          [ngClass]="{'justify-center': sidebarCollapsed}">
-          <i class="pi text-lg" [ngClass]="isDarkMode ? 'pi-sun' : 'pi-moon'"></i>
-          <span *ngIf="!sidebarCollapsed" class="text-sm font-medium">
+          [ngClass]="{'justify-center': isCollapsed}">
+          <i class="pi text-lg flex-shrink-0" [ngClass]="isDarkMode ? 'pi-sun' : 'pi-moon'"></i>
+          <span *ngIf="!isCollapsed" class="text-sm font-medium">
             {{ isDarkMode ? 'Modo Claro' : 'Modo Oscuro' }}
           </span>
         </button>
@@ -100,40 +120,58 @@
       <button
         (click)="logout()"
         class="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
-        [ngClass]="{'justify-center': sidebarCollapsed}">
-        <i class="pi pi-sign-out text-lg"></i>
-        <span *ngIf="!sidebarCollapsed" class="text-sm font-medium">Cerrar Sesión</span>
+        [ngClass]="{'justify-center': isCollapsed}">
+        <i class="pi pi-sign-out text-lg flex-shrink-0"></i>
+        <span *ngIf="!isCollapsed" class="text-sm font-medium">Cerrar Sesión</span>
       </button>
     </div>
 
-    <!-- Collapsed toggle button -->
+    <!-- Expand button for collapsed desktop sidebar -->
     <button 
-      *ngIf="sidebarCollapsed"
-      (click)="toggleSidebar()"
-      class="absolute top-4 -right-3 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200">
-      <i class="pi pi-chevron-right text-xs text-gray-600 dark:text-gray-400"></i>
+      *ngIf="!isMobile && isCollapsed"
+      (click)="toggleDesktopSidebar()"
+      class="absolute top-4 -right-3 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hidden lg:flex">
+      <i class="pi pi-angle-right text-xs text-gray-600 dark:text-gray-400"></i>
     </button>
   </aside>
 
   <!-- Main Content -->
-  <main class="transition-all duration-300 min-h-screen"
-        [ngClass]="sidebarCollapsed ? 'ml-16' : 'ml-64'">
+  <main class="transition-all duration-300 min-h-screen" [class]="getMainClasses()">
     
     <!-- Top Header -->
-    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 shadow-sm">
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 shadow-sm">
       <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ currentPageTitle }}</h1>
-          <p class="text-sm text-gray-600 dark:text-gray-400">{{ currentPageSubtitle }}</p>
+        <div class="flex items-center gap-4">
+          <!-- Mobile Menu Button -->
+          <button 
+            (click)="openMobileSidebar()"
+            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 lg:hidden">
+            <i class="pi pi-bars text-gray-600 dark:text-gray-400 text-lg"></i>
+          </button>
+          
+          <div>
+            <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ currentPageTitle }}</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400 hidden sm:block">{{ currentPageSubtitle }}</p>
+          </div>
         </div>
         
         <!-- User Profile -->
-        <div class="flex items-center gap-4">
-          <div class="text-right">
+        <div class="flex items-center gap-2 sm:gap-4">
+          <!-- Mobile: Nombre centrado verticalmente -->
+          <div class="text-right block sm:hidden">
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[120px]">
+              {{user?.sub | uppercase}}
+            </p>
+          </div>
+          
+          <!-- Desktop: Información completa -->
+          <div class="text-right hidden sm:block">
             <p class="text-sm font-medium text-gray-900 dark:text-white">{{user?.sub | uppercase}}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">{{ user?.authorities?.[0]?.authority }}</p>
           </div>
-          <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+          
+          <!-- Avatar -->
+          <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
             <i class="pi pi-user text-white text-sm"></i>
           </div>
         </div>
@@ -141,7 +179,7 @@
     </header>
 
     <!-- Page Content -->
-    <div class="p-6">
+    <div class="p-4 sm:p-6">
       <router-outlet></router-outlet>
     </div>
   </main>
