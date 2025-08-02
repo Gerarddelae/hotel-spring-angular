@@ -27,6 +27,8 @@ export class LoginComponent implements OnInit {
 
   isDarkMode = false;
 
+  authError: string | null = null;
+
   constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit(): void {
@@ -52,13 +54,18 @@ export class LoginComponent implements OnInit {
   onSubmit() {
     if (this.form.invalid) return;
 
+    this.authError = null; // 🔸 Limpia el error anterior
+
     const { username, password } = this.form.getRawValue();
     this.authService.login({ username, password }).subscribe({
       next: () => {
         console.log('Login exitoso');
         this.router.navigate(['/dashboard']);
       },
-      error: (err) => console.error('Error en login:', err),
+      error: (err) => {
+        console.error('Error en login:', err)
+        this.authError = 'Invalid username or password'; // 🔹 Mensaje de error
+      },
     });
   }
 
