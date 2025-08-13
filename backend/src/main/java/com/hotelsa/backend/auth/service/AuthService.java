@@ -4,6 +4,7 @@ import com.hotelsa.backend.auth.dto.AuthRequest;
 import com.hotelsa.backend.auth.dto.AuthResponse;
 import com.hotelsa.backend.auth.dto.RegisterRequest;
 import com.hotelsa.backend.user.enums.Role;
+import com.hotelsa.backend.user.exception.UserAlreadyExistsException;
 import com.hotelsa.backend.user.model.User;
 import com.hotelsa.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +39,7 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("El usuario ya existe");
+            throw new UserAlreadyExistsException("El usuario ya existe");
         }
 
         User user = User.builder()
