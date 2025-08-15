@@ -3,6 +3,8 @@ package com.hotelsa.backend.auth.service;
 import com.hotelsa.backend.auth.dto.AuthRequest;
 import com.hotelsa.backend.auth.dto.AuthResponse;
 import com.hotelsa.backend.auth.dto.RegisterRequest;
+import com.hotelsa.backend.hotel.model.Hotel;
+import com.hotelsa.backend.hotel.repository.HotelRepository;
 import com.hotelsa.backend.user.enums.Role;
 import com.hotelsa.backend.user.exception.UserAlreadyExistsException;
 import com.hotelsa.backend.user.model.User;
@@ -14,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +24,7 @@ public class AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
+    private final HotelRepository hotelRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
@@ -29,26 +33,55 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
 
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String username = userDetails.getUsername();
-        User user = userRepository.findByUsername(username).orElseThrow();
+        User user = (User) authentication.getPrincipal();
 
-        String jwt = jwtService.generateToken(user);
-        return new AuthResponse(jwt);
+        // Buscar hotel asociado al usuario
+        Hotel hotel = user.getHotel();
+        if (hotel == null) {
+            throw new IllegalStateException("No se encontró el hotel del usuario");
+        }
+
+        String token = jwtService.generateToken(user);
+
+        return new AuthResponse(token, hotel.getId(), user.getUsername());
     }
 
-    public void register(RegisterRequest request) {
+    @Transactional
+    public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new UserAlreadyExistsException("El usuario ya existe");
         }
 
+        // Crear usuario ADMIN
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.valueOf(request.getRole()))
+                .role(Role.ADMIN)
                 .build();
 
-        userRepository.save(user);
+        // Crear hotel con datos del request
+        Hotel hotel = Hotel.builder()
+                .name(request.getHotelName())
+                .address(request.getAddress())
+                .city(request.getCity())
+                .country(request.getCountry())
+                .phone(request.getPhone())
+                .description(request.getDescription())
+                .build();
+
+        // Guardar hotel primero
+        Hotel savedHotel = hotelRepository.save(hotel);
+
+        // Asociar usuario al hotel
+        user.setHotel(savedHotel);
+        User savedUser = userRepository.save(user);
+
+        // Generar token JWT
+        String token = jwtService.generateToken(savedUser);
+
+        return new AuthResponse(token, savedHotel.getId(), savedUser.getUsername());
     }
+
+
 }

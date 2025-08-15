@@ -24,10 +24,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
-        System.out.println("EMAIL: " + request.getEmail()); // 👈 Haz esto temporalmente
-        authService.register(request);
-        return ResponseEntity.ok(Map.of("message", "Usuario registrado correctamente"));
+    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(authService.register(request));
     }
 }
 

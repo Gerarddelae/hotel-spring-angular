@@ -35,34 +35,45 @@ class AuthControllerTest {
     @Test
     void login_debeRetornarAuthResponse() throws Exception {
         // Arrange
-        AuthResponse mockResponse = new AuthResponse("mock-token");
+        AuthResponse mockResponse = new AuthResponse("mock-token", 1L, "testuser");
         Mockito.when(authService.login(any(AuthRequest.class))).thenReturn(mockResponse);
 
         String requestJson = """
-                {
-                    "username": "testuser",
-                    "password": "123456"
-                }
-                """;
+            {
+                "username": "testuser",
+                "password": "123456"
+            }
+            """;
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("mock-token"));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.token").value("mock-token"))
+                .andExpect(jsonPath("$.hotelId").value(1L))
+                .andExpect(jsonPath("$.username").value("testuser"));
     }
 
+
     @Test
-    void register_debeRetornarMensajeOk() throws Exception {
+    void register_debeRetornarTokenYDatosUsuario() throws Exception {
         // Arrange
-        Mockito.doNothing().when(authService).register(any(RegisterRequest.class));
+        Mockito.when(authService.register(any(RegisterRequest.class)))
+                .thenReturn(new AuthResponse("mock-token", 10L, "adminuser"));
 
         String requestJson = """
                 {
-                    "email": "nuevo@example.com",
+                    "username": "adminuser",
                     "password": "123456",
-                    "nombre": "Nuevo Usuario"
+                    "email": "admin@example.com",
+                    "hotelName": "Hotel Test",
+                    "address": "Calle Falsa 123",
+                    "city": "Ciudad",
+                    "country": "Pais",
+                    "phone": "123456789",
+                    "description": "Hotel de prueba"
                 }
                 """;
 
@@ -71,6 +82,10 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Usuario registrado correctamente"));
+                .andExpect(jsonPath("$.token").value("mock-token"))
+                .andExpect(jsonPath("$.hotelId").value(10L))
+                .andExpect(jsonPath("$.username").value("adminuser"));
     }
+
+
 }

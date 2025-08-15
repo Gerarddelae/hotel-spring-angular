@@ -1,12 +1,10 @@
 package com.hotelsa.backend.user.model;
 
+import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.user.enums.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -37,6 +35,12 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    // Relación con Hotel
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hotel_id", nullable = false)
+    @ToString.Exclude
+    private Hotel hotel;
 
     // Métodos de UserDetails
     @Override
