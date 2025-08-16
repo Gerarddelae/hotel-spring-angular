@@ -1,26 +1,25 @@
 package com.hotelsa.backend.auth.dto;
 
+import com.hotelsa.backend.user.dto.RegisterUserDto;
+import com.hotelsa.backend.hotel.dto.RegisterHotelDto;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class RegisterRequest {
-    private String username;
-    private String password;
-    private String email;
 
-    // Datos del hotel
-    private String hotelName;
-    private String address;
-    private String city;
-    private String country;
-    private String phone;
-    private String hotelEmail;
-    private String description;
+    @NotNull(message = "Los datos de usuario son obligatorios")
+    @Valid
+    private RegisterUserDto user;
+
+    @NotNull(message = "Los datos del hotel son obligatorios")
+    @Valid
+    private RegisterHotelDto hotel;
 }
-

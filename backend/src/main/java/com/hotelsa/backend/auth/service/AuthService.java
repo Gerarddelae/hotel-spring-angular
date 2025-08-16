@@ -3,10 +3,12 @@ package com.hotelsa.backend.auth.service;
 import com.hotelsa.backend.auth.dto.AuthRequest;
 import com.hotelsa.backend.auth.dto.AuthResponse;
 import com.hotelsa.backend.auth.dto.RegisterRequest;
+import com.hotelsa.backend.hotel.mapper.HotelMapper;
 import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.hotel.repository.HotelRepository;
 import com.hotelsa.backend.user.enums.Role;
 import com.hotelsa.backend.user.exception.UserAlreadyExistsException;
+import com.hotelsa.backend.user.mapper.UserMapper;
 import com.hotelsa.backend.user.model.User;
 import com.hotelsa.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,8 @@ public class AuthService {
     private final HotelRepository hotelRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
+    private final HotelMapper hotelMapper;
 
     public AuthResponse login(AuthRequest request) {
         Authentication authentication = authenticationManager.authenticate(
@@ -48,33 +52,26 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
+        // Extraer DTOs
+        var userDto = request.getUser();
+        var hotelDto = request.getHotel();
+
+        // Validar si el usuario ya existe
+        if (userRepository.existsByUsername(userDto.getUsername())) {
             throw new UserAlreadyExistsException("El usuario ya existe");
         }
 
-        // Crear usuario ADMIN
-        User user = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.ADMIN)
-                .build();
+        // Mapear DTOs a entidades usando los mappers
+        User user = userMapper.fromRegisterDto(userDto);
+        Hotel hotel = hotelMapper.fromRegisterDto(hotelDto);
 
-        // Crear hotel con datos del request
-        Hotel hotel = Hotel.builder()
-                .name(request.getHotelName())
-                .address(request.getAddress())
-                .city(request.getCity())
-                .country(request.getCountry())
-                .phone(request.getPhone())
-                .description(request.getDescription())
-                .build();
-
-        // Guardar hotel primero
+        // Guardar hotel
         Hotel savedHotel = hotelRepository.save(hotel);
 
-        // Asociar usuario al hotel
+        // Asociar usuario con el hotel y guardar
         user.setHotel(savedHotel);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
         User savedUser = userRepository.save(user);
 
         // Generar token JWT

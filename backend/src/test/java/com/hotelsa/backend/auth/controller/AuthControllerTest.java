@@ -64,18 +64,23 @@ class AuthControllerTest {
                 .thenReturn(new AuthResponse("mock-token", 10L, "adminuser"));
 
         String requestJson = """
-                {
+            {
+                "user": {
                     "username": "adminuser",
                     "password": "123456",
-                    "email": "admin@example.com",
-                    "hotelName": "Hotel Test",
+                    "email": "admin@example.com"
+                },
+                "hotel": {
+                    "name": "Hotel Test",
                     "address": "Calle Falsa 123",
                     "city": "Ciudad",
                     "country": "Pais",
                     "phone": "123456789",
+                    "email": "hotel@example.com",
                     "description": "Hotel de prueba"
                 }
-                """;
+            }
+            """;
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
@@ -85,6 +90,33 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.token").value("mock-token"))
                 .andExpect(jsonPath("$.hotelId").value(10L))
                 .andExpect(jsonPath("$.username").value("adminuser"));
+    }
+
+
+    @Test
+    void register_debeRetornarBadRequestCuandoFaltanCamposEnUser() throws Exception {
+        // JSON con `user` incompleto (sin username ni password)
+        String requestJson = """
+            {
+                "user": {
+                    "email": "admin@example.com"
+                },
+                "hotel": {
+                    "name": "Hotel Test",
+                    "address": "Calle Falsa 123",
+                    "city": "Ciudad",
+                    "country": "Pais",
+                    "phone": "123456789",
+                    "email": "hotel@example.com",
+                    "description": "Hotel de prueba"
+                }
+            }
+            """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isBadRequest());
     }
 
 
