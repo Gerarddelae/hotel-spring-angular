@@ -1,21 +1,17 @@
 import { Component, OnInit } from '@angular/core';
-
 import {
   ReactiveFormsModule,
   FormBuilder,
   FormGroup,
   Validators,
-  AbstractControl,
-  ValidationErrors,
-  ValidatorFn,
 } from '@angular/forms';
-import { AuthService } from '../auth.service';
-import { RegisterForm } from '../interfaces/register-form.interface';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../auth.service';
 import { RegisterRequest } from '../interfaces/register-request.interface';
 import { AuthResponse } from '../interfaces/auth-response.interface';
 import { passwordsMatchValidator } from '../../shared/validators/password-match.validator';
+import { CountryService, Country } from '../../shared/services/country.service';
 
 @Component({
   selector: 'app-register',
@@ -28,10 +24,15 @@ export class RegisterComponent implements OnInit {
   isDarkMode = false;
   authError: string | null = null;
 
+  countries: Country[] = [];
+  filteredCountries: Country[] = [];
+  showDropdown = false;
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private countryService: CountryService
   ) {}
 
   ngOnInit(): void {
@@ -42,7 +43,6 @@ export class RegisterComponent implements OnInit {
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', Validators.required],
 
-        // Campos de hotel
         name: ['', Validators.required],
         address: ['', Validators.required],
         city: ['', Validators.required],
@@ -54,17 +54,26 @@ export class RegisterComponent implements OnInit {
       { validators: passwordsMatchValidator }
     );
 
+    // Carga de países
+    this.countryService.getCountries().subscribe({
+      next: (countries) => {
+        this.countries = countries;
+        this.filteredCountries = countries;
+      },
+      error: (err) => console.error('Error cargando países', err),
+    });
+
+    // Dark mode
     const savedTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia(
       '(prefers-color-scheme: dark)'
     ).matches;
-
     this.isDarkMode =
       savedTheme === 'dark' || (!savedTheme && systemPrefersDark);
     this.applyTheme();
   }
 
-  // ✅ Getters para facilitar el acceso desde el template
+  // Getters
   get username() {
     return this.form.get('username');
   }
@@ -76,6 +85,23 @@ export class RegisterComponent implements OnInit {
   }
   get confirmPassword() {
     return this.form.get('confirmPassword');
+  }
+
+  // Country dropdown
+  filterCountries(value: string) {
+    const filter = (value || '').toLowerCase();
+    this.filteredCountries = this.countries.filter((c) =>
+      c.name.toLowerCase().includes(filter)
+    );
+  }
+
+  selectCountry(name: string) {
+    this.form.get('country')?.setValue(name);
+    this.showDropdown = false;
+  }
+
+  hideDropdown() {
+    setTimeout(() => (this.showDropdown = false), 150);
   }
 
   onSubmit(): void {
@@ -107,20 +133,16 @@ export class RegisterComponent implements OnInit {
       },
     };
 
-
     this.authService.register(payload).subscribe({
       next: (res: AuthResponse) => {
-        // Guardamos token, username y hotelId
         localStorage.setItem('token', res.token);
         localStorage.setItem('username', res.username);
         localStorage.setItem('hotelId', String(res.hotelId));
-
-        this.router.navigate(['/dashboard']); // ✅ igual que login
+        this.router.navigate(['/dashboard']);
       },
-      error: (err) => {
-        console.error('❌ Error en registro:', err);
+      error: () => {
         this.authError = 'Error en el registro. Inténtalo de nuevo.';
-      }
+      },
     });
   }
 
@@ -131,10 +153,6 @@ export class RegisterComponent implements OnInit {
   }
 
   private applyTheme(): void {
-    if (this.isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', this.isDarkMode);
   }
 }
