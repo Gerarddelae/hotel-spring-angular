@@ -3,5 +3,12 @@ export interface RegisterForm {
   email: string;
   password: string;
   confirmPassword: string;
-  role: 'USER' | 'ADMIN';
+  name: string;        // Nombre del hotel
+  address: string;
+  city: string;
+  country: string;
+  phone: string;
+  hotelEmail: string;  // Email del hotel
+  description?: string;
 }
+

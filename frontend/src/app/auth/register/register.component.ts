@@ -11,8 +11,11 @@ import {
 } from '@angular/forms';
 import { AuthService } from '../auth.service';
 import { RegisterForm } from '../interfaces/register-form.interface';
-import { CommonModule } from '@angular/common'; 
+import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { RegisterRequest } from '../interfaces/register-request.interface';
+import { AuthResponse } from '../interfaces/auth-response.interface';
+import { passwordsMatchValidator } from '../../shared/validators/password-match.validator';
 
 @Component({
   selector: 'app-register',
@@ -23,6 +26,7 @@ import { Router, RouterModule } from '@angular/router';
 export class RegisterComponent implements OnInit {
   form!: FormGroup;
   isDarkMode = false;
+  authError: string | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -33,16 +37,21 @@ export class RegisterComponent implements OnInit {
   ngOnInit(): void {
     this.form = this.fb.group(
       {
-        username: this.fb.control('', Validators.required),
-        email: this.fb.control('', [Validators.required, Validators.email]),
-        password: this.fb.control('', [
-          Validators.required,
-          Validators.minLength(6),
-        ]),
-        confirmPassword: this.fb.control(''),
-        role: this.fb.control<'USER' | 'ADMIN'>('USER'),
+        username: ['', Validators.required],
+        email: ['', [Validators.required, Validators.email]],
+        password: ['', [Validators.required, Validators.minLength(6)]],
+        confirmPassword: ['', Validators.required],
+
+        // Campos de hotel
+        name: ['', Validators.required],
+        address: ['', Validators.required],
+        city: ['', Validators.required],
+        country: ['', Validators.required],
+        phone: ['', Validators.required],
+        hotelEmail: ['', [Validators.required, Validators.email]],
+        description: [''],
       },
-      { validators: this.passwordsMatchValidator }
+      { validators: passwordsMatchValidator }
     );
 
     const savedTheme = localStorage.getItem('theme');
@@ -54,15 +63,6 @@ export class RegisterComponent implements OnInit {
       savedTheme === 'dark' || (!savedTheme && systemPrefersDark);
     this.applyTheme();
   }
-
-  // ✅ Validador de contraseñas
-  passwordsMatchValidator: ValidatorFn = (
-    group: AbstractControl
-  ): ValidationErrors | null => {
-    const password = group.get('password')?.value;
-    const confirmPassword = group.get('confirmPassword')?.value;
-    return password === confirmPassword ? null : { mismatch: true };
-  };
 
   // ✅ Getters para facilitar el acceso desde el template
   get username() {
@@ -77,29 +77,51 @@ export class RegisterComponent implements OnInit {
   get confirmPassword() {
     return this.form.get('confirmPassword');
   }
-  get role() {
-    return this.form.get('role');
-  }
 
   onSubmit(): void {
     if (this.form.invalid) return;
 
-    const { username, email, password, role } = this.form.value;
-    console.log(this.form.value);
-    this.authService
-      .register({
-        username,
-        email,
-        password,
-        role,
-      })
-      .subscribe({
-        next: () => {
-          console.log('✅ Registro exitoso');
-          this.router.navigate(['/auth/login']);
-        },
-        error: (err) => console.error('❌ Error en registro:', err),
-      });
+    const {
+      username,
+      email,
+      password,
+      name,
+      address,
+      city,
+      country,
+      phone,
+      hotelEmail,
+      description,
+    } = this.form.value;
+
+    const payload: RegisterRequest = {
+      user: { username, email, password },
+      hotel: {
+        name,
+        address,
+        city,
+        country,
+        phone,
+        email: hotelEmail,
+        description,
+      },
+    };
+
+
+    this.authService.register(payload).subscribe({
+      next: (res: AuthResponse) => {
+        // Guardamos token, username y hotelId
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('username', res.username);
+        localStorage.setItem('hotelId', String(res.hotelId));
+
+        this.router.navigate(['/dashboard']); // ✅ igual que login
+      },
+      error: (err) => {
+        console.error('❌ Error en registro:', err);
+        this.authError = 'Error en el registro. Inténtalo de nuevo.';
+      }
+    });
   }
 
   toggleDarkMode(): void {

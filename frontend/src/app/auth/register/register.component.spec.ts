@@ -1,135 +1,142 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RegisterComponent } from './register.component';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../auth.service';
-import { Router } from '@angular/router';
+import { AuthResponse } from '../interfaces/auth-response.interface';
 import { of, throwError } from 'rxjs';
+import { Router } from '@angular/router';
+import { RouterTestingModule } from '@angular/router/testing';
 
-describe('RegisterComponent (solo lógica)', () => {
+describe('RegisterComponent', () => {
   let component: RegisterComponent;
+  let fixture: ComponentFixture<RegisterComponent>;
   let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let routerSpy: jasmine.SpyObj<Router>;
+  let router: Router;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     authServiceSpy = jasmine.createSpyObj('AuthService', ['register']);
-    routerSpy = jasmine.createSpyObj('Router', ['navigate']);
 
-    TestBed.configureTestingModule({
-      imports: [ReactiveFormsModule],
-      providers: [
-        FormBuilder,
-        { provide: AuthService, useValue: authServiceSpy },
-        { provide: Router, useValue: routerSpy }
-      ]
-    });
+    await TestBed.configureTestingModule({
+      imports: [
+        RegisterComponent, // ✅ standalone
+        RouterTestingModule, // ✅ proporciona ActivatedRoute, RouterLink, etc.
+      ],
+      providers: [{ provide: AuthService, useValue: authServiceSpy }],
+    }).compileComponents();
 
-    component = new RegisterComponent(
-      TestBed.inject(FormBuilder),
-      TestBed.inject(AuthService),
-      TestBed.inject(Router)
-    );
+    fixture = TestBed.createComponent(RegisterComponent);
+    component = fixture.componentInstance;
 
-    component.ngOnInit(); // Inicializa el formulario y modo oscuro
+    router = TestBed.inject(Router);
+    spyOn(router, 'navigate'); // 🔹 espiamos navigate
+
+    fixture.detectChanges();
   });
+
+  function fillValidForm() {
+    component.form.patchValue({
+      username: 'usuario',
+      email: 'user@example.com',
+      password: 'clave123',
+      confirmPassword: 'clave123',
+      name: 'Hotel Test',
+      address: 'Calle 123',
+      city: 'Bogotá',
+      country: 'Colombia',
+      phone: '123456789',
+      hotelEmail: 'hotel@example.com',
+      description: 'Hotel de prueba',
+    });
+  }
 
   it('debería crear el componente', () => {
     expect(component).toBeTruthy();
   });
 
-  it('debería inicializar el formulario con valores vacíos y rol USER', () => {
-    expect(component.form).toBeDefined();
-    expect(component.username?.value).toBe('');
-    expect(component.email?.value).toBe('');
-    expect(component.password?.value).toBe('');
-    expect(component.confirmPassword?.value).toBe('');
-    expect(component.role?.value).toBe('USER');
-  });
-
-  it('debería marcar el formulario como inválido si faltan campos', () => {
-    component.form.setValue({
+  it('el formulario debería ser inválido si faltan campos obligatorios', () => {
+    component.form.patchValue({
       username: '',
       email: '',
       password: '',
       confirmPassword: '',
-      role: 'USER'
+      name: '',
+      address: '',
+      city: '',
+      country: '',
+      phone: '',
+      hotelEmail: '',
     });
-
     expect(component.form.invalid).toBeTrue();
   });
 
-  it('debería validar que las contraseñas coincidan', () => {
-    component.password?.setValue('123456');
-    component.confirmPassword?.setValue('654321');
-
-    expect(component.form.errors?.['mismatch']).toBeTrue();
-
-    component.confirmPassword?.setValue('123456');
-    expect(component.form.errors).toBeNull();
-  });
-
-  it('debería llamar a AuthService.register y navegar al login en éxito', () => {
-    const mockFormValue = {
-      username: 'testuser',
-      email: 'test@example.com',
-      password: '123456',
-      confirmPassword: '123456',
-      role: 'USER'
+  it('debería llamar a AuthService.register con la estructura correcta', () => {
+    const mockResponse: AuthResponse = {
+      token: 'fake-token',
+      username: 'usuario',
+      hotelId: 1,
     };
+    authServiceSpy.register.and.returnValue(of(mockResponse));
 
-    component.form.setValue(mockFormValue);
-    authServiceSpy.register.and.returnValue(of({ token: 'fake-token' }));
-
+    fillValidForm();
     component.onSubmit();
 
     expect(authServiceSpy.register).toHaveBeenCalledWith({
-      username: 'testuser',
-      email: 'test@example.com',
-      password: '123456',
-      role: 'USER'
+      user: {
+        username: 'usuario',
+        email: 'user@example.com',
+        password: 'clave123',
+      },
+      hotel: {
+        name: 'Hotel Test',
+        address: 'Calle 123',
+        city: 'Bogotá',
+        country: 'Colombia',
+        phone: '123456789',
+        email: 'hotel@example.com',
+        description: 'Hotel de prueba',
+      },
     });
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login']);
   });
 
-  it('no debería llamar a AuthService.register si el formulario es inválido', () => {
-    component.form.setValue({
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      role: 'USER'
-    });
-
-    component.onSubmit();
-
-    expect(authServiceSpy.register).not.toHaveBeenCalled();
-  });
-
-  it('debería manejar error en AuthService.register', () => {
-    const mockFormValue = {
-      username: 'testuser',
-      email: 'test@example.com',
-      password: '123456',
-      confirmPassword: '123456',
-      role: 'USER'
+  it('debería guardar token, username y hotelId en localStorage tras registro exitoso', () => {
+    const mockResponse: AuthResponse = {
+      token: 'fake-token',
+      username: 'usuario',
+      hotelId: 1,
     };
+    authServiceSpy.register.and.returnValue(of(mockResponse));
+    spyOn(localStorage, 'setItem');
 
-    component.form.setValue(mockFormValue);
-    authServiceSpy.register.and.returnValue(throwError(() => new Error('Error')));
-
-    spyOn(console, 'error');
-
+    fillValidForm();
     component.onSubmit();
 
-    expect(console.error).toHaveBeenCalledWith('❌ Error en registro:', jasmine.any(Error));
+    expect(localStorage.setItem).toHaveBeenCalledWith('token', 'fake-token');
+    expect(localStorage.setItem).toHaveBeenCalledWith('username', 'usuario');
+    expect(localStorage.setItem).toHaveBeenCalledWith('hotelId', '1');
   });
 
-  it('debería alternar el modo oscuro y guardar en localStorage', () => {
-    spyOn(localStorage, 'setItem');
-    component.isDarkMode = false;
+  it('debería navegar a /dashboard después de registro exitoso', () => {
+    const mockResponse: AuthResponse = {
+      token: 'fake-token',
+      username: 'usuario',
+      hotelId: 1,
+    };
+    authServiceSpy.register.and.returnValue(of(mockResponse));
 
-    component.toggleDarkMode();
+    fillValidForm();
+    component.onSubmit();
 
-    expect(component.isDarkMode).toBeTrue();
-    expect(localStorage.setItem).toHaveBeenCalledWith('theme', 'dark');
+    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+  });
+
+  it('debería establecer authError cuando el registro falla', () => {
+    authServiceSpy.register.and.returnValue(
+      throwError(() => new Error('Error'))
+    );
+    fillValidForm();
+    component.onSubmit();
+
+    expect(component.authError).toBe(
+      'Error en el registro. Inténtalo de nuevo.'
+    );
   });
 });

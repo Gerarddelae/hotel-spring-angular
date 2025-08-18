@@ -1,6 +1,17 @@
 export interface RegisterRequest {
-  username: string;
-  password: string;
-  email: string;
-  role: string;
+  user: {
+    username: string;
+    password: string;
+    email: string;
+  };
+  hotel: {
+    name: string;
+    address: string;
+    city: string;
+    country: string;
+    phone: string;
+    email: string;
+    description?: string; // opcional
+  };
 }
+
