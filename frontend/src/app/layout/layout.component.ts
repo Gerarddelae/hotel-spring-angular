@@ -26,6 +26,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   sidebarCollapsed = false;
   isMobile = false;
   isMobileSidebarOpen = false;
+  showLogoutModal = false;
 
   // Información de la página actual
   currentPageTitle = 'Dashboard';
@@ -98,12 +99,12 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   getSidebarClasses(): string {
     if (this.isMobile) {
-      return this.isMobileSidebarOpen 
-        ? 'sidebar-mobile-open' 
+      return this.isMobileSidebarOpen
+        ? 'sidebar-mobile-open'
         : 'sidebar-mobile-closed';
     } else {
-      return this.sidebarCollapsed 
-        ? 'sidebar-desktop-collapsed' 
+      return this.sidebarCollapsed
+        ? 'sidebar-desktop-collapsed'
         : 'sidebar-desktop-expanded';
     }
   }
@@ -112,8 +113,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (this.isMobile) {
       return 'main-mobile';
     } else {
-      return this.sidebarCollapsed 
-        ? 'main-desktop-collapsed' 
+      return this.sidebarCollapsed
+        ? 'main-desktop-collapsed'
         : 'main-desktop-expanded';
     }
   }
@@ -123,8 +124,13 @@ export class LayoutComponent implements OnInit, OnDestroy {
   checkScreenSize(): void {
     const wasMobile = this.isMobile;
     this.isMobile = window.innerWidth < 1024; // lg breakpoint in Tailwind
-    
-    console.log('Screen check - Width:', window.innerWidth, 'isMobile:', this.isMobile);
+
+    console.log(
+      'Screen check - Width:',
+      window.innerWidth,
+      'isMobile:',
+      this.isMobile
+    );
 
     // If changing from mobile to desktop, close mobile sidebar
     if (wasMobile && !this.isMobile) {
@@ -146,7 +152,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   logout(): void {
     // Close mobile sidebar if open
     this.closeMobileSidebar();
-    
+
     // Clear storage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -155,13 +161,31 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.router.navigate(['/auth/login']);
   }
 
+  // Modal de confirmación
+
+  openLogoutModal(): void {
+    this.showLogoutModal = true;
+  }
+
+  confirmLogout(): void {
+    this.logout(); // ya existente
+    this.showLogoutModal = false;
+  }
+
+  cancelLogout(): void {
+    this.showLogoutModal = false;
+  }
+
   // ==================== INITIALIZATION METHODS ====================
 
   private initializeTheme(): void {
     const savedTheme = localStorage.getItem('theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const systemPrefersDark = window.matchMedia(
+      '(prefers-color-scheme: dark)'
+    ).matches;
 
-    this.isDarkMode = savedTheme === 'dark' || (!savedTheme && systemPrefersDark);
+    this.isDarkMode =
+      savedTheme === 'dark' || (!savedTheme && systemPrefersDark);
     this.applyTheme();
   }
 
