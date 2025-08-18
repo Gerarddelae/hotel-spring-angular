@@ -14,7 +14,7 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly apiUrl = 'http://localhost:8080/api/auth'; // ajusta si tu backend cambia
+  private readonly apiUrl = 'http://localhost:8080/api/auth';
 
   private userSubject = new BehaviorSubject<JwtPayload | null>(null);
   public user$ = this.userSubject.asObservable();
