@@ -6,7 +6,6 @@ import com.hotelsa.backend.auth.dto.RegisterRequest;
 import com.hotelsa.backend.hotel.mapper.HotelMapper;
 import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.hotel.repository.HotelRepository;
-import com.hotelsa.backend.user.enums.Role;
 import com.hotelsa.backend.user.exception.UserAlreadyExistsException;
 import com.hotelsa.backend.user.mapper.UserMapper;
 import com.hotelsa.backend.user.model.User;
@@ -15,10 +14,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +39,6 @@ public class AuthService {
 
         User user = (User) authentication.getPrincipal();
 
-        // Buscar hotel asociado al usuario
         Hotel hotel = user.getHotel();
         if (hotel == null) {
             throw new IllegalStateException("No se encontró el hotel del usuario");
@@ -47,38 +46,40 @@ public class AuthService {
 
         String token = jwtService.generateToken(user);
 
-        return new AuthResponse(token, hotel.getId(), user.getUsername());
+        return new AuthResponse(
+                token,
+                user.getUsername(),
+                hotel.getName(),
+                List.of(user.getRole().name()) // Solo el nombre del role, sin prefijo
+        );
     }
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        // Extraer DTOs
         var userDto = request.getUser();
         var hotelDto = request.getHotel();
 
-        // Validar si el usuario ya existe
         if (userRepository.existsByUsername(userDto.getUsername())) {
             throw new UserAlreadyExistsException("El usuario ya existe");
         }
 
-        // Mapear DTOs a entidades usando los mappers
         User user = userMapper.fromRegisterDto(userDto);
         Hotel hotel = hotelMapper.fromRegisterDto(hotelDto);
 
-        // Guardar hotel
         Hotel savedHotel = hotelRepository.save(hotel);
 
-        // Asociar usuario con el hotel y guardar
         user.setHotel(savedHotel);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         User savedUser = userRepository.save(user);
 
-        // Generar token JWT
         String token = jwtService.generateToken(savedUser);
 
-        return new AuthResponse(token, savedHotel.getId(), savedUser.getUsername());
+        return new AuthResponse(
+                token,
+                savedUser.getUsername(),
+                savedHotel.getName(),
+                List.of(savedUser.getRole().name())
+        );
     }
-
-
 }

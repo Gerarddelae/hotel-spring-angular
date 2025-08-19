@@ -23,6 +23,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -55,7 +57,7 @@ class AuthServiceTest {
     private AuthService authService;
 
     @Test
-    void login_debeRetornarTokenYHotelId() {
+    void login_debeRetornarTokenYHotelNameYAuthorities() {
         // Arrange
         AuthRequest request = new AuthRequest("testuser", "123456");
 
@@ -84,8 +86,9 @@ class AuthServiceTest {
         // Assert
         assertNotNull(response);
         assertEquals("mock-jwt", response.getToken());
-        assertEquals(100L, response.getHotelId());
+        assertEquals("Hotel Test", response.getHotelName());
         assertEquals("testuser", response.getUsername());
+        assertEquals(List.of("ADMIN"), response.getAuthorities());
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(jwtService).generateToken(mockUser);
@@ -118,7 +121,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void register_debeGuardarUsuarioConPasswordEncriptadaYHotel() {
+    void register_debeGuardarUsuarioConPasswordEncriptadaYHotelYAuthorities() {
         // Arrange: DTOs de prueba
         RegisterUserDto userDto = RegisterUserDto.builder()
                 .username("secureuser")
@@ -178,14 +181,16 @@ class AuthServiceTest {
         // Assert
         assertNotNull(response);
         assertEquals("mock-token", response.getToken());
-        assertEquals(10L, response.getHotelId());
+        assertEquals("Secure Hotel", response.getHotelName());
         assertEquals("secureuser", response.getUsername());
+        assertEquals(List.of("ADMIN"), response.getAuthorities());
 
         // Verificar que la contraseña fue encriptada antes de guardar
         verify(passwordEncoder).encode("plainpass");
         verify(userRepository).save(argThat(user ->
                 user.getPassword().equals("encoded-pass") &&
                         user.getUsername().equals("secureuser") &&
+                        user.getEmail().equals("secure@example.com") &&
                         user.getHotel() != null
         ));
 
@@ -194,9 +199,6 @@ class AuthServiceTest {
                 hotel.getName().equals("Secure Hotel")
         ));
     }
-
-
-
 
     @Test
     void register_debeLanzarExcepcionSiUsuarioExiste() {
@@ -225,86 +227,4 @@ class AuthServiceTest {
         verify(userRepository, never()).save(any());
         verify(hotelRepository, never()).save(any());
     }
-
-    @Test
-    void register_debeAsignarPasswordEncriptadoAntesDeGuardar() {
-        // Arrange: DTOs de prueba
-        RegisterUserDto userDto = RegisterUserDto.builder()
-                .username("secureuser")
-                .password("plainpass")
-                .email("secure@example.com")
-                .build();
-
-        RegisterHotelDto hotelDto = RegisterHotelDto.builder()
-                .name("Secure Hotel")
-                .address("Calle Segura 123")
-                .city("CiudadSegura")
-                .country("PaisSegura")
-                .phone("123456789")
-                .description("Hotel seguro")
-                .build();
-
-        RegisterRequest request = new RegisterRequest(userDto, hotelDto);
-
-        // Objetos que devolverán los mappers
-        User mappedUser = new User();
-        mappedUser.setUsername(userDto.getUsername());
-        mappedUser.setEmail(userDto.getEmail());
-        mappedUser.setPassword(userDto.getPassword());
-        mappedUser.setRole(Role.ADMIN);
-
-        Hotel mappedHotel = new Hotel();
-        mappedHotel.setName(hotelDto.getName());
-        mappedHotel.setAddress(hotelDto.getAddress());
-        mappedHotel.setCity(hotelDto.getCity());
-        mappedHotel.setCountry(hotelDto.getCountry());
-        mappedHotel.setPhone(hotelDto.getPhone());
-        mappedHotel.setDescription(hotelDto.getDescription());
-
-        // Objetos "guardados"
-        Hotel savedHotel = Hotel.builder().id(10L).name(mappedHotel.getName()).build();
-        User savedUser = new User();
-        savedUser.setUsername(mappedUser.getUsername());
-        savedUser.setEmail(mappedUser.getEmail());
-        savedUser.setPassword("encoded-pass");
-        savedUser.setRole(Role.ADMIN);
-        savedUser.setHotel(savedHotel);
-
-        // Stubbing de mappers
-        when(userMapper.fromRegisterDto(any(RegisterUserDto.class))).thenReturn(mappedUser);
-        when(hotelMapper.fromRegisterDto(any(RegisterHotelDto.class))).thenReturn(mappedHotel);
-
-        // Stubbing de repositorios y encoder
-        when(userRepository.existsByUsername("secureuser")).thenReturn(false);
-        when(passwordEncoder.encode("plainpass")).thenReturn("encoded-pass");
-        when(hotelRepository.save(any(Hotel.class))).thenReturn(savedHotel);
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(jwtService.generateToken(any(User.class))).thenReturn("mock-token");
-
-        // Act
-        AuthResponse response = authService.register(request);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals("mock-token", response.getToken());
-        assertEquals(10L, response.getHotelId());
-        assertEquals("secureuser", response.getUsername());
-
-        // Verificar que la contraseña fue encriptada antes de guardar
-        verify(passwordEncoder).encode("plainpass");
-        verify(userRepository).save(argThat(user ->
-                user.getPassword().equals("encoded-pass") &&
-                        user.getUsername().equals("secureuser") &&
-                        user.getEmail().equals("secure@example.com") &&
-                        user.getHotel() != null
-        ));
-
-        // Verificar que el hotel se guardó
-        verify(hotelRepository).save(argThat(hotel ->
-                hotel.getName().equals("Secure Hotel")
-        ));
-    }
-
-
-
 }

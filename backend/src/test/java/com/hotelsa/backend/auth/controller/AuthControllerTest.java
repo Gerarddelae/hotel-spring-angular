@@ -14,6 +14,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -25,7 +27,6 @@ class AuthControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    // Mocks para inyectar en el contexto
     @MockitoBean
     private AuthService authService;
 
@@ -35,7 +36,12 @@ class AuthControllerTest {
     @Test
     void login_debeRetornarAuthResponse() throws Exception {
         // Arrange
-        AuthResponse mockResponse = new AuthResponse("mock-token", 1L, "testuser");
+        AuthResponse mockResponse = new AuthResponse(
+                "mock-token",
+                "testuser",
+                "Hotel Test",
+                List.of("ROLE_ADMIN", "ROLE_USER")
+        );
         Mockito.when(authService.login(any(AuthRequest.class))).thenReturn(mockResponse);
 
         String requestJson = """
@@ -52,16 +58,22 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.token").value("mock-token"))
-                .andExpect(jsonPath("$.hotelId").value(1L))
-                .andExpect(jsonPath("$.username").value("testuser"));
+                .andExpect(jsonPath("$.hotelName").value("Hotel Test"))
+                .andExpect(jsonPath("$.username").value("testuser"))
+                .andExpect(jsonPath("$.authorities[0]").value("ROLE_ADMIN"))
+                .andExpect(jsonPath("$.authorities[1]").value("ROLE_USER"));
     }
-
 
     @Test
     void register_debeRetornarTokenYDatosUsuario() throws Exception {
         // Arrange
         Mockito.when(authService.register(any(RegisterRequest.class)))
-                .thenReturn(new AuthResponse("mock-token", 10L, "adminuser"));
+                .thenReturn(new AuthResponse(
+                        "mock-token",
+                        "adminuser",
+                        "Hotel Test",
+                        List.of("ROLE_ADMIN")
+                ));
 
         String requestJson = """
             {
@@ -88,14 +100,13 @@ class AuthControllerTest {
                         .content(requestJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("mock-token"))
-                .andExpect(jsonPath("$.hotelId").value(10L))
-                .andExpect(jsonPath("$.username").value("adminuser"));
+                .andExpect(jsonPath("$.hotelName").value("Hotel Test"))
+                .andExpect(jsonPath("$.username").value("adminuser"))
+                .andExpect(jsonPath("$.authorities[0]").value("ROLE_ADMIN"));
     }
-
 
     @Test
     void register_debeRetornarBadRequestCuandoFaltanCamposEnUser() throws Exception {
-        // JSON con `user` incompleto (sin username ni password)
         String requestJson = """
             {
                 "user": {
@@ -118,6 +129,4 @@ class AuthControllerTest {
                         .content(requestJson))
                 .andExpect(status().isBadRequest());
     }
-
-
 }
