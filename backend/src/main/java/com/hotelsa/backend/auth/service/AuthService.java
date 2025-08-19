@@ -6,6 +6,7 @@ import com.hotelsa.backend.auth.dto.RegisterRequest;
 import com.hotelsa.backend.hotel.mapper.HotelMapper;
 import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.hotel.repository.HotelRepository;
+import com.hotelsa.backend.user.enums.Role;
 import com.hotelsa.backend.user.exception.UserAlreadyExistsException;
 import com.hotelsa.backend.user.mapper.UserMapper;
 import com.hotelsa.backend.user.model.User;
@@ -67,6 +68,9 @@ public class AuthService {
         Hotel hotel = hotelMapper.fromRegisterDto(hotelDto);
 
         Hotel savedHotel = hotelRepository.save(hotel);
+
+        // ✅ Decisión de negocio AQUÍ: el primer usuario siempre es ADMIN
+        user.setRole(Role.ADMIN);
 
         user.setHotel(savedHotel);
         user.setPassword(passwordEncoder.encode(user.getPassword()));

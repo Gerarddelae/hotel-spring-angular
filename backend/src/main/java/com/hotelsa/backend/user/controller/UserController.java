@@ -1,0 +1,27 @@
+package com.hotelsa.backend.user.controller;
+
+import com.hotelsa.backend.user.dto.RegisterUserDto;
+import com.hotelsa.backend.user.dto.UserDto;
+import com.hotelsa.backend.user.model.User;
+import com.hotelsa.backend.user.service.UserService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/users")
+@RequiredArgsConstructor
+public class UserController {
+
+    private final UserService userService;
+
+    @PostMapping("/employees")
+    @PreAuthorize("hasRole('ADMIN')") // Solo admins pueden crear empleados
+    public ResponseEntity<UserDto> registerEmployee(@Valid @RequestBody RegisterUserDto dto) {
+        UserDto createdUser = userService.registerEmployee(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+    }
+}
