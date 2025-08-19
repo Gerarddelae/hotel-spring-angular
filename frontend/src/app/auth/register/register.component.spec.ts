@@ -5,6 +5,7 @@ import { AuthResponse } from '../interfaces/auth-response.interface';
 import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 describe('RegisterComponent', () => {
   let component: RegisterComponent;
@@ -17,8 +18,9 @@ describe('RegisterComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [
-        RegisterComponent, // ✅ standalone
-        RouterTestingModule, // ✅ proporciona ActivatedRoute, RouterLink, etc.
+        RegisterComponent, 
+        RouterTestingModule, 
+        HttpClientTestingModule // necesario si tu RegisterComponent usa servicios con HttpClient
       ],
       providers: [{ provide: AuthService, useValue: authServiceSpy }],
     }).compileComponents();
@@ -27,7 +29,7 @@ describe('RegisterComponent', () => {
     component = fixture.componentInstance;
 
     router = TestBed.inject(Router);
-    spyOn(router, 'navigate'); // 🔹 espiamos navigate
+    spyOn(router, 'navigate');
 
     fixture.detectChanges();
   });
@@ -70,9 +72,10 @@ describe('RegisterComponent', () => {
 
   it('debería llamar a AuthService.register con la estructura correcta', () => {
     const mockResponse: AuthResponse = {
-      token: 'fake-token',
-      username: 'usuario',
-      hotelId: 1,
+      token: 'mock-token',
+      username: 'adminuser',
+      hotelName: 'Hotel Test',
+      authorities: ['ADMIN'],
     };
     authServiceSpy.register.and.returnValue(of(mockResponse));
 
@@ -97,11 +100,12 @@ describe('RegisterComponent', () => {
     });
   });
 
-  it('debería guardar token, username y hotelId en localStorage tras registro exitoso', () => {
+  it('debería guardar token, username y hotelName en localStorage tras registro exitoso', () => {
     const mockResponse: AuthResponse = {
-      token: 'fake-token',
-      username: 'usuario',
-      hotelId: 1,
+      token: 'mock-token',
+      username: 'adminuser',
+      hotelName: 'Hotel Test',
+      authorities: ['ADMIN'],
     };
     authServiceSpy.register.and.returnValue(of(mockResponse));
     spyOn(localStorage, 'setItem');
@@ -109,16 +113,17 @@ describe('RegisterComponent', () => {
     fillValidForm();
     component.onSubmit();
 
-    expect(localStorage.setItem).toHaveBeenCalledWith('token', 'fake-token');
-    expect(localStorage.setItem).toHaveBeenCalledWith('username', 'usuario');
-    expect(localStorage.setItem).toHaveBeenCalledWith('hotelId', '1');
+    expect(localStorage.setItem).toHaveBeenCalledWith('token', 'mock-token');
+    expect(localStorage.setItem).toHaveBeenCalledWith('username', 'adminuser');
+    expect(localStorage.setItem).toHaveBeenCalledWith('hotelName', 'Hotel Test');
   });
 
   it('debería navegar a /dashboard después de registro exitoso', () => {
     const mockResponse: AuthResponse = {
-      token: 'fake-token',
-      username: 'usuario',
-      hotelId: 1,
+      token: 'mock-token',
+      username: 'adminuser',
+      hotelName: 'Hotel Test',
+      authorities: ['ADMIN'],
     };
     authServiceSpy.register.and.returnValue(of(mockResponse));
 

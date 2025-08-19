@@ -6,11 +6,13 @@ import { BehaviorSubject, of } from 'rxjs';
 import { Title } from '@angular/platform-browser';
 import { NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { CurrentUser } from '../auth/interfaces/current-user.interface';
 
 // Simulación de un usuario
-const mockUser = {
-  sub: 'testuser',
-  authorities: [{ authority: 'ROLE_USER' }]
+const mockUser: CurrentUser = {
+  username: 'adminuser',
+  hotelName: 'Hotel Test',
+  authorities: ['ADMIN']
 };
 
 // Mock AuthService

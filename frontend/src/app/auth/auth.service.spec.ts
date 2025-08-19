@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 import { AuthService } from './auth.service';
 import { AuthResponse } from './interfaces/auth-response.interface';
 import { RegisterRequest } from './interfaces/register-request.interface';
@@ -9,15 +12,16 @@ describe('AuthService', () => {
   let httpMock: HttpTestingController;
 
   const mockResponse: AuthResponse = {
-    token: 'mock-jwt-token',
-    username: 'mockuser',
-    hotelId: 1
+    token: 'mock-toker',
+    username: 'admin',
+    hotelName: 'Hotel Test',
+    authorities: ['ADMIN'],
   };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [AuthService]
+      providers: [AuthService],
     });
     service = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -51,7 +55,7 @@ describe('AuthService', () => {
         user: {
           username: 'user',
           email: 'email@example.com',
-          password: 'pass123'
+          password: 'pass123',
         },
         hotel: {
           name: 'Hotel Test',
@@ -60,8 +64,8 @@ describe('AuthService', () => {
           country: 'Country',
           phone: '123456789',
           email: 'hotel@example.com',
-          description: 'Hotel description'
-        }
+          description: 'Hotel description',
+        },
       };
 
       service.register(registerData).subscribe((res) => {

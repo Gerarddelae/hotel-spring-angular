@@ -32,7 +32,7 @@
             Hotel SPA
           </h2>
           <p class="text-xs text-gray-500 dark:text-gray-400">
-            Management System
+            {{ user?.hotelName | uppercase }}
           </p>
         </div>
       </div>
@@ -207,17 +207,17 @@
             <p
               class="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[120px]"
             >
-              {{ user?.sub | uppercase }}
+              {{ user?.username | uppercase }}
             </p>
           </div>
 
           <!-- Desktop: Información completa -->
           <div class="text-right hidden sm:block">
             <p class="text-sm font-medium text-gray-900 dark:text-white">
-              {{ user?.sub | uppercase }}
+              {{ user?.username | uppercase }}
             </p>
             <p class="text-xs text-gray-500 dark:text-gray-400">
-              {{ user?.authorities?.[0]?.authority }}
+              {{ user?.authorities?.[0] }}
             </p>
           </div>
 

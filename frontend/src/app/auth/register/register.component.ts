@@ -137,7 +137,7 @@ export class RegisterComponent implements OnInit {
       next: (res: AuthResponse) => {
         localStorage.setItem('token', res.token);
         localStorage.setItem('username', res.username);
-        localStorage.setItem('hotelId', String(res.hotelId));
+        localStorage.setItem('hotelName', String(res.hotelName));
         this.router.navigate(['/dashboard']);
       },
       error: () => {

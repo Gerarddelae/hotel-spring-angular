@@ -14,9 +14,10 @@ describe('LoginComponent', () => {
   let router: Router; // 🔹 router real de RouterTestingModule
 
   const mockResponse: AuthResponse = {
-    token: 'fake-token',
-    username: 'mockuser',
-    hotelId: 1
+    token: 'mock-toker',
+    username: 'admin',
+    hotelName: 'Hotel Test',
+    authorities: ['ADMIN'],
   };
 
   beforeEach(async () => {

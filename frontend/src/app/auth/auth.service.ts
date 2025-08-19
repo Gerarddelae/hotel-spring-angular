@@ -3,49 +3,54 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap } from 'rxjs/operators';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { jwtDecode } from 'jwt-decode';
 
 import { AuthRequest } from './interfaces/auth-request.interface';
 import { RegisterRequest } from './interfaces/register-request.interface';
-import { AuthResponse } from './interfaces/auth-response.interface';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
 
+import { AuthResponse } from './interfaces/auth-response.interface';
+import { CurrentUser } from './interfaces/current-user.interface';
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   private readonly apiUrl = 'http://localhost:8080/api/auth';
 
-  private userSubject = new BehaviorSubject<JwtPayload | null>(null);
+  private userSubject = new BehaviorSubject<CurrentUser | null>(null);
   public user$ = this.userSubject.asObservable();
 
   constructor(private http: HttpClient, private router: Router) {
-    this.loadUserFromToken();
+    this.loadUserFromStorage();
   }
 
   login(credentials: AuthRequest): Observable<AuthResponse> {
-    return this.http
-      .post<AuthResponse>(`${this.apiUrl}/login`, credentials)
-      .pipe(
-        tap((response) => {
-          localStorage.setItem('token', response.token);
-          const decoded = this.decodeToken(response.token);
-          this.userSubject.next(decoded); 
-        })
-      );
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
+      tap((response) => {
+        localStorage.setItem('token', response.token);
+        this.userSubject.next({
+          username: response.username,
+          hotelName: response.hotelName,
+          authorities: response.authorities,
+        });
+      })
+    );
   }
 
   register(data: RegisterRequest): Observable<AuthResponse> {
-    console.log(data);
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
       tap((response) => {
-        localStorage.setItem('token', response.token); // opcional: si también se devuelve el token al registrarse
+        localStorage.setItem('token', response.token);
+        this.userSubject.next({
+          username: response.username,
+          hotelName: response.hotelName,
+          authorities: response.authorities,
+        });
       })
     );
   }
 
   logout(): void {
     localStorage.removeItem('token');
+    this.userSubject.next(null);
     this.router.navigate(['/auth/login']);
   }
 
@@ -53,25 +58,13 @@ export class AuthService {
     return !!localStorage.getItem('token');
   }
 
-  decodeToken(token: string): JwtPayload | null {
-    try {
-      return jwtDecode<JwtPayload>(token);
-    } catch (error) {
-      console.error('Error decoding token:', error);
-      return null;
-    }
-  }
-
-  private loadUserFromToken(): void {
+  private loadUserFromStorage(): void {
     const token = localStorage.getItem('token');
-    if (token) {
-      const decoded = this.decodeToken(token);
-      console.log(decoded);
-      this.userSubject.next(decoded);
-    }
+    if (!token) return;
+    this.userSubject.next(null);
   }
 
-  getCurrentUser(): JwtPayload | null {
+  getCurrentUser(): CurrentUser | null {
     return this.userSubject.value;
   }
 }

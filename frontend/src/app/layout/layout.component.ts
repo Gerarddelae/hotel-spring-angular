@@ -12,6 +12,7 @@ import { Title } from '@angular/platform-browser';
 import { filter, map, switchMap } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { CurrentUser } from '../auth/interfaces/current-user.interface';
 
 @Component({
   selector: 'app-layout',
@@ -33,7 +34,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   currentPageSubtitle = 'Bienvenido al sistema de gestión hotelera';
 
   // Usuario actual
-  user?: JwtPayload | null = null;
+  user?: CurrentUser | null = null;
 
   constructor(
     private router: Router,
