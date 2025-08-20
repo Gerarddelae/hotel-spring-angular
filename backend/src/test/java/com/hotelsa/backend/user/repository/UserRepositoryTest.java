@@ -115,4 +115,51 @@ class UserRepositoryTest {
         assertThat(guardado.getId()).isNotNull();
         assertThat(guardado.getHotel().getId()).isEqualTo(hotel.getId());
     }
+
+    @Test
+    void findByHotelId_debeRetornarUsuariosDelHotel() {
+        // Arrange
+        Hotel hotel = crearHotelDePrueba();
+
+        User user1 = User.builder()
+                .username("user1")
+                .email("user1@mail.com")
+                .password("password")
+                .role(Role.USER)
+                .hotel(hotel)
+                .build();
+
+        User user2 = User.builder()
+                .username("user2")
+                .email("user2@mail.com")
+                .password("password")
+                .role(Role.USER)
+                .hotel(hotel)
+                .build();
+
+        userRepository.save(user1);
+        userRepository.save(user2);
+
+        // Act
+        var usuarios = userRepository.findByHotelId(hotel.getId());
+
+        // Assert
+        assertThat(usuarios).hasSize(2);
+        assertThat(usuarios).extracting(User::getUsername)
+                .containsExactlyInAnyOrder("user1", "user2");
+    }
+
+    @Test
+    void findByHotelId_debeRetornarListaVaciaCuandoNoHayUsuarios() {
+        // Arrange
+        Hotel hotel = crearHotelDePrueba();
+
+        // Act
+        var usuarios = userRepository.findByHotelId(hotel.getId());
+
+        // Assert
+        assertThat(usuarios).isEmpty();
+    }
+
+
 }

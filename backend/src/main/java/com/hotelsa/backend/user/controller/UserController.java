@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -23,5 +25,11 @@ public class UserController {
     public ResponseEntity<UserDto> registerEmployee(@Valid @RequestBody RegisterUserDto dto) {
         UserDto createdUser = userService.registerEmployee(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')") // Solo admins pueden crear empleados
+    public ResponseEntity<List<UserDto>> getUsersByHotel() {
+        return ResponseEntity.ok(userService.getUsersByHotel());
     }
 }

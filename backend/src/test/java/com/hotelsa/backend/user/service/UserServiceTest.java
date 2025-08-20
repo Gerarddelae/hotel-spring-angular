@@ -19,6 +19,8 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -114,4 +116,81 @@ class UserServiceTest {
         assertEquals(Role.USER, savedUser.getRole());
         assertEquals(hotel.getId(), savedUser.getHotelId());
     }
+
+    @Test
+    void shouldReturnUsersOfSameHotel() {
+        // Arrange
+        User adminUser = User.builder()
+                .id(1L)
+                .username("admin")
+                .email("admin@mail.com")
+                .password("securePassword")
+                .role(Role.ADMIN)
+                .hotel(hotel)
+                .build();
+        mockAuthenticatedUser(adminUser);
+
+        User user1 = User.builder()
+                .id(2L)
+                .username("employee1")
+                .email("employee1@mail.com")
+                .role(Role.USER)
+                .hotel(hotel)
+                .build();
+
+        User user2 = User.builder()
+                .id(3L)
+                .username("employee2")
+                .email("employee2@mail.com")
+                .role(Role.USER)
+                .hotel(hotel)
+                .build();
+
+        List<User> users = List.of(user1, user2);
+
+        when(userRepository.findByHotelId(hotel.getId())).thenReturn(users);
+        when(userMapper.fromEntity(user1)).thenReturn(UserDto.builder()
+                .username("employee1")
+                .email("employee1@mail.com")
+                .role(Role.USER)
+                .hotelId(hotel.getId())
+                .build());
+        when(userMapper.fromEntity(user2)).thenReturn(UserDto.builder()
+                .username("employee2")
+                .email("employee2@mail.com")
+                .role(Role.USER)
+                .hotelId(hotel.getId())
+                .build());
+
+        // Act
+        List<UserDto> result = userService.getUsersByHotel();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("employee1", result.get(0).getUsername());
+        assertEquals("employee2", result.get(1).getUsername());
+    }
+
+    @Test
+    void shouldReturnEmptyListIfNoUsers() {
+        // Arrange
+        User adminUser = User.builder()
+                .id(1L)
+                .username("admin")
+                .role(Role.ADMIN)
+                .hotel(hotel)
+                .build();
+        mockAuthenticatedUser(adminUser);
+
+        when(userRepository.findByHotelId(hotel.getId())).thenReturn(List.of());
+
+        // Act
+        List<UserDto> result = userService.getUsersByHotel();
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
 }

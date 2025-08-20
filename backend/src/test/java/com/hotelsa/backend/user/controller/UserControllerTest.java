@@ -16,8 +16,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserController.class)
@@ -79,4 +82,47 @@ class UserControllerTest {
                         .content(requestJson))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void getUsersByHotel_debeRetornarListaDeUsuarios() throws Exception {
+        // Arrange
+        UserDto user1 = UserDto.builder()
+                .id(1L)
+                .username("user1")
+                .email("user1@mail.com")
+                .role(Role.USER)
+                .build();
+
+        UserDto user2 = UserDto.builder()
+                .id(2L)
+                .username("user2")
+                .email("user2@mail.com")
+                .role(Role.USER)
+                .build();
+
+        Mockito.when(userService.getUsersByHotel())
+                .thenReturn(List.of(user1, user2));
+
+        // Act & Assert
+        mockMvc.perform(get("/users")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].username").value("user1"))
+                .andExpect(jsonPath("$[1].username").value("user2"))
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void getUsersByHotel_debeRetornarListaVaciaCuandoNoHayUsuarios() throws Exception {
+        // Arrange
+        Mockito.when(userService.getUsersByHotel())
+                .thenReturn(List.of());
+
+        // Act & Assert
+        mockMvc.perform(get("/users")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
 }

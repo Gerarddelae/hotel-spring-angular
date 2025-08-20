@@ -13,6 +13,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -43,4 +45,14 @@ public class UserService {
         }
         throw new AccessDeniedException("User is not authenticated");
     }
+
+    @AdminOnly
+    public List<UserDto> getUsersByHotel() {
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        List<User> users = userRepository.findByHotelId(currentUser.getHotel().getId());
+        return users.stream()
+                .map(userMapper::fromEntity)
+                .toList();
+    }
+
 }
