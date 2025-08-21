@@ -43,6 +43,18 @@ export const routes: Routes = [
         },
       },
       {
+        path: 'users',
+        loadComponent: () =>
+          import('./features/users/users.component').then(
+            (m) => m.UsersComponent
+          ),
+        data: {
+          title: 'Usuarios',
+          subtitle: 'Lista de empleados y administradores',
+          icon: 'pi-id-card',
+        },
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full',

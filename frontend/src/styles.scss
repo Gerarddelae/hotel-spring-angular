@@ -1,5 +1,153 @@
+/* stylelint-disable at-rule-no-unknown */
+// 1. Tailwind + PrimeIcons
 @use 'tailwindcss/base';
 @use 'tailwindcss/components';
 @use 'tailwindcss/utilities';
 @use "primeicons/primeicons.css";
+
+// 2. Angular Material
+@use '@angular/material' as mat;
+
+// 3. Define tema claro
+$light-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$cyan-palette,
+    tertiary: mat.$orange-palette,
+  ),
+));
+
+// 4. Define tema oscuro
+$dark-theme: mat.define-theme((
+  color: (
+    theme-type: dark,
+    primary: mat.$cyan-palette,
+    tertiary: mat.$orange-palette,
+  ),
+));
+
+// 5. Aplica tema claro por defecto
+@include mat.all-component-themes($light-theme);
+
+// 6. Cuando `.dark` esté activo → aplica tema oscuro
+.dark {
+  @include mat.all-component-colors($dark-theme);
+
+  // Sobreescribir variables para que coincidan con Tailwind
+  --mat-sys-surface: #1f2937;     // bg-gray-800
+  --mat-sys-background: #111827;  // bg-gray-900
+  --mat-sys-on-surface: #f9fafb;  // text-gray-50
+}
+
+// 7. Estilos globales con Tailwind y Material
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+}
+
+// 8. Ajustes para tablas y paginador
+table.mat-mdc-table {
+  @apply w-full text-left border-collapse;
+}
+
+.mat-mdc-header-cell {
+  @apply bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold;
+}
+
+.mat-mdc-cell {
+  @apply text-gray-800 dark:text-gray-100;
+}
+
+.mat-mdc-paginator {
+  @apply bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100;
+}
+
+.dark .mat-mdc-table {
+  background-color: var(--mat-sys-surface);
+}
+
+.dark .mat-mdc-header-cell {
+  background-color: #374151; // bg-gray-700
+  color: #d1d5db;           // text-gray-300
+}
+
+.dark .mat-mdc-cell {
+  color: #e5e7eb; // text-gray-200
+}
+
+/* === Tabla compacta y minimalista === */
+table.mat-mdc-table {
+  @apply w-full text-xs text-left border-collapse;
+}
+
+/* Cabeceras más compactas */
+.mat-mdc-header-cell {
+  @apply px-4 py-2 bg-gray-100 dark:bg-gray-800 text-[11px] font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider;
+}
+
+/* Celdas más reducidas */
+.mat-mdc-cell {
+  @apply px-4 py-2 text-gray-800 dark:text-gray-100 whitespace-nowrap;
+}
+
+/* Hover en filas */
+tr.mat-mdc-row {
+  @apply transition-colors hover:bg-gray-50 dark:hover:bg-gray-800;
+}
+
+/* === Paginador minimalista === */
+.mat-mdc-paginator {
+  @apply flex flex-wrap justify-between items-center gap-2 p-1 bg-gray-50 dark:bg-gray-900 text-xs text-gray-700 dark:text-gray-300;
+
+  .mat-mdc-paginator-range-label,
+  .mat-mdc-paginator-page-size-label {
+    @apply text-xs text-gray-600 dark:text-gray-400;
+  }
+
+  .mat-mdc-icon-button {
+    width: 24px;
+    height: 24px;
+    @apply rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400;
+  }
+
+  .mat-mdc-select-trigger {
+    @apply text-xs;
+  }
+}
+
+/* Ocultar botones extremos en pantallas chicas */
+@media (max-width: 640px) {
+  .mat-mdc-paginator-navigation-first,
+  .mat-mdc-paginator-navigation-last {
+    display: none;
+  }
+}
+
+/* === Ajuste visual del paginador === */
+
+/* Botones del paginador minimalistas */
+.mat-mdc-paginator .mat-mdc-icon-button {
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  @apply rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300;
+}
+
+/* Íconos dentro de los botones */
+.mat-mdc-paginator .mat-mdc-icon-button .mat-mdc-button-persistent-ripple,
+.mat-mdc-paginator .mat-mdc-icon-button .mat-mdc-button-touch-target {
+  display: none !important; /* Elimina el ripple extra */
+}
+
+/* Íconos más pequeños y centrados */
+.mat-mdc-paginator .mat-mdc-icon-button .mat-icon {
+  font-size: 18px !important;
+  line-height: 1 !important;
+}
+
 
