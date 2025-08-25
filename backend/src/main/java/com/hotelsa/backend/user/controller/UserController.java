@@ -32,4 +32,12 @@ public class UserController {
     public ResponseEntity<List<UserDto>> getUsersByHotel() {
         return ResponseEntity.ok(userService.getUsersByHotel());
     }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
+        UserDto user = userService.getUserById(id);
+        return ResponseEntity.ok(user);
+    }
+
 }

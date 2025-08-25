@@ -5,6 +5,7 @@ import com.hotelsa.backend.auth.JwtFilter;
 import com.hotelsa.backend.user.dto.RegisterUserDto;
 import com.hotelsa.backend.user.dto.UserDto;
 import com.hotelsa.backend.user.enums.Role;
+import com.hotelsa.backend.user.exception.UserNotFoundException;
 import com.hotelsa.backend.user.model.User;
 import com.hotelsa.backend.user.service.UserService;
 import org.junit.jupiter.api.Test;
@@ -123,6 +124,42 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void getUserById_debeRetornarUsuarioCuandoExiste() throws Exception {
+        // Arrange
+        Long userId = 5L;
+        UserDto userDto = UserDto.builder()
+                .id(userId)
+                .username("user5")
+                .email("user5@mail.com")
+                .role(Role.USER)
+                .build();
+
+        Mockito.when(userService.getUserById(userId)).thenReturn(userDto);
+
+        // Act & Assert
+        mockMvc.perform(get("/users/{id}", userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(5))
+                .andExpect(jsonPath("$.username").value("user5"))
+                .andExpect(jsonPath("$.email").value("user5@mail.com"));
+    }
+
+    @Test
+    void getUserById_debeRetornarNotFoundCuandoNoExiste() throws Exception {
+        // Arrange
+        Long userId = 999L;
+
+        Mockito.when(userService.getUserById(userId))
+                .thenThrow(new UserNotFoundException("User not found"));
+
+        // Act & Assert
+        mockMvc.perform(get("/users/{id}", userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 
 }

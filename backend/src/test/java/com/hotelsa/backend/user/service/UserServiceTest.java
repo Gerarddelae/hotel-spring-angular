@@ -4,6 +4,7 @@ import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.user.dto.RegisterUserDto;
 import com.hotelsa.backend.user.dto.UserDto;
 import com.hotelsa.backend.user.enums.Role;
+import com.hotelsa.backend.user.exception.UserNotFoundException;
 import com.hotelsa.backend.user.mapper.UserMapper;
 import com.hotelsa.backend.user.model.User;
 import com.hotelsa.backend.user.repository.UserRepository;
@@ -192,5 +193,52 @@ class UserServiceTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    void shouldReturnUserWhenExists() {
+        // Arrange
+        Long userId = 10L;
+
+        User userEntity = User.builder()
+                .id(userId)
+                .username("john_doe")
+                .email("john@mail.com")
+                .role(Role.USER)
+                .hotel(hotel)
+                .build();
+
+        UserDto userDto = UserDto.builder()
+                .id(userId)
+                .username("john_doe")
+                .email("john@mail.com")
+                .role(Role.USER)
+                .hotelId(hotel.getId())
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(userEntity));
+        when(userMapper.fromEntity(userEntity)).thenReturn(userDto);
+
+        // Act
+        UserDto result = userService.getUserById(userId);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(userId, result.getId());
+        assertEquals("john_doe", result.getUsername());
+    }
+
+    @Test
+    void shouldThrowUserNotFoundExceptionWhenUserDoesNotExist() {
+        // Arrange
+        Long userId = 999L;
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class,
+                () -> userService.getUserById(userId));
+
+        assertEquals("User not found", exception.getMessage());
+    }
+
 
 }

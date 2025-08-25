@@ -161,5 +161,35 @@ class UserRepositoryTest {
         assertThat(usuarios).isEmpty();
     }
 
+    @Test
+    void findById_debeRetornarUsuarioCuandoExiste() {
+        // Arrange
+        Hotel hotel = crearHotelDePrueba();
 
+        User user = User.builder()
+                .username("usuarioTest")
+                .email("usuario@test.com")
+                .password("password123")
+                .role(Role.USER)
+                .hotel(hotel)
+                .build();
+
+        User guardado = userRepository.save(user);
+
+        // Act
+        var encontrado = userRepository.findById(guardado.getId());
+
+        // Assert
+        assertThat(encontrado).isPresent();
+        assertThat(encontrado.get().getUsername()).isEqualTo("usuarioTest");
+    }
+
+    @Test
+    void findById_debeRetornarVacioCuandoNoExiste() {
+        // Act
+        var encontrado = userRepository.findById(999L);
+
+        // Assert
+        assertThat(encontrado).isEmpty();
+    }
 }

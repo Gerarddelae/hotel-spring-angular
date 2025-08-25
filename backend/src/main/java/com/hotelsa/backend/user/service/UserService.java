@@ -4,6 +4,7 @@ import com.hotelsa.backend.aop.annotation.AdminOnly;
 import com.hotelsa.backend.user.dto.RegisterUserDto;
 import com.hotelsa.backend.user.dto.UserDto;
 import com.hotelsa.backend.user.enums.Role;
+import com.hotelsa.backend.user.exception.UserNotFoundException;
 import com.hotelsa.backend.user.mapper.UserMapper;
 import com.hotelsa.backend.user.model.User;
 import com.hotelsa.backend.user.repository.UserRepository;
@@ -55,4 +56,9 @@ public class UserService {
                 .toList();
     }
 
+    public UserDto getUserById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        return userMapper.fromEntity(user);
+    }
 }
