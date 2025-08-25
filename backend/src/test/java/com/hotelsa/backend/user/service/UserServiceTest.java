@@ -4,6 +4,7 @@ import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.user.dto.RegisterUserDto;
 import com.hotelsa.backend.user.dto.UserDto;
 import com.hotelsa.backend.user.enums.Role;
+import com.hotelsa.backend.user.exception.UserAlreadyExistsException;
 import com.hotelsa.backend.user.exception.UserNotFoundException;
 import com.hotelsa.backend.user.mapper.UserMapper;
 import com.hotelsa.backend.user.model.User;
@@ -239,6 +240,105 @@ class UserServiceTest {
 
         assertEquals("User not found", exception.getMessage());
     }
+
+
+    @Test
+    void shouldUpdateUserSuccessfully() {
+        // Arrange
+        Long userId = 10L;
+        RegisterUserDto dto = RegisterUserDto.builder()
+                .username("nuevoNombre")
+                .email("nuevo@mail.com")
+                .password("nuevaPassword")
+                .build();
+
+        User existingUser = User.builder()
+                .id(userId)
+                .username("viejoNombre")
+                .email("viejo@mail.com")
+                .password("viejaPassword")
+                .role(Role.USER)
+                .hotel(hotel)
+                .build();
+
+        User updatedUser = User.builder()
+                .id(userId)
+                .username(dto.getUsername())
+                .email(dto.getEmail())
+                .password("encodedPassword")
+                .role(Role.USER)
+                .hotel(hotel)
+                .build();
+
+        UserDto updatedDto = UserDto.builder()
+                .id(userId)
+                .username(dto.getUsername())
+                .email(dto.getEmail())
+                .role(Role.USER)
+                .hotelId(hotel.getId())
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(existingUser));
+        when(userRepository.existsByUsername(dto.getUsername())).thenReturn(false);
+        when(passwordEncoder.encode(dto.getPassword())).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(updatedUser);
+        when(userMapper.fromEntity(updatedUser)).thenReturn(updatedDto);
+
+        // Act
+        UserDto result = userService.updateUser(userId, dto);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(dto.getUsername(), result.getUsername());
+        assertEquals(dto.getEmail(), result.getEmail());
+    }
+
+    @Test
+    void shouldThrowUserNotFoundExceptionWhenUpdatingNonExistingUser() {
+        // Arrange
+        Long userId = 999L;
+        RegisterUserDto dto = RegisterUserDto.builder()
+                .username("nuevoNombre")
+                .email("nuevo@mail.com")
+                .password("nuevaPassword")
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class,
+                () -> userService.updateUser(userId, dto));
+
+        assertEquals("User not found", exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowUserAlreadyExistsExceptionWhenUsernameIsTaken() {
+        // Arrange
+        Long userId = 10L;
+        RegisterUserDto dto = RegisterUserDto.builder()
+                .username("duplicado")
+                .email("nuevo@mail.com")
+                .password("nuevaPassword")
+                .build();
+
+        User existingUser = User.builder()
+                .id(userId)
+                .username("viejoNombre")
+                .email("viejo@mail.com")
+                .password("viejaPassword")
+                .role(Role.USER)
+                .hotel(hotel)
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(existingUser));
+        when(userRepository.existsByUsername("duplicado")).thenReturn(true);
+
+        // Act & Assert
+        assertThrows(UserAlreadyExistsException.class,
+                () -> userService.updateUser(userId, dto));
+    }
+
 
 
 }

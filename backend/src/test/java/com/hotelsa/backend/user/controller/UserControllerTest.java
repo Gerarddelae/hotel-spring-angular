@@ -22,6 +22,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserController.class)
@@ -161,5 +162,76 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void updateUser_debeRetornarUsuarioActualizado() throws Exception {
+        // Arrange
+        Long userId = 1L;
+        UserDto updatedUserDto = UserDto.builder()
+                .id(userId)
+                .username("nuevoUser")
+                .email("nuevo@mail.com")
+                .role(Role.USER)
+                .build();
+
+        Mockito.when(userService.updateUser(Mockito.eq(userId), any(RegisterUserDto.class)))
+                .thenReturn(updatedUserDto);
+
+        String requestJson = """
+        {
+            "username": "nuevoUser",
+            "email": "nuevo@mail.com",
+            "password": "newpass123"
+        }
+        """;
+
+        // Act & Assert
+        mockMvc.perform(put("/users/{id}", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("nuevoUser"))
+                .andExpect(jsonPath("$.email").value("nuevo@mail.com"));
+    }
+
+    @Test
+    void updateUser_debeRetornarNotFoundCuandoUsuarioNoExiste() throws Exception {
+        // Arrange
+        Long userId = 999L;
+
+        Mockito.when(userService.updateUser(Mockito.eq(userId), any(RegisterUserDto.class)))
+                .thenThrow(new UserNotFoundException("User not found"));
+
+        String requestJson = """
+        {
+            "username": "inexistente",
+            "email": "no@mail.com",
+            "password": "password"
+        }
+        """;
+
+        // Act & Assert
+        mockMvc.perform(put("/users/{id}", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateUser_debeRetornarBadRequestCuandoFaltanCampos() throws Exception {
+        Long userId = 1L;
+
+        String requestJson = """
+        {
+            "username": "nuevoUser"
+        }
+        """;
+
+        mockMvc.perform(put("/users/{id}", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isBadRequest());
+    }
+
 
 }

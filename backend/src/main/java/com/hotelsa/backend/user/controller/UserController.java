@@ -40,4 +40,14 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserDto> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody RegisterUserDto registerUserDto) {
+        UserDto updatedUser = userService.updateUser(id, registerUserDto);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+
 }

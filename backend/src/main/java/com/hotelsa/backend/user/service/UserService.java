@@ -4,6 +4,7 @@ import com.hotelsa.backend.aop.annotation.AdminOnly;
 import com.hotelsa.backend.user.dto.RegisterUserDto;
 import com.hotelsa.backend.user.dto.UserDto;
 import com.hotelsa.backend.user.enums.Role;
+import com.hotelsa.backend.user.exception.UserAlreadyExistsException;
 import com.hotelsa.backend.user.exception.UserNotFoundException;
 import com.hotelsa.backend.user.mapper.UserMapper;
 import com.hotelsa.backend.user.model.User;
@@ -60,5 +61,26 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
         return userMapper.fromEntity(user);
+    }
+
+    @AdminOnly
+    public UserDto updateUser(Long id, RegisterUserDto dto) {
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (!existingUser.getUsername().equals(dto.getUsername()) &&
+                userRepository.existsByUsername(dto.getUsername())) {
+            throw new UserAlreadyExistsException("Username already exists");
+        }
+
+        existingUser.setUsername(dto.getUsername());
+        existingUser.setEmail(dto.getEmail());
+
+        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
+            existingUser.setPassword(passwordEncoder.encode(dto.getPassword()));
+        }
+
+        User updatedUser = userRepository.save(existingUser);
+        return userMapper.fromEntity(updatedUser);
     }
 }
