@@ -3,11 +3,14 @@ package com.hotelsa.backend.user.model;
 import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.user.enums.Role;
 import jakarta.persistence.*;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import lombok.*;
+import org.hibernate.annotations.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
 
 import java.util.Collection;
 import java.util.List;
@@ -18,6 +21,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SQLDelete(sql = "UPDATE users SET deleted = true WHERE id = ?")
+@FilterDef(name = "deletedFilter", parameters = @ParamDef(name = "isDeleted", type = Boolean.class))
+@Filter(name = "deletedFilter", condition = "deleted = :isDeleted")
 public class User implements UserDetails {
 
     @Id
@@ -41,6 +47,10 @@ public class User implements UserDetails {
     @JoinColumn(name = "hotel_id", nullable = false)
     @ToString.Exclude
     private Hotel hotel;
+
+    // 🔹 Soft delete
+    @Column(nullable = false)
+    private boolean deleted = false;
 
     // Métodos de UserDetails
     @Override

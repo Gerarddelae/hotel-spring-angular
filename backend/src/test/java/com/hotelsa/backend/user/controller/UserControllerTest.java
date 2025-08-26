@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserController.class)
@@ -232,6 +233,36 @@ class UserControllerTest {
                         .content(requestJson))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void deleteUser_debeRetornarNoContentCuandoExitoso() throws Exception {
+        // Arrange
+        Long userId = 1L;
+
+        // Mock del servicio: no retorna nada, solo debe ejecutarse sin excepción
+        Mockito.doNothing().when(userService).deleteUser(userId);
+
+        // Act & Assert
+        mockMvc.perform(delete("/users/{id}", userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteUser_debeRetornarNotFoundCuandoUsuarioNoExiste() throws Exception {
+        // Arrange
+        Long userId = 999L;
+
+        // Mock del servicio: lanza excepción si no existe
+        Mockito.doThrow(new UserNotFoundException("User not found"))
+                .when(userService).deleteUser(userId);
+
+        // Act & Assert
+        mockMvc.perform(delete("/users/{id}", userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
 
 
 }

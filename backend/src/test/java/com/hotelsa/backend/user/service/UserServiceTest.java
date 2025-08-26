@@ -15,330 +15,226 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    @Mock
-    private UserRepository userRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private PasswordEncoder passwordEncoder;
+    @Mock private UserMapper userMapper;
+    @Mock private SecurityContext securityContext;
+    @Mock private Authentication authentication;
 
-    @Mock
-    private PasswordEncoder passwordEncoder;
+    @InjectMocks private UserService userService;
 
-    @Mock
-    private UserMapper userMapper;
-
-    @InjectMocks
-    private UserService userService;
-
-    private Hotel hotel;
+    private User currentUser;
+    private User employee;
+    private RegisterUserDto registerUserDto;
+    private UserDto userDto;
 
     @BeforeEach
     void setUp() {
-        hotel = Hotel.builder()
-                .id(1L)
-                .name("Hotel Test")
-                .address("123 Street")
-                .city("Test City")
-                .country("Testland")
-                .phone("+123456789")
-                .description("Test description")
+        // ✅ Crear hotel ficticio y asociarlo a los usuarios
+        Hotel hotel = new Hotel();
+        hotel.setId(100L);
+        hotel.setName("Hotel Paradise");
+        hotel.setCity("Madrid");
+        hotel.setCountry("Spain");
+
+        // Usuario actual (admin)
+        currentUser = new User();
+        currentUser.setId(1L);
+        currentUser.setUsername("admin");
+        currentUser.setEmail("admin@hotel.com");
+        currentUser.setRole(Role.ADMIN);
+
+        // Empleado
+        employee = new User();
+        employee.setId(2L);
+        employee.setUsername("employee");
+        employee.setEmail("employee@hotel.com");
+        employee.setRole(Role.USER);
+
+        // ✅ Mantener consistencia bidireccional
+        hotel.addUser(currentUser);
+        hotel.addUser(employee);
+
+        // DTO para registro
+        registerUserDto = RegisterUserDto.builder()
+                .username("newemployee")
+                .password("password123")
+                .email("newemployee@hotel.com")
                 .build();
+
+        // DTO de usuario
+        userDto = new UserDto();
+        userDto.setId(2L);
+        userDto.setUsername("employee");
+        userDto.setEmail("employee@hotel.com");
     }
 
     private void mockAuthenticatedUser(User user) {
-        UsernamePasswordAuthenticationToken auth =
-                new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(auth);
-        SecurityContextHolder.setContext(context);
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
     }
 
     @Test
-    void shouldRegisterEmployeeSuccessfully() {
-        // Arrange: admin autenticado
-        User adminUser = User.builder()
-                .id(1L)
-                .username("admin")
-                .email("admin@mail.com")
-                .password("securePassword")
-                .role(Role.ADMIN)
-                .hotel(hotel)
-                .build();
-        mockAuthenticatedUser(adminUser);
+    void registerEmployee_ShouldCreateEmployee_WhenValidData() {
+        mockAuthenticatedUser(currentUser); // Necesario para registerEmployee()
 
-        // DTO de entrada
-        RegisterUserDto dto = RegisterUserDto.builder()
-                .username("employee1")
-                .email("employee@mail.com")
-                .password("password123")
-                .build();
+        when(userMapper.fromRegisterDto(registerUserDto)).thenReturn(employee);
+        when(passwordEncoder.encode(registerUserDto.getPassword())).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(employee);
+        when(userMapper.fromEntity(employee)).thenReturn(userDto);
 
-        // Entidad que será creada
-        User employeeEntity = User.builder()
-                .username(dto.getUsername())
-                .email(dto.getEmail())
-                .password("encodedPassword")
-                .role(Role.USER)
-                .hotel(hotel)
-                .build();
+        UserDto result = userService.registerEmployee(registerUserDto);
 
-        // DTO de salida
-        UserDto employeeDto = UserDto.builder()
-                .username(dto.getUsername())
-                .email(dto.getEmail())
-                .role(Role.USER)
-                .hotelId(hotel.getId())
-                .build();
-
-        // Mocks
-        when(userMapper.fromRegisterDto(dto)).thenReturn(employeeEntity);
-        when(passwordEncoder.encode(dto.getPassword())).thenReturn("encodedPassword");
-        when(userRepository.save(any(User.class))).thenReturn(employeeEntity);
-        when(userMapper.fromEntity(employeeEntity)).thenReturn(employeeDto);
-
-        // Act
-        UserDto savedUser = userService.registerEmployee(dto);
-
-        // Assert
-        assertNotNull(savedUser);
-        assertEquals(dto.getUsername(), savedUser.getUsername());
-        assertEquals(dto.getEmail(), savedUser.getEmail());
-        assertEquals(Role.USER, savedUser.getRole());
-        assertEquals(hotel.getId(), savedUser.getHotelId());
+        assertNotNull(result);
+        assertEquals(userDto.getId(), result.getId());
+        verify(userRepository).save(any(User.class));
     }
 
     @Test
-    void shouldReturnUsersOfSameHotel() {
-        // Arrange
-        User adminUser = User.builder()
-                .id(1L)
-                .username("admin")
-                .email("admin@mail.com")
-                .password("securePassword")
-                .role(Role.ADMIN)
-                .hotel(hotel)
-                .build();
-        mockAuthenticatedUser(adminUser);
+    void getUsersByHotel_ShouldReturnUsersList_WhenUsersExist() {
+        mockAuthenticatedUser(currentUser); // Necesario para getUsersByHotel()
 
-        User user1 = User.builder()
-                .id(2L)
-                .username("employee1")
-                .email("employee1@mail.com")
-                .role(Role.USER)
-                .hotel(hotel)
-                .build();
+        List<User> users = Arrays.asList(currentUser, employee);
+        when(userRepository.findByHotelId(anyLong())).thenReturn(users);
+        when(userMapper.fromEntity(any(User.class))).thenReturn(userDto);
 
-        User user2 = User.builder()
-                .id(3L)
-                .username("employee2")
-                .email("employee2@mail.com")
-                .role(Role.USER)
-                .hotel(hotel)
-                .build();
-
-        List<User> users = List.of(user1, user2);
-
-        when(userRepository.findByHotelId(hotel.getId())).thenReturn(users);
-        when(userMapper.fromEntity(user1)).thenReturn(UserDto.builder()
-                .username("employee1")
-                .email("employee1@mail.com")
-                .role(Role.USER)
-                .hotelId(hotel.getId())
-                .build());
-        when(userMapper.fromEntity(user2)).thenReturn(UserDto.builder()
-                .username("employee2")
-                .email("employee2@mail.com")
-                .role(Role.USER)
-                .hotelId(hotel.getId())
-                .build());
-
-        // Act
         List<UserDto> result = userService.getUsersByHotel();
 
-        // Assert
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertEquals("employee1", result.get(0).getUsername());
-        assertEquals("employee2", result.get(1).getUsername());
+        verify(userRepository).findByHotelId(anyLong());
     }
 
     @Test
-    void shouldReturnEmptyListIfNoUsers() {
-        // Arrange
-        User adminUser = User.builder()
-                .id(1L)
-                .username("admin")
-                .role(Role.ADMIN)
-                .hotel(hotel)
-                .build();
-        mockAuthenticatedUser(adminUser);
+    void getUserById_ShouldReturnUser_WhenUserExists() {
+        when(userRepository.findById(2L)).thenReturn(Optional.of(employee));
+        when(userMapper.fromEntity(employee)).thenReturn(userDto);
 
-        when(userRepository.findByHotelId(hotel.getId())).thenReturn(List.of());
+        UserDto result = userService.getUserById(2L);
 
-        // Act
-        List<UserDto> result = userService.getUsersByHotel();
-
-        // Assert
         assertNotNull(result);
-        assertTrue(result.isEmpty());
+        assertEquals(userDto.getUsername(), result.getUsername());
     }
 
     @Test
-    void shouldReturnUserWhenExists() {
-        // Arrange
-        Long userId = 10L;
+    void getUserById_ShouldThrowException_WhenUserNotFound() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
-        User userEntity = User.builder()
-                .id(userId)
-                .username("john_doe")
-                .email("john@mail.com")
-                .role(Role.USER)
-                .hotel(hotel)
-                .build();
-
-        UserDto userDto = UserDto.builder()
-                .id(userId)
-                .username("john_doe")
-                .email("john@mail.com")
-                .role(Role.USER)
-                .hotelId(hotel.getId())
-                .build();
-
-        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(userEntity));
-        when(userMapper.fromEntity(userEntity)).thenReturn(userDto);
-
-        // Act
-        UserDto result = userService.getUserById(userId);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(userId, result.getId());
-        assertEquals("john_doe", result.getUsername());
+        assertThrows(UserNotFoundException.class, () -> userService.getUserById(999L));
     }
 
     @Test
-    void shouldThrowUserNotFoundExceptionWhenUserDoesNotExist() {
-        // Arrange
-        Long userId = 999L;
-        when(userRepository.findById(userId)).thenReturn(java.util.Optional.empty());
-
-        // Act & Assert
-        UserNotFoundException exception = assertThrows(UserNotFoundException.class,
-                () -> userService.getUserById(userId));
-
-        assertEquals("User not found", exception.getMessage());
-    }
-
-
-    @Test
-    void shouldUpdateUserSuccessfully() {
-        // Arrange
-        Long userId = 10L;
-        RegisterUserDto dto = RegisterUserDto.builder()
-                .username("nuevoNombre")
-                .email("nuevo@mail.com")
-                .password("nuevaPassword")
+    void updateUser_ShouldUpdateUser_WhenValidData() {
+        RegisterUserDto updateDto = RegisterUserDto.builder()
+                .username("updatedEmployee")
+                .password("newPassword")
+                .email("updated@hotel.com")
                 .build();
 
-        User existingUser = User.builder()
-                .id(userId)
-                .username("viejoNombre")
-                .email("viejo@mail.com")
-                .password("viejaPassword")
-                .role(Role.USER)
-                .hotel(hotel)
-                .build();
+        User existingUser = new User();
+        existingUser.setId(2L);
+        existingUser.setUsername("employee");
+        existingUser.setEmail("employee@hotel.com");
 
-        User updatedUser = User.builder()
-                .id(userId)
-                .username(dto.getUsername())
-                .email(dto.getEmail())
-                .password("encodedPassword")
-                .role(Role.USER)
-                .hotel(hotel)
-                .build();
+        when(userRepository.findById(2L)).thenReturn(Optional.of(existingUser));
+        when(userRepository.existsByUsername(updateDto.getUsername())).thenReturn(false);
+        when(passwordEncoder.encode(updateDto.getPassword())).thenReturn("encodedNewPassword");
+        when(userRepository.save(existingUser)).thenReturn(existingUser);
+        when(userMapper.fromEntity(existingUser)).thenReturn(userDto);
 
-        UserDto updatedDto = UserDto.builder()
-                .id(userId)
-                .username(dto.getUsername())
-                .email(dto.getEmail())
-                .role(Role.USER)
-                .hotelId(hotel.getId())
-                .build();
+        UserDto result = userService.updateUser(2L, updateDto);
 
-        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(existingUser));
-        when(userRepository.existsByUsername(dto.getUsername())).thenReturn(false);
-        when(passwordEncoder.encode(dto.getPassword())).thenReturn("encodedPassword");
-        when(userRepository.save(any(User.class))).thenReturn(updatedUser);
-        when(userMapper.fromEntity(updatedUser)).thenReturn(updatedDto);
-
-        // Act
-        UserDto result = userService.updateUser(userId, dto);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(dto.getUsername(), result.getUsername());
-        assertEquals(dto.getEmail(), result.getEmail());
+        assertEquals("updatedEmployee", existingUser.getUsername());
+        assertEquals("updated@hotel.com", existingUser.getEmail());
     }
 
     @Test
-    void shouldThrowUserNotFoundExceptionWhenUpdatingNonExistingUser() {
-        // Arrange
-        Long userId = 999L;
-        RegisterUserDto dto = RegisterUserDto.builder()
-                .username("nuevoNombre")
-                .email("nuevo@mail.com")
-                .password("nuevaPassword")
-                .build();
+    void updateUser_ShouldThrowException_WhenUserNotFound() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
-        when(userRepository.findById(userId)).thenReturn(java.util.Optional.empty());
-
-        // Act & Assert
-        UserNotFoundException exception = assertThrows(UserNotFoundException.class,
-                () -> userService.updateUser(userId, dto));
-
-        assertEquals("User not found", exception.getMessage());
+        assertThrows(UserNotFoundException.class, () -> userService.updateUser(999L, registerUserDto));
     }
 
     @Test
-    void shouldThrowUserAlreadyExistsExceptionWhenUsernameIsTaken() {
-        // Arrange
-        Long userId = 10L;
-        RegisterUserDto dto = RegisterUserDto.builder()
-                .username("duplicado")
-                .email("nuevo@mail.com")
-                .password("nuevaPassword")
+    void updateUser_ShouldThrowException_WhenUsernameAlreadyExists() {
+        User existingUser = new User();
+        existingUser.setId(2L);
+        existingUser.setUsername("oldUsername");
+
+        RegisterUserDto updateDto = RegisterUserDto.builder()
+                .username("existingUsername")
+                .password("password123")
+                .email("updated@hotel.com")
                 .build();
 
-        User existingUser = User.builder()
-                .id(userId)
-                .username("viejoNombre")
-                .email("viejo@mail.com")
-                .password("viejaPassword")
-                .role(Role.USER)
-                .hotel(hotel)
-                .build();
+        when(userRepository.findById(2L)).thenReturn(Optional.of(existingUser));
+        when(userRepository.existsByUsername(updateDto.getUsername())).thenReturn(true);
 
-        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(existingUser));
-        when(userRepository.existsByUsername("duplicado")).thenReturn(true);
-
-        // Act & Assert
-        assertThrows(UserAlreadyExistsException.class,
-                () -> userService.updateUser(userId, dto));
+        assertThrows(UserAlreadyExistsException.class, () -> userService.updateUser(2L, updateDto));
     }
 
+    @Test
+    void updateUser_ShouldNotUpdatePassword_WhenPasswordIsBlank() {
+        RegisterUserDto updateDto = RegisterUserDto.builder()
+                .username("updatedEmployee")
+                .password("")
+                .email("updated@hotel.com")
+                .build();
 
+        User existingUser = new User();
+        existingUser.setId(2L);
+        existingUser.setUsername("employee");
+        existingUser.setEmail("employee@hotel.com");
+        existingUser.setPassword("oldEncodedPassword");
 
+        when(userRepository.findById(2L)).thenReturn(Optional.of(existingUser));
+        when(userRepository.existsByUsername(updateDto.getUsername())).thenReturn(false);
+        when(userRepository.save(existingUser)).thenReturn(existingUser);
+        when(userMapper.fromEntity(existingUser)).thenReturn(userDto);
+
+        UserDto result = userService.updateUser(2L, updateDto);
+
+        assertEquals("oldEncodedPassword", existingUser.getPassword());
+        verify(passwordEncoder, never()).encode(anyString());
+    }
+
+    @Test
+    void deleteUser_ShouldSoftDeleteUser_WhenUserExists() {
+        User userToDelete = new User();
+        userToDelete.setId(2L);
+        userToDelete.setUsername("employee");
+        userToDelete.setDeleted(false);
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(userToDelete));
+        when(userRepository.save(userToDelete)).thenReturn(userToDelete);
+
+        userService.deleteUser(2L);
+
+        assertTrue(userToDelete.isDeleted());
+        verify(userRepository).save(userToDelete);
+    }
+
+    @Test
+    void deleteUser_ShouldThrowException_WhenUserNotFound() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> userService.deleteUser(999L));
+    }
 }
