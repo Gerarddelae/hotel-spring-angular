@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, AfterViewInit, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, AfterViewInit, ViewChild, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -16,7 +16,11 @@ import { Observable } from 'rxjs';
 export class TableComponent implements OnInit, AfterViewInit {
 
   @Input() data$!: Observable<any[]>;     // Observable de datos
-  @Input() columnHeadersMap?: Record<string, string>; // Opcional: mapeo para nombres de columnas
+  @Input() columnHeadersMap?: Record<string, string>; // Mapeo para nombres de columnas
+
+  @Output() create = new EventEmitter<void>();
+  @Output() edit = new EventEmitter<any>();
+  @Output() delete = new EventEmitter<number>();
 
   dataSource = new MatTableDataSource<any>();
   displayedColumns: string[] = [];
@@ -29,7 +33,7 @@ export class TableComponent implements OnInit, AfterViewInit {
     this.data$.subscribe(res => {
       this.dataSource.data = res;
       if (res.length > 0) {
-        this.displayedColumns = Object.keys(res[0]);
+        this.displayedColumns = [...Object.keys(res[0]), 'actions']; // Agregamos columna acciones
       }
     });
   }
@@ -45,6 +49,19 @@ export class TableComponent implements OnInit, AfterViewInit {
   }
 
   getHeader(column: string): string {
+    if (column === 'actions') return 'Acciones';
     return this.columnHeadersMap?.[column] ?? column;
+  }
+
+  onCreate() {
+    this.create.emit();
+  }
+
+  onEdit(element: any) {
+    this.edit.emit(element);
+  }
+
+  onDelete(id: number) {
+    this.delete.emit(id);
   }
 }

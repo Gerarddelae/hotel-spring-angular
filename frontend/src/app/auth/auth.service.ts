@@ -25,7 +25,13 @@ export class AuthService {
   login(credentials: AuthRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
       tap((response) => {
+        // Guardar token y datos del usuario
         localStorage.setItem('token', response.token);
+        localStorage.setItem('authorities', JSON.stringify(response.authorities));
+        localStorage.setItem('username', response.username);
+        localStorage.setItem('hotelName', response.hotelName);
+        
+        // Actualizar el BehaviorSubject
         this.userSubject.next({
           username: response.username,
           hotelName: response.hotelName,
@@ -38,7 +44,10 @@ export class AuthService {
   register(data: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
       tap((response) => {
+        // Guardar token y datos del usuario
         localStorage.setItem('token', response.token);
+        localStorage.setItem('authorities', JSON.stringify(response.authorities));
+        
         this.userSubject.next({
           username: response.username,
           hotelName: response.hotelName,
@@ -49,7 +58,13 @@ export class AuthService {
   }
 
   logout(): void {
+    // Limpiar todo el localStorage
     localStorage.removeItem('token');
+    localStorage.removeItem('authorities');
+    localStorage.removeItem('hotelName');
+    localStorage.removeItem('hotelId');
+    localStorage.removeItem('username');
+
     this.userSubject.next(null);
     this.router.navigate(['/auth/login']);
   }
@@ -58,10 +73,39 @@ export class AuthService {
     return !!localStorage.getItem('token');
   }
 
+  private isTokenValid(token: string): boolean {
+    try {
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const expirationDate = new Date(tokenData.exp * 1000);
+      return expirationDate > new Date();
+    } catch {
+      return false;
+    }
+  }
+
   private loadUserFromStorage(): void {
     const token = localStorage.getItem('token');
-    if (!token) return;
-    this.userSubject.next(null);
+    const authorities = localStorage.getItem('authorities');
+    const username = localStorage.getItem('username');
+    const hotelName = localStorage.getItem('hotelName');
+
+    if (!token || !this.isTokenValid(token)) {
+        this.logout(); // Usar el método logout existente para limpiar todo
+        return;
+    }
+
+    try {
+        const user: CurrentUser = {
+            username: username || '',
+            hotelName: hotelName || '',
+            authorities: authorities ? JSON.parse(authorities) : [],
+        };
+        console.log('Usuario cargado del storage:', user);
+        this.userSubject.next(user);
+    } catch (e) {
+        console.error('Error al cargar usuario desde storage:', e);
+        this.logout();
+    }
   }
 
   getCurrentUser(): CurrentUser | null {

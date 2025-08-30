@@ -54,17 +54,25 @@ export class LoginComponent implements OnInit {
   onSubmit() {
     if (this.form.invalid) return;
 
-    this.authError = null; // 🔸 Limpia el error anterior
+    this.authError = null;
 
     const { username, password } = this.form.getRawValue();
     this.authService.login({ username, password }).subscribe({
-      next: () => {
+      next: (response) => {
         console.log('Login exitoso');
-        this.router.navigate(['/dashboard']);
+        // Redirección basada en el rol
+        const authorities = response.authorities;
+        if (authorities.includes('USER')) {
+          this.router.navigate(['/reservations']);
+        } else if (authorities.includes('ADMIN')) {
+          this.router.navigate(['/dashboard']);
+        } else {
+          this.router.navigate(['/reservations']); // ruta por defecto
+        }
       },
       error: (err) => {
         console.error('Error en login:', err)
-        this.authError = 'Invalid username or password'; // 🔹 Mensaje de error
+        this.authError = 'Usuario o contraseña incorrectos';
       },
     });
   }

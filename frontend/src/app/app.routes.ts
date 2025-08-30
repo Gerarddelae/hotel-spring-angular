@@ -3,6 +3,7 @@ import { LoginComponent } from './auth/login/login.component';
 import { RegisterComponent } from './auth/register/register.component';
 import { LayoutComponent } from './layout/layout.component';
 import { authGuard } from './auth/auth.guard';
+import { roleGuard } from './auth/role.guard';
 
 export const routes: Routes = [
   {
@@ -24,6 +25,7 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard.component').then(
             (m) => m.DashboardComponent
           ),
+        canActivate: [() => roleGuard(['ADMIN'])],
         data: {
           title: 'Dashboard',
           subtitle: 'Bienvenido al sistema de gestión hotelera',
@@ -36,6 +38,7 @@ export const routes: Routes = [
           import('./features/reservations/reservations.component').then(
             (m) => m.ReservationsComponent
           ),
+        canActivate: [() => roleGuard(['ADMIN', 'USER'])],
         data: {
           title: 'Reservas',
           subtitle: 'Gestión de reservas y bookings',
@@ -48,6 +51,7 @@ export const routes: Routes = [
           import('./features/users/users.component').then(
             (m) => m.UsersComponent
           ),
+        canActivate: [() => roleGuard(['ADMIN'])],
         data: {
           title: 'Usuarios',
           subtitle: 'Lista de empleados y administradores',
@@ -56,7 +60,7 @@ export const routes: Routes = [
       },
       {
         path: '',
-        redirectTo: 'dashboard',
+        redirectTo: 'reservations',
         pathMatch: 'full',
       },
     ],

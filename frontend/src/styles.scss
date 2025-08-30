@@ -150,4 +150,49 @@ tr.mat-mdc-row {
   line-height: 1 !important;
 }
 
+.mat-dialog-container {
+  @apply bg-gray-900 text-white rounded-lg p-4;
+}
+
+/* Estilos para el diálogo */
+.mat-mdc-dialog-container {
+  --mdc-dialog-container-color: transparent !important;
+  
+  .mdc-dialog__surface {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Eliminar padding por defecto de Material */
+.mat-mdc-dialog-content {
+  --mdc-dialog-supporting-text-color: rgb(243 244 246);
+}
+
+/* Sobrescribir colores de los campos de formulario de Material */
+.mat-mdc-form-field.mat-form-field-appearance-outline {
+  .mdc-notched-outline__leading,
+  .mdc-notched-outline__notch,
+  .mdc-notched-outline__trailing {
+    border-color: rgb(75 85 99) !important; // equivalent to gray-600
+  }
+  
+  .mdc-floating-label {
+    color: rgb(209 213 219) !important; // equivalent to gray-300
+  }
+  
+}
+
+/* Estilos para los botones del diálogo */
+.mat-mdc-dialog-actions {
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+// Style to fix the weird border with angular material
+.mdc-notched-outline__notch {
+  border-right: none !important;
+}
+
+
 

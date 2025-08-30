@@ -49,9 +49,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.loadUser();
     this.initializeTheme();
     this.checkScreenSize();
-    this.loadUser();
     this.setupRouteListener();
     this.updatePageInfoFromCurrentRoute();
   }
@@ -126,13 +126,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
     const wasMobile = this.isMobile;
     this.isMobile = window.innerWidth < 1024; // lg breakpoint in Tailwind
 
-    console.log(
-      'Screen check - Width:',
-      window.innerWidth,
-      'isMobile:',
-      this.isMobile
-    );
-
     // If changing from mobile to desktop, close mobile sidebar
     if (wasMobile && !this.isMobile) {
       this.closeMobileSidebar();
@@ -157,6 +150,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
     // Clear storage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('authorities');
+    localStorage.removeItem('hotelName');
+    localStorage.removeItem('username');
 
     // Navigate to login
     this.router.navigate(['/auth/login']);
@@ -199,11 +195,18 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   private loadUser(): void {
-    this.authService.user$.subscribe((user) => {
-      console.log('👤 Usuario recibido en LayoutComponent:', user);
-      this.user = user;
+    this.authService.user$.subscribe({
+        next: (user) => {
+            console.log('Usuario recibido en LayoutComponent:', user);
+            if (user) {
+                this.user = user;
+            }
+        },
+        error: (error) => {
+            console.error('Error al cargar usuario:', error);
+        }
     });
-  }
+}
 
   private setupRouteListener(): void {
     this.router.events
@@ -258,5 +261,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   isRouteActive(route: string): boolean {
     return this.router.url === route;
+  }
+
+  hasRole(role: string): boolean {
+    return this.user?.authorities?.includes(role) || false;
   }
 }

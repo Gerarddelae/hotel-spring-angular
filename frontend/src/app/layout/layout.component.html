@@ -59,8 +59,8 @@
     <!-- Navigation -->
     <nav class="p-4 overflow-y-auto flex-1">
       <ul class="space-y-2">
-        <!-- Dashboard -->
-        <li>
+        <!-- Dashboard - solo visible para ADMIN -->
+        <li *ngIf="hasRole('ADMIN')">
           <a
             routerLink="/dashboard"
             routerLinkActive="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 border-r-2 border-blue-600"
@@ -110,8 +110,8 @@
             <span *ngIf="!isCollapsed" class="font-medium">Habitaciones</span>
           </a>
         </li>
-        <!-- Usuarios -->
-        <li>
+        <!-- Usuarios - solo visible para ADMIN -->
+        <li *ngIf="hasRole('ADMIN')">
           <a
             routerLink="/users"
             routerLinkActive="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 border-r-2 border-blue-600"
@@ -124,8 +124,8 @@
           </a>
         </li>
 
-        <!-- Settings -->
-        <li>
+        <!-- Settings - solo visible para ADMIN -->
+        <li *ngIf="hasRole('ADMIN')">
           <a
             href="#"
             class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
