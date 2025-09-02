@@ -1,5 +1,6 @@
 package com.hotelsa.backend.hotel.model;
 
+import com.hotelsa.backend.room.model.Room;
 import com.hotelsa.backend.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,6 +35,11 @@ public class Hotel {
     @ToString.Exclude
     private List<User> users = new ArrayList<>();
 
+    // Relación: un hotel puede tener muchas habitaciones
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    private List<Room> rooms = new ArrayList<>();
 
     public void addUser(User user) {
         if (users == null) {
@@ -47,6 +53,21 @@ public class Hotel {
         if (users != null) {
             users.remove(user);
             user.setHotel(null);
+        }
+    }
+
+    public void addRoom(Room room) {
+        if (rooms == null) {
+            rooms = new ArrayList<>();
+        }
+        rooms.add(room);
+        room.setHotel(this); // Mantiene consistencia bidireccional
+    }
+
+    public void removeRoom(Room room) {
+        if (rooms != null) {
+            rooms.remove(room);
+            room.setHotel(null);
         }
     }
 }
