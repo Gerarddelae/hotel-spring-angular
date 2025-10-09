@@ -5,6 +5,8 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class RoomService {
   private apiUrl = 'http://127.0.0.1:8080/rooms/hotel/1'; // Ajusta según tu backend
+
+  // TODO: IMPORTANTE REFORMULAR ESTE SERVICIO LUEGO DE REFACTORIZAR BACKEND
   
   // Estado reactivo
   private roomsSubject = new BehaviorSubject<any[]>([]);
@@ -30,26 +32,26 @@ export class RoomService {
 
   /** 🔹 Obtener habitación por ID */
   getRoomById(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/${id}`);
+    return this.http.get<any>("http://127.0.0.1:8080/rooms/" + id);
   }
 
   /** 🔹 Crear una nueva habitación */
   createRoom(room: any): Observable<any> {
-    return this.http.post<any>(this.apiUrl, room).pipe(
+    return this.http.post<any>("http://127.0.0.1:8080/rooms", room).pipe(
       tap(() => this.loadRooms()) // Recargar habitaciones después de crear
     );
   }
 
   /** 🔹 Actualizar una habitación existente */
   updateRoom(id: number, room: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/${id}`, room).pipe(
+    return this.http.put<any>(`http://127.0.0.1:8080/rooms/${id}`, room).pipe(
       tap(() => this.loadRooms()) // Recargar habitaciones después de actualizar
     );
   }
 
   /** 🔹 Eliminar una habitación */
   deleteRoom(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+    return this.http.delete<void>(`http://127.0.0.1:8080/rooms/${id}`).pipe(
       tap(() => this.loadRooms()) // Recargar habitaciones después de eliminar
     );
   }

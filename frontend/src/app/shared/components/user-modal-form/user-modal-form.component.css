@@ -1,0 +1,45 @@
+:host {
+  display: block;
+  background-color: #ffffff; /* modo claro */
+  border-radius: 12px;
+  padding: 24px;
+  width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  color: #1f2937; /* texto gris oscuro */
+}
+
+/* Modo oscuro (Tailwind dark:) */
+:host-context(.dark) {
+  background-color: #1e293b; /* gris oscuro */
+  color: #f1f5f9; /* texto claro */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* Campos y estructura */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* Borde de campos (modo claro/oscuro) */
+::ng-deep .mat-mdc-form-field-outline {
+  border-color: #94a3b8 !important;
+}
+
+:host-context(.dark) ::ng-deep .mat-mdc-form-field-outline {
+  border-color: #475569 !important;
+}
+
+mat-label {
+  font-weight: 500;
+}
+
+

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { TableComponent } from '../../shared/components/table/table.component';
-import { ModalFormComponent } from '../../shared/components/modal-form/modal-form.component';
+import { RoomModalFormComponent } from '../../shared/components/room-modal-form/room-modal-form.component';
 import { RoomService } from './rooms.service';
 
 @Component({
@@ -17,7 +17,7 @@ export class RoomsComponent {
   showDeleteModal = false;
   roomToDelete: any = null;
 
-  /** Columnas visibles en la tabla */
+  // Columnas visibles en la tabla
   columns = [
     'id',
     'number',
@@ -29,14 +29,14 @@ export class RoomsComponent {
     'hotelId'
   ];
 
-  /** Mapeo de headers personalizados */
+  // Mapeo para headers personalizados
   headersMap = {
     id: 'ID',
     number: 'N° Habitación',
     type: 'Tipo',
     floor: 'Piso',
     capacity: 'Capacidad',
-    pricePerNight: 'Precio por noche',
+    pricePerNight: 'Precio/Noche',
     status: 'Estado',
     hotelId: 'Hotel'
   };
@@ -55,21 +55,9 @@ export class RoomsComponent {
 
   /** Crear nueva habitación */
   onCreate() {
-    const dialogRef = this.dialog.open(ModalFormComponent, {
+    const dialogRef = this.dialog.open(RoomModalFormComponent, {
       width: '500px',
-      data: {
-        mode: 'create',
-        entity: 'room',
-        formFields: {
-          number: '',
-          type: '',
-          floor: 0,
-          capacity: 1,
-          pricePerNight: 0,
-          status: '',
-          hotelId: null
-        }
-      }
+      data: { mode: 'create' }
     });
 
     dialogRef.afterClosed().subscribe(result => {
@@ -81,19 +69,14 @@ export class RoomsComponent {
 
   /** Editar habitación */
   onEdit(room: any) {
-    const dialogRef = this.dialog.open(ModalFormComponent, {
+    const dialogRef = this.dialog.open(RoomModalFormComponent, {
       width: '500px',
-      data: {
-        mode: 'edit',
-        entity: 'room',
-        formFields: { ...room }
-      }
+      data: { mode: 'edit', room }
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.roomService.updateRoom(room.id, result)
-          .subscribe(() => this.refreshRooms());
+        this.roomService.updateRoom(room.id, result).subscribe(() => this.refreshRooms());
       }
     });
   }

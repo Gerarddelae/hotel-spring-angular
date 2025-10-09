@@ -1,0 +1,33 @@
+<h2 mat-dialog-title>
+  {{ data?.user ? 'Editar usuario' : 'Agregar usuario' }}
+</h2>
+
+<form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="modal-form">
+  <mat-form-field appearance="outline">
+    <mat-label>Nombre de usuario</mat-label>
+    <input matInput formControlName="username" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Correo electrónico</mat-label>
+    <input matInput formControlName="email" />
+  </mat-form-field>
+
+  <!-- Campos de contraseña siempre visibles -->
+  <mat-form-field appearance="outline">
+    <mat-label>Contraseña</mat-label>
+    <input matInput type="password" formControlName="password" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Confirmar contraseña</mat-label>
+    <input matInput type="password" formControlName="confirmPassword" />
+  </mat-form-field>
+
+  <div class="modal-actions">
+    <button mat-button type="button" (click)="close()">Cancelar</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="userForm.invalid">
+      Guardar
+    </button>
+  </div>
+</form>

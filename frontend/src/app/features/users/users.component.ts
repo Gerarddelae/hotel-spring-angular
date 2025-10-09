@@ -4,7 +4,7 @@ import { UsersService } from './users.service';
 import { TableComponent } from '../../shared/components/table/table.component';
 import { Observable } from 'rxjs';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { ModalFormComponent } from '../../shared/components/modal-form/modal-form.component';
+import { UserModalFormComponent } from '../../shared/components/user-modal-form/user-modal-form.component';
 
 @Component({
   selector: 'app-users',
@@ -43,7 +43,7 @@ export class UsersComponent {
 
   /** Crear nuevo usuario */
   onCreate() {
-    const dialogRef = this.dialog.open(ModalFormComponent, {
+    const dialogRef = this.dialog.open(UserModalFormComponent, {
       width: '450px',
       data: { mode: 'create' }
     });
@@ -57,7 +57,7 @@ export class UsersComponent {
 
   /** Editar usuario */
   onEdit(user: any) {
-    const dialogRef = this.dialog.open(ModalFormComponent, {
+    const dialogRef = this.dialog.open(UserModalFormComponent, {
       width: '450px',
       data: { mode: 'edit', user }
     });

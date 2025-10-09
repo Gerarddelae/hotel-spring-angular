@@ -1,0 +1,20 @@
+:host {
+  display: block;
+}
+
+::ng-deep .mat-mdc-form-field-outline {
+  @apply !border-gray-600;
+}
+
+::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled)
+  .mdc-notched-outline__leading,
+::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled)
+  .mdc-notched-outline__notch,
+::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled)
+  .mdc-notched-outline__trailing {
+  @apply !border-gray-600;
+}
+
+::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  height: auto !important;
+}
