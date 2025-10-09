@@ -3,7 +3,8 @@
   <div class="flex justify-end">
     <button
       (click)="onCreate()"
-      class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow">
+      class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow"
+    >
       + Agregar
     </button>
   </div>
@@ -11,7 +12,9 @@
   <!-- Barra de búsqueda -->
   <div class="flex items-center gap-2 max-w-md w-full">
     <div class="relative w-full">
-      <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+      <span
+        class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"
+      >
         <i class="pi pi-search"></i>
       </span>
       <input
@@ -24,28 +27,55 @@
   </div>
 
   <!-- Contenedor de la tabla -->
-  <div class="relative overflow-x-auto shadow-md sm:rounded-lg bg-white dark:bg-gray-900">
-    <table mat-table [dataSource]="dataSource" matSort class="w-full text-sm text-left rtl:text-right divide-y divide-gray-200 dark:divide-gray-700">
-
+  <div
+    class="relative overflow-x-auto shadow-md sm:rounded-lg bg-white dark:bg-gray-900"
+  >
+    <table
+      mat-table
+      [dataSource]="dataSource"
+      matSort
+      class="w-full text-sm text-left rtl:text-right divide-y divide-gray-200 dark:divide-gray-700"
+    >
       <!-- Columnas dinámicas -->
-      <ng-container *ngFor="let column of displayedColumns" [matColumnDef]="column">
+      <ng-container
+        *ngFor="let column of displayedColumns"
+        [matColumnDef]="column"
+      >
         <th
           mat-header-cell
           *matHeaderCellDef
           mat-sort-header
-          class="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+          class="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide"
+        >
           {{ getHeader(column) }}
         </th>
 
         <td
           mat-cell
           *matCellDef="let element"
-          class="px-6 py-4 text-gray-800 dark:text-gray-100 whitespace-nowrap">
-
+          class="px-6 py-4 text-gray-800 dark:text-gray-100 whitespace-nowrap"
+        >
           <!-- Si es columna acciones -->
           <ng-container *ngIf="column === 'actions'; else normalCell">
-            <button (click)="onEdit(element)" class="text-blue-500 hover:underline mr-2">Editar</button>
-            <button (click)="onDelete(element.id)" class="text-red-500 hover:underline">Eliminar</button>
+            <div class="flex items-center gap-2">
+              <!-- Botón Editar -->
+              <button
+                (click)="onEdit(element)"
+                class="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm shadow-sm hover:shadow-md transition-all duration-150 active:scale-95"
+              >
+                <i class="pi pi-pencil text-xs"></i>
+                <span>Editar</span>
+              </button>
+
+              <!-- Botón Eliminar -->
+              <button
+                (click)="onDelete(element.id)"
+                class="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-sm shadow-sm hover:shadow-md transition-all duration-150 active:scale-95"
+              >
+                <i class="pi pi-trash text-xs"></i>
+                <span>Eliminar</span>
+              </button>
+            </div>
           </ng-container>
 
           <ng-template #normalCell>
@@ -56,12 +86,22 @@
 
       <!-- Filas -->
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns" class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: displayedColumns"
+        class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+      ></tr>
     </table>
 
     <!-- Paginador -->
-    <div class="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2">
-      <mat-paginator class="custom-paginator" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons>
+    <div
+      class="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2"
+    >
+      <mat-paginator
+        class="custom-paginator"
+        [pageSizeOptions]="[5, 10, 20]"
+        showFirstLastButtons
+      >
       </mat-paginator>
     </div>
   </div>
