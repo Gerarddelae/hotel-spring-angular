@@ -59,6 +59,19 @@ export const routes: Routes = [
         },
       },
       {
+        path: 'rooms',
+        loadComponent: () =>
+          import('./features/rooms/rooms.component').then(
+            (m) => m.RoomsComponent
+          ),
+        canActivate: [() => roleGuard(['ADMIN'])],
+        data: {
+          title: 'Habitaciones',
+          subtitle: 'Gestión de habitaciones del hotel',
+          icon: 'pi-home',
+        },
+      },
+      {
         path: '',
         redirectTo: 'reservations',
         pathMatch: 'full',
