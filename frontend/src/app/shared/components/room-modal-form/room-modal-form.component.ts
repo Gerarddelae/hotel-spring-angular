@@ -42,8 +42,7 @@ export class RoomModalFormComponent {
       floor: [data?.room?.floor || '', [Validators.required, Validators.min(0)]],
       capacity: [data?.room?.capacity || '', [Validators.required, Validators.min(1)]],
       pricePerNight: [data?.room?.pricePerNight || '', [Validators.required, Validators.min(0.01)]],
-      status: [data?.room?.status || '', Validators.required],
-      hotelId: [data?.room?.hotelId || '', Validators.required]
+      status: [data?.room?.status || '', Validators.required]
     });
   }
 
