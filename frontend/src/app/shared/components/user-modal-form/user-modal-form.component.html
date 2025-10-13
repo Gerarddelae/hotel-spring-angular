@@ -1,5 +1,5 @@
 <h2 mat-dialog-title>
-  {{ data?.user ? 'Editar usuario' : 'Agregar usuario' }}
+  {{ data.user ? 'Editar usuario' : 'Agregar usuario' }}
 </h2>
 
 <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="modal-form">
