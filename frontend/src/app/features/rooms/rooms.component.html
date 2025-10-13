@@ -2,8 +2,8 @@
   <app-table
     [data$]="rooms$"
     [columnHeadersMap]="headersMap"
-    (create)="onCreate()"
-    (edit)="onEdit($event)"
+    (create)="openRoomModal()"
+    (edit)="openRoomModal($event)"
     (delete)="onDelete($event)">
   </app-table>
 </section>

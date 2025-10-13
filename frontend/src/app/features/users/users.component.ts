@@ -5,6 +5,7 @@ import { TableComponent } from '../../shared/components/table/table.component';
 import { Observable } from 'rxjs';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { UserModalFormComponent } from '../../shared/components/user-modal-form/user-modal-form.component';
+import { User } from './models/user.interface';
 
 @Component({
   selector: 'app-users',
@@ -13,14 +14,12 @@ import { UserModalFormComponent } from '../../shared/components/user-modal-form/
   templateUrl: './users.component.html'
 })
 export class UsersComponent {
-  users$: Observable<any[]>;
+  users$: Observable<User[]>;
   showDeleteModal = false;
-  userToDelete: any = null;
+  userToDelete: { id: number } | null = null;
 
-  // Columnas visibles en la tabla
   columns = ['id', 'username', 'email', 'role', 'hotelId'];
 
-  // Mapeo para headers personalizados
   headersMap = {
     id: 'ID',
     username: 'Usuario',
@@ -36,40 +35,28 @@ export class UsersComponent {
     this.users$ = this.usersService.users$;
   }
 
-  /** Recargar usuarios */
   refreshUsers() {
     this.users$ = this.usersService.getUsers();
   }
 
-  /** Crear nuevo usuario */
-  onCreate() {
+  /** Abrir modal para crear o editar usuario */
+  openUserModal(user?: User) {
     const dialogRef = this.dialog.open(UserModalFormComponent, {
       width: '450px',
-      data: { mode: 'create' }
+      data: { user } // usuario opcional para edición
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.usersService.createUser(result).subscribe(() => this.refreshUsers());
+        if (user) {
+          this.usersService.updateUser(user.id, result).subscribe(() => this.refreshUsers());
+        } else {
+          this.usersService.createUser(result).subscribe(() => this.refreshUsers());
+        }
       }
     });
   }
 
-  /** Editar usuario */
-  onEdit(user: any) {
-    const dialogRef = this.dialog.open(UserModalFormComponent, {
-      width: '450px',
-      data: { mode: 'edit', user }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.usersService.updateUser(user.id, result).subscribe(() => this.refreshUsers());
-      }
-    });
-  }
-
-  /** Eliminar usuario */
   onDelete(id: number) {
     this.userToDelete = { id };
     this.showDeleteModal = true;

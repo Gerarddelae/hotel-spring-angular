@@ -6,6 +6,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { passwordsMatchValidator } from '../../validators/password-match.validator';
+import { User } from '../../../features/users/models/user.interface';
+
+interface UserModalData {
+  user?: User; // usuario opcional para edición
+}
 
 @Component({
   selector: 'app-user-modal-form',
@@ -27,16 +32,14 @@ export class UserModalFormComponent {
   constructor(
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<UserModalFormComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any
+    @Inject(MAT_DIALOG_DATA) public data: UserModalData
   ) {
-    const isEditMode = !!data?.user;
-
     this.userForm = this.fb.group(
       {
-        username: [data?.user?.username || '', Validators.required],
-        email: [data?.user?.email || '', [Validators.required, Validators.email]],
-        password: ['', isEditMode ? [] : Validators.required],
-        confirmPassword: ['', isEditMode ? [] : Validators.required]
+        username: [data.user?.username || '', Validators.required],
+        email: [data.user?.email || '', [Validators.required, Validators.email]],
+        password: ['', Validators.required],
+        confirmPassword: ['', Validators.required]
       },
       { validators: passwordsMatchValidator }
     );
@@ -44,15 +47,7 @@ export class UserModalFormComponent {
 
   onSubmit() {
     if (this.userForm.valid) {
-      const formValue = this.userForm.value;
-
-      // Si está en modo edición y no se ingresó contraseña, no la incluimos
-      if (this.data?.user && !formValue.password) {
-        delete formValue.password;
-        delete formValue.confirmPassword;
-      }
-
-      this.dialogRef.close(formValue);
+      this.dialogRef.close(this.userForm.value);
     }
   }
 
