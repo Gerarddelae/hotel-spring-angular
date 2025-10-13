@@ -17,6 +17,8 @@ export class TableComponent implements OnInit, AfterViewInit {
 
   @Input() data$!: Observable<any[]>;     // Observable de datos
   @Input() columnHeadersMap?: Record<string, string>; // Mapeo para nombres de columnas
+  @Input() columnTransformMap?: Record<string, (value: any) => any>; // 🔹 Mapeo para transformar valores
+
 
   @Output() create = new EventEmitter<void>();
   @Output() edit = new EventEmitter<any>();

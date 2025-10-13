@@ -55,10 +55,9 @@
           *matCellDef="let element"
           class="px-6 py-4 text-gray-800 dark:text-gray-100 whitespace-nowrap"
         >
-          <!-- Si es columna acciones -->
+          <!-- Columna acciones -->
           <ng-container *ngIf="column === 'actions'; else normalCell">
             <div class="flex items-center gap-2">
-              <!-- Botón Editar -->
               <button
                 (click)="onEdit(element)"
                 class="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm shadow-sm hover:shadow-md transition-all duration-150 active:scale-95"
@@ -67,7 +66,6 @@
                 <span>Editar</span>
               </button>
 
-              <!-- Botón Eliminar -->
               <button
                 (click)="onDelete(element.id)"
                 class="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-sm shadow-sm hover:shadow-md transition-all duration-150 active:scale-95"
@@ -78,8 +76,14 @@
             </div>
           </ng-container>
 
+          <!-- Celda normal con transformación -->
           <ng-template #normalCell>
-            {{ element[column] }}
+            <ng-container *ngIf="columnTransformMap && columnTransformMap[column]; else defaultCell">
+              {{ columnTransformMap[column](element[column]) }}
+            </ng-container>
+            <ng-template #defaultCell>
+              {{ element[column] }}
+            </ng-template>
           </ng-template>
         </td>
       </ng-container>

@@ -11,7 +11,7 @@ import { Room } from './models/room.interface';
   selector: 'app-rooms',
   standalone: true,
   imports: [CommonModule, TableComponent, MatDialogModule],
-  templateUrl: './rooms.component.html'
+  templateUrl: './rooms.component.html',
 })
 export class RoomsComponent {
   rooms$: Observable<Room[]>;
@@ -26,7 +26,7 @@ export class RoomsComponent {
     'capacity',
     'pricePerNight',
     'status',
-    'hotelId'
+    'hotelId',
   ];
 
   headersMap = {
@@ -37,13 +37,10 @@ export class RoomsComponent {
     capacity: 'Capacidad',
     pricePerNight: 'Precio/Noche',
     status: 'Estado',
-    hotelId: 'Hotel'
+    hotelId: 'Hotel',
   };
 
-  constructor(
-    private dialog: MatDialog,
-    private roomService: RoomService
-  ) {
+  constructor(private dialog: MatDialog, private roomService: RoomService) {
     this.rooms$ = this.roomService.rooms$;
   }
 
@@ -55,15 +52,19 @@ export class RoomsComponent {
   openRoomModal(room?: Room) {
     const dialogRef = this.dialog.open(RoomModalFormComponent, {
       width: '500px',
-      data: { room } // habitación opcional para edición
+      data: { room }, // habitación opcional para edición
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         if (room) {
-          this.roomService.updateRoom(room.id!, result).subscribe(() => this.refreshRooms());
+          this.roomService
+            .updateRoom(room.id!, result)
+            .subscribe(() => this.refreshRooms());
         } else {
-          this.roomService.createRoom(result).subscribe(() => this.refreshRooms());
+          this.roomService
+            .createRoom(result)
+            .subscribe(() => this.refreshRooms());
         }
       }
     });
@@ -76,11 +77,10 @@ export class RoomsComponent {
 
   confirmDelete() {
     if (this.roomToDelete) {
-      this.roomService.deleteRoom(this.roomToDelete.id)
-        .subscribe(() => {
-          this.refreshRooms();
-          this.cancelDelete();
-        });
+      this.roomService.deleteRoom(this.roomToDelete.id).subscribe(() => {
+        this.refreshRooms();
+        this.cancelDelete();
+      });
     }
   }
 
@@ -88,4 +88,8 @@ export class RoomsComponent {
     this.showDeleteModal = false;
     this.roomToDelete = null;
   }
+
+  columnTransformMap: Record<string, (value: any) => any> = {
+    pricePerNight: (value: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(value)
+  };
 }

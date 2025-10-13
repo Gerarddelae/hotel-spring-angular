@@ -2,6 +2,7 @@
   <app-table
     [data$]="rooms$"
     [columnHeadersMap]="headersMap"
+    [columnTransformMap]="columnTransformMap"
     (create)="openRoomModal()"
     (edit)="openRoomModal($event)"
     (delete)="onDelete($event)">
