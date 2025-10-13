@@ -1,6 +1,7 @@
 package com.hotelsa.backend.room.service;
 
 import com.hotelsa.backend.aop.annotation.AdminOnly;
+import com.hotelsa.backend.auth.service.AuthService;
 import com.hotelsa.backend.hotel.exception.HotelNotFoundException;
 import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.hotel.repository.HotelRepository;
@@ -27,16 +28,16 @@ import java.util.List;
 public class RoomService {
 
     private final HotelRepository hotelRepository;
-
     private final RoomRepository roomRepository;
     private final RoomMapper roomMapper;
     private final EntityManager entityManager;
+    private final AuthService authService;
 
     /**
      * Activa automáticamente el filtro de soft delete para habitaciones.
      */
     private void activarFiltroSoftDelete() {
-        if (entityManager == null) return; // evita NPE en tests
+        if (entityManager == null) return;
 
         try {
             Session session = entityManager.unwrap(Session.class);
@@ -44,8 +45,8 @@ public class RoomService {
                 Filter filter = session.enableFilter("roomDeletedFilter");
                 filter.setParameter("isDeleted", false);
             }
-        } catch (Exception e) {
-            // Contexto de test/mock donde no hay sesión real
+        } catch (Exception ignored) {
+            // En contexto de test/mock sin sesión real
         }
     }
 
@@ -54,47 +55,49 @@ public class RoomService {
         if (principal instanceof User user) {
             return user;
         }
-        throw new AccessDeniedException("User is not authenticated");
+        throw new AccessDeniedException("Usuario no autenticado");
     }
 
     @AdminOnly
     @Transactional
     public RoomResponseDTO createRoom(RoomRequestDTO dto) {
-        // Obtener el usuario actual
-        User currentUser = getCurrentUser();
+        Long hotelId = authService.getCurrentHotelId();
 
-        // Cargar explícitamente el hotel desde el repositorio
-        Hotel hotel = hotelRepository.findById(dto.getHotelId())
+        Hotel hotel = hotelRepository.findById(hotelId)
                 .orElseThrow(() -> new HotelNotFoundException("Hotel no encontrado"));
 
-        // Validar que el usuario pertenece a ese hotel
-        if (!currentUser.getHotel().getId().equals(hotel.getId())) {
-            throw new AccessDeniedException("No puedes crear habitaciones para otro hotel");
+        // Verificar que no exista una habitación con el mismo número
+        if (roomRepository.existsByNumberAndHotel_Id(dto.getNumber(), hotelId)) {
+            throw new IllegalArgumentException("Ya existe una habitación con ese número en el hotel");
         }
 
-        // Crear la entidad Room desde el DTO
         Room room = roomMapper.fromRequestDto(dto);
-        room.setHotel(hotel); // asignar hotel ya inicializado
+        room.setHotel(hotel);
 
-        // Guardar en la base de datos
         Room savedRoom = roomRepository.save(room);
-
-        // Mapear a DTO de respuesta
         return roomMapper.fromEntity(savedRoom);
     }
-
 
     @Transactional(readOnly = true)
     public RoomResponseDTO getRoomById(Long roomId) {
         activarFiltroSoftDelete();
+        Long hotelId = authService.getCurrentHotelId();
+
         Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RoomNotFoundException("Room not found"));
+                .orElseThrow(() -> new RoomNotFoundException("Habitación no encontrada"));
+
+        if (!room.getHotel().getId().equals(hotelId)) {
+            throw new AccessDeniedException("No puedes acceder a habitaciones de otro hotel");
+        }
+
         return roomMapper.fromEntity(room);
     }
 
     @Transactional(readOnly = true)
-    public List<RoomResponseDTO> getRoomsByHotelId(Long hotelId) {
+    public List<RoomResponseDTO> getRoomsForCurrentHotel() {
         activarFiltroSoftDelete();
+        Long hotelId = authService.getCurrentHotelId();
+
         List<Room> rooms = roomRepository.findByHotel_Id(hotelId);
         return rooms.stream().map(roomMapper::fromEntity).toList();
     }
@@ -103,16 +106,16 @@ public class RoomService {
     @Transactional
     public RoomResponseDTO updateRoom(Long roomId, RoomRequestDTO dto) {
         activarFiltroSoftDelete();
-        User currentUser = getCurrentUser();
+        Long hotelId = authService.getCurrentHotelId();
 
         Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RoomNotFoundException("Room not found"));
+                .orElseThrow(() -> new RoomNotFoundException("Habitación no encontrada"));
 
-        if (!room.getHotel().getId().equals(currentUser.getHotel().getId())) {
-            throw new AccessDeniedException("Cannot modify rooms from another hotel");
+        if (!room.getHotel().getId().equals(hotelId)) {
+            throw new AccessDeniedException("No puedes modificar habitaciones de otro hotel");
         }
 
-        // Mapear cambios (sin tocar relaciones)
+        // Actualizar campos
         room.setNumber(dto.getNumber());
         room.setType(dto.getType());
         room.setFloor(dto.getFloor());
@@ -128,13 +131,13 @@ public class RoomService {
     @Transactional
     public void deleteRoom(Long roomId) {
         activarFiltroSoftDelete();
-        User currentUser = getCurrentUser();
+        Long hotelId = authService.getCurrentHotelId();
 
         Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RoomNotFoundException("Room not found"));
+                .orElseThrow(() -> new RoomNotFoundException("Habitación no encontrada"));
 
-        if (!room.getHotel().getId().equals(currentUser.getHotel().getId())) {
-            throw new AccessDeniedException("Cannot delete rooms from another hotel");
+        if (!room.getHotel().getId().equals(hotelId)) {
+            throw new AccessDeniedException("No puedes eliminar habitaciones de otro hotel");
         }
 
         room.setDeleted(true);

@@ -10,8 +10,8 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -40,6 +40,7 @@ class AuthControllerTest {
                 "mock-token",
                 "testuser",
                 "Hotel Test",
+                1L, // ✅ nuevo campo hotelId
                 List.of("ROLE_ADMIN", "ROLE_USER")
         );
         Mockito.when(authService.login(any(AuthRequest.class))).thenReturn(mockResponse);
@@ -59,6 +60,7 @@ class AuthControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.token").value("mock-token"))
                 .andExpect(jsonPath("$.hotelName").value("Hotel Test"))
+                .andExpect(jsonPath("$.hotelId").value(1)) // ✅ validación añadida
                 .andExpect(jsonPath("$.username").value("testuser"))
                 .andExpect(jsonPath("$.authorities[0]").value("ROLE_ADMIN"))
                 .andExpect(jsonPath("$.authorities[1]").value("ROLE_USER"));
@@ -72,6 +74,7 @@ class AuthControllerTest {
                         "mock-token",
                         "adminuser",
                         "Hotel Test",
+                        2L, // ✅ hotelId agregado
                         List.of("ROLE_ADMIN")
                 ));
 
@@ -101,6 +104,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("mock-token"))
                 .andExpect(jsonPath("$.hotelName").value("Hotel Test"))
+                .andExpect(jsonPath("$.hotelId").value(2)) // ✅ validación añadida
                 .andExpect(jsonPath("$.username").value("adminuser"))
                 .andExpect(jsonPath("$.authorities[0]").value("ROLE_ADMIN"));
     }

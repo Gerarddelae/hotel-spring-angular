@@ -16,7 +16,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -26,7 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RoomController.class)
-@AutoConfigureMockMvc(addFilters = false) // Desactiva filtros de seguridad para el test
+@AutoConfigureMockMvc(addFilters = false) // ✅ Desactiva filtros de seguridad
 class RoomControllerTest {
 
     @Autowired
@@ -53,15 +52,14 @@ class RoomControllerTest {
                 .capacity(2)
                 .pricePerNight(100.0)
                 .status(RoomStatus.AVAILABLE)
-                .hotelId(1L)
                 .hotelName("Hotel Test")
-                .build();
+                .build(); // ✅ Eliminado hotelId (ya no se envía en DTO)
     }
 
     @Test
     void shouldCreateRoomSuccessfully() throws Exception {
         RoomRequestDTO requestDTO = new RoomRequestDTO(
-                "101", RoomType.SINGLE, 1, 2, 100.0, RoomStatus.AVAILABLE, 1L
+                "101", RoomType.SINGLE, 1, 2, 100.0, RoomStatus.AVAILABLE
         );
 
         when(roomService.createRoom(any(RoomRequestDTO.class))).thenReturn(roomResponseDTO);
@@ -87,11 +85,11 @@ class RoomControllerTest {
     }
 
     @Test
-    void shouldListRoomsByHotel() throws Exception {
-        List<RoomResponseDTO> rooms = Arrays.asList(roomResponseDTO);
-        when(roomService.getRoomsByHotelId(1L)).thenReturn(rooms);
+    void shouldListRoomsForCurrentHotel() throws Exception {
+        List<RoomResponseDTO> rooms = List.of(roomResponseDTO);
+        when(roomService.getRoomsForCurrentHotel()).thenReturn(rooms);
 
-        mockMvc.perform(get("/rooms/hotel/1"))
+        mockMvc.perform(get("/rooms"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size()").value(1))
                 .andExpect(jsonPath("$[0].number").value("101"));
@@ -100,7 +98,7 @@ class RoomControllerTest {
     @Test
     void shouldUpdateRoomSuccessfully() throws Exception {
         RoomRequestDTO updateDTO = new RoomRequestDTO(
-                "102", RoomType.DOUBLE, 1, 3, 150.0, RoomStatus.AVAILABLE, 1L
+                "102", RoomType.DOUBLE, 1, 3, 150.0, RoomStatus.AVAILABLE
         );
 
         RoomResponseDTO updatedRoom = RoomResponseDTO.builder()
@@ -111,7 +109,6 @@ class RoomControllerTest {
                 .capacity(3)
                 .pricePerNight(150.0)
                 .status(RoomStatus.AVAILABLE)
-                .hotelId(1L)
                 .hotelName("Hotel Test")
                 .build();
 
@@ -126,9 +123,8 @@ class RoomControllerTest {
     }
 
     @Test
-    void deleteRoom_debeRetornarNoContent_yLlamarDeleteRoom() throws Exception {
+    void shouldDeleteRoomSuccessfully() throws Exception {
         Long roomId = 1L;
-
         doNothing().when(roomService).deleteRoom(roomId);
 
         mockMvc.perform(delete("/rooms/{id}", roomId))
@@ -136,5 +132,4 @@ class RoomControllerTest {
 
         verify(roomService, times(1)).deleteRoom(roomId);
     }
-
 }

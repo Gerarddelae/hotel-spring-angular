@@ -12,6 +12,7 @@ import java.util.List;
 public class AuthResponse {
     private String token;
     private String username;
-    private String hotelName;           // antes era hotelId
-    private List<String> authorities;   // lista de roles del usuario
+    private String hotelName;
+    private Long hotelId;
+    private List<String> authorities;
 }

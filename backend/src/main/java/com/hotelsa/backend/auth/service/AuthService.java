@@ -12,9 +12,11 @@ import com.hotelsa.backend.user.mapper.UserMapper;
 import com.hotelsa.backend.user.model.User;
 import com.hotelsa.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +53,7 @@ public class AuthService {
                 token,
                 user.getUsername(),
                 hotel.getName(),
+                hotel.getId(),
                 List.of(user.getRole().name()) // Solo el nombre del role, sin prefijo
         );
     }
@@ -83,7 +86,20 @@ public class AuthService {
                 token,
                 savedUser.getUsername(),
                 savedHotel.getName(),
+                savedHotel.getId(),
                 List.of(savedUser.getRole().name())
         );
+    }
+
+    public Long getCurrentHotelId() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof User user) {
+            Hotel hotel = user.getHotel();
+            if (hotel != null) {
+                return hotel.getId();
+            }
+            throw new IllegalStateException("El usuario no tiene un hotel asociado");
+        }
+        throw new AccessDeniedException("Usuario no autenticado o token inválido");
     }
 }

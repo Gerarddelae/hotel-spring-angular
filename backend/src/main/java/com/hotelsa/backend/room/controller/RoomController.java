@@ -19,6 +19,9 @@ public class RoomController {
 
     private final RoomService roomService;
 
+    /**
+     * Crea una nueva habitación para el hotel del usuario autenticado.
+     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<RoomResponseDTO> createRoom(@Valid @RequestBody RoomRequestDTO dto) {
@@ -26,6 +29,9 @@ public class RoomController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdRoom);
     }
 
+    /**
+     * Obtiene los detalles de una habitación específica (solo si pertenece al hotel del usuario).
+     */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     public ResponseEntity<RoomResponseDTO> getRoomById(@PathVariable Long id) {
@@ -33,21 +39,32 @@ public class RoomController {
         return ResponseEntity.ok(room);
     }
 
-    @GetMapping("/hotel/{hotelId}")
+    /**
+     * Lista todas las habitaciones del hotel del usuario autenticado.
+     */
+    @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
-    public ResponseEntity<List<RoomResponseDTO>> getRoomsByHotel(@PathVariable Long hotelId) {
-        return ResponseEntity.ok(roomService.getRoomsByHotelId(hotelId));
+    public ResponseEntity<List<RoomResponseDTO>> getRoomsForCurrentHotel() {
+        List<RoomResponseDTO> rooms = roomService.getRoomsForCurrentHotel();
+        return ResponseEntity.ok(rooms);
     }
 
+    /**
+     * Actualiza una habitación (solo si pertenece al hotel del usuario).
+     */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<RoomResponseDTO> updateRoom(
             @PathVariable Long id,
-            @Valid @RequestBody RoomRequestDTO dto) {
+            @Valid @RequestBody RoomRequestDTO dto
+    ) {
         RoomResponseDTO updatedRoom = roomService.updateRoom(id, dto);
         return ResponseEntity.ok(updatedRoom);
     }
 
+    /**
+     * Elimina (soft delete) una habitación del hotel del usuario autenticado.
+     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {

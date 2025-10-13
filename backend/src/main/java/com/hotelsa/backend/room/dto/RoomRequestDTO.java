@@ -32,6 +32,6 @@ public class RoomRequestDTO {
     @NotNull(message = "El estado de la habitación es obligatorio")
     private RoomStatus status;
 
-    @NotNull(message = "El hotelId es obligatorio")
-    private Long hotelId;
+//    @NotNull(message = "El hotelId es obligatorio")
+//    private Long hotelId;
 }
