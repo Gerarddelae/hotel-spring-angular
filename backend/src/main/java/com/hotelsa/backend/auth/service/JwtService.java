@@ -1,5 +1,6 @@
 package com.hotelsa.backend.auth.service;
 
+import com.hotelsa.backend.user.model.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
@@ -21,25 +22,31 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    public String generateToken(UserDetails userDetails) {
-        long EXPIRATION_TIME = 86400000; // 1 día
+    private static final long EXPIRATION_TIME = 86400000; // 1 día
 
-        // Convertir authorities a lista de strings con prefijo ROLE_
-        var authorities = userDetails.getAuthorities()
+    // 🔹 Genera token incluyendo hotelId
+    public String generateToken(UserDetails userDetails) {
+        if (!(userDetails instanceof User user)) {
+            throw new IllegalArgumentException("UserDetails must be instance of User");
+        }
+
+        var authorities = user.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
                 .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
                 .collect(Collectors.toList());
 
         return Jwts.builder()
-                .setSubject(userDetails.getUsername())
+                .setSubject(user.getUsername())
                 .claim("authorities", authorities)
+                .claim("hotelId", user.getHotel().getId()) // 👈 añadimos tenant
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
+    // 🔹 Extraer username (igual que antes)
     public String extractUsername(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSignKey())
@@ -49,6 +56,22 @@ public class JwtService {
                 .getSubject();
     }
 
+    // 🔹 Extraer hotelId (nuevo)
+    public Long extractHotelId(String token) {
+        Object hotelId = Jwts.parserBuilder()
+                .setSigningKey(getSignKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("hotelId");
+
+        if (hotelId instanceof Integer i) return i.longValue();
+        if (hotelId instanceof Long l) return l;
+        if (hotelId instanceof String s) return Long.parseLong(s);
+        return null;
+    }
+
+    // 🔹 Validar token (igual que antes)
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);

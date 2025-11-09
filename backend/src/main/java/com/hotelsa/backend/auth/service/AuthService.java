@@ -74,8 +74,9 @@ public class AuthService {
 
         // ✅ Decisión de negocio AQUÍ: el primer usuario siempre es ADMIN
         user.setRole(Role.ADMIN);
-
         user.setHotel(savedHotel);
+
+        user.setHotelId(savedHotel.getId());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         User savedUser = userRepository.save(user);
