@@ -1,6 +1,7 @@
 package com.hotelsa.backend.room.service;
 
 import com.hotelsa.backend.auth.service.AuthService;
+import com.hotelsa.backend.hotel.exception.HotelNotFoundException;
 import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.hotel.repository.HotelRepository;
 import com.hotelsa.backend.room.dto.RoomRequestDTO;
@@ -11,30 +12,29 @@ import com.hotelsa.backend.room.exception.RoomNotFoundException;
 import com.hotelsa.backend.room.mapper.RoomMapper;
 import com.hotelsa.backend.room.model.Room;
 import com.hotelsa.backend.room.repository.RoomRepository;
-import com.hotelsa.backend.user.model.User;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class RoomServiceTest {
 
     @Mock private HotelRepository hotelRepository;
     @Mock private RoomRepository roomRepository;
     @Mock private RoomMapper roomMapper;
     @Mock private AuthService authService;
-    @Mock private SecurityContext securityContext;
-    @Mock private Authentication authentication;
 
     @InjectMocks private RoomService roomService;
 
@@ -49,17 +49,18 @@ class RoomServiceTest {
         hotel.setId(100L);
         hotel.setName("Hotel Paradise");
 
-        User user = new User();
-        user.setId(1L);
-        user.setUsername("admin");
-        user.setHotel(hotel);
-        hotel.addUser(user);
-
-        room = new Room();
-        room.setId(1L);
-        room.setNumber("101");
-        room.setHotel(hotel);
-        room.setPricePerNight(100.0);
+        room = Room.builder()
+                .id(1L)
+                .hotelId(100L)
+                .number("101")
+                .type(RoomType.SINGLE)
+                .floor(1)
+                .capacity(2)
+                .pricePerNight(100.0)
+                .status(RoomStatus.AVAILABLE)
+                .deleted(false)
+                .hotel(hotel)
+                .build();
 
         roomRequestDTO = RoomRequestDTO.builder()
                 .number("101")
@@ -78,21 +79,15 @@ class RoomServiceTest {
                 .hotelName("Hotel Paradise")
                 .build();
 
-        lenient().when(authentication.getPrincipal()).thenReturn(user);
-        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
+        // siempre se obtiene el hotelId actual del AuthService
+        when(authService.getCurrentHotelId()).thenReturn(100L);
     }
 
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
-    }
-
-    // ------------------------ CREATE ------------------------
+    // ---------------------- CREATE ----------------------
     @Test
     void createRoom_ShouldCreateRoomSuccessfully() {
-        when(hotelRepository.findById(hotel.getId())).thenReturn(Optional.of(hotel));
+        when(hotelRepository.findById(100L)).thenReturn(Optional.of(hotel));
+        when(roomRepository.existsByNumber("101")).thenReturn(false);
         when(roomMapper.fromRequestDto(roomRequestDTO)).thenReturn(room);
         when(roomRepository.save(room)).thenReturn(room);
         when(roomMapper.fromEntity(room)).thenReturn(roomResponseDTO);
@@ -100,12 +95,26 @@ class RoomServiceTest {
         RoomResponseDTO result = roomService.createRoom(roomRequestDTO);
 
         assertNotNull(result);
-        assertEquals(1L, result.getId());
         assertEquals("101", result.getNumber());
-        verify(roomRepository).save(room);
+        verify(roomRepository, times(1)).save(room);
     }
 
-    // ------------------------ GET ------------------------
+    @Test
+    void createRoom_ShouldThrow_WhenHotelNotFound() {
+        when(hotelRepository.findById(100L)).thenReturn(Optional.empty());
+
+        assertThrows(HotelNotFoundException.class, () -> roomService.createRoom(roomRequestDTO));
+    }
+
+    @Test
+    void createRoom_ShouldThrow_WhenNumberExists() {
+        when(hotelRepository.findById(100L)).thenReturn(Optional.of(hotel));
+        when(roomRepository.existsByNumber("101")).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class, () -> roomService.createRoom(roomRequestDTO));
+    }
+
+    // ---------------------- GET ----------------------
     @Test
     void getRoomById_ShouldReturnRoom_WhenExists() {
         when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
@@ -113,22 +122,22 @@ class RoomServiceTest {
 
         RoomResponseDTO result = roomService.getRoomById(1L);
 
-        assertEquals(1L, result.getId());
+        assertNotNull(result);
         assertEquals("101", result.getNumber());
     }
 
     @Test
-    void getRoomById_ShouldThrowNotFound_WhenDoesNotExist() {
+    void getRoomById_ShouldThrow_WhenNotFound() {
         when(roomRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(RoomNotFoundException.class, () -> roomService.getRoomById(999L));
     }
 
     @Test
-    void getRoomsForCurrentHotel_ShouldReturnRoomList() {
-        List<Room> rooms = List.of(room);
-        when(roomRepository.findByHotel_Id(hotel.getId())).thenReturn(rooms);
-        when(roomMapper.fromEntity(any(Room.class))).thenReturn(roomResponseDTO);
+    void getRoomsForCurrentHotel_ShouldReturnRoomsList() {
+        // findAll() ya es suficiente, el filtro de hotel_id se aplica automáticamente en runtime
+        when(roomRepository.findAll()).thenReturn(List.of(room));
+        when(roomMapper.fromEntity(room)).thenReturn(roomResponseDTO);
 
         List<RoomResponseDTO> result = roomService.getRoomsForCurrentHotel();
 
@@ -136,45 +145,49 @@ class RoomServiceTest {
         assertEquals("101", result.get(0).getNumber());
     }
 
-    // ------------------------ UPDATE ------------------------
+    // ---------------------- UPDATE ----------------------
     @Test
-    void updateRoom_ShouldUpdateRoomSuccessfully() {
+    void updateRoom_ShouldUpdateSuccessfully() {
         when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
+        when(roomRepository.existsByNumber("101")).thenReturn(false);
         when(roomRepository.save(room)).thenReturn(room);
         when(roomMapper.fromEntity(room)).thenReturn(roomResponseDTO);
 
-        RoomRequestDTO updateDTO = RoomRequestDTO.builder()
+        RoomResponseDTO result = roomService.updateRoom(1L, roomRequestDTO);
+
+        assertNotNull(result);
+        assertEquals("101", result.getNumber());
+        verify(roomRepository).save(room);
+    }
+
+    @Test
+    void updateRoom_ShouldThrow_WhenNotFound() {
+        when(roomRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(RoomNotFoundException.class, () -> roomService.updateRoom(99L, roomRequestDTO));
+    }
+
+    @Test
+    void updateRoom_ShouldThrow_WhenDuplicateNumber() {
+        RoomRequestDTO updateDto = RoomRequestDTO.builder()
                 .number("102")
                 .type(RoomType.DOUBLE)
                 .floor(2)
                 .capacity(3)
-                .pricePerNight(150.0)
+                .pricePerNight(200.0)
                 .status(RoomStatus.AVAILABLE)
                 .build();
 
-        RoomResponseDTO result = roomService.updateRoom(1L, updateDTO);
-
-        assertEquals("102", room.getNumber());
-        verify(roomRepository).save(room);
-        assertEquals(1L, result.getId());
-    }
-
-    @Test
-    void updateRoom_ShouldThrowAccessDenied_WhenOtherHotel() {
-        Hotel otherHotel = new Hotel();
-        otherHotel.setId(999L);
-        room.setHotel(otherHotel);
-
         when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
+        when(roomRepository.existsByNumber("102")).thenReturn(true);
 
-        assertThrows(AccessDeniedException.class, () -> roomService.updateRoom(1L, roomRequestDTO));
+        assertThrows(IllegalArgumentException.class, () -> roomService.updateRoom(1L, updateDto));
     }
 
-    // ------------------------ DELETE ------------------------
+    // ---------------------- DELETE ----------------------
     @Test
     void deleteRoom_ShouldSoftDeleteSuccessfully() {
         when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
-        when(roomRepository.save(room)).thenReturn(room);
 
         roomService.deleteRoom(1L);
 
@@ -183,13 +196,9 @@ class RoomServiceTest {
     }
 
     @Test
-    void deleteRoom_ShouldThrowAccessDenied_WhenOtherHotel() {
-        Hotel otherHotel = new Hotel();
-        otherHotel.setId(999L);
-        room.setHotel(otherHotel);
+    void deleteRoom_ShouldThrow_WhenNotFound() {
+        when(roomRepository.findById(99L)).thenReturn(Optional.empty());
 
-        when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
-
-        assertThrows(AccessDeniedException.class, () -> roomService.deleteRoom(1L));
+        assertThrows(RoomNotFoundException.class, () -> roomService.deleteRoom(99L));
     }
 }

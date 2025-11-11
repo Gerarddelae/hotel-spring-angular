@@ -6,6 +6,7 @@ import com.hotelsa.backend.user.enums.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.SQLDelete;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,7 +21,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @EqualsAndHashCode(callSuper = true) // 👈 Aquí
 @SQLDelete(sql = "UPDATE users SET deleted = true WHERE id = ?")
 public class User extends BaseEntity implements UserDetails {

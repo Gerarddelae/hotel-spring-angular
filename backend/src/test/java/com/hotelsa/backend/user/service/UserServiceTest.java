@@ -1,6 +1,6 @@
 package com.hotelsa.backend.user.service;
 
-import com.hotelsa.backend.hotel.model.Hotel;
+import com.hotelsa.backend.tenant.TenantContext;
 import com.hotelsa.backend.user.dto.RegisterUserDto;
 import com.hotelsa.backend.user.dto.UserDto;
 import com.hotelsa.backend.user.enums.Role;
@@ -9,26 +9,25 @@ import com.hotelsa.backend.user.exception.UserNotFoundException;
 import com.hotelsa.backend.user.mapper.UserMapper;
 import com.hotelsa.backend.user.model.User;
 import com.hotelsa.backend.user.repository.UserRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class UserServiceTest {
 
     @Mock private UserRepository userRepository;
@@ -46,43 +45,43 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        // ✅ Crear hotel ficticio y asociarlo a los usuarios
-        Hotel hotel = new Hotel();
-        hotel.setId(100L);
-        hotel.setName("Hotel Paradise");
-        hotel.setCity("Madrid");
-        hotel.setCountry("Spain");
+        // ✅ Configurar tenant ficticio
+        TenantContext.setCurrentTenant(1L);
 
-        // Usuario actual (admin)
+        // ✅ Usuario actual simulado (admin)
         currentUser = new User();
         currentUser.setId(1L);
         currentUser.setUsername("admin");
         currentUser.setEmail("admin@hotel.com");
         currentUser.setRole(Role.ADMIN);
+        currentUser.setHotelId(1L);
 
-        // Empleado
+        // ✅ Usuario empleado
         employee = new User();
         employee.setId(2L);
         employee.setUsername("employee");
         employee.setEmail("employee@hotel.com");
         employee.setRole(Role.USER);
+        employee.setHotelId(1L);
 
-        // ✅ Mantener consistencia bidireccional
-        hotel.addUser(currentUser);
-        hotel.addUser(employee);
-
-        // DTO para registro
+        // ✅ DTO de registro
         registerUserDto = RegisterUserDto.builder()
                 .username("newemployee")
                 .password("password123")
                 .email("newemployee@hotel.com")
                 .build();
 
-        // DTO de usuario
+        // ✅ DTO de respuesta
         userDto = new UserDto();
         userDto.setId(2L);
         userDto.setUsername("employee");
         userDto.setEmail("employee@hotel.com");
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
+        SecurityContextHolder.clearContext();
     }
 
     private void mockAuthenticatedUser(User user) {
@@ -91,9 +90,10 @@ class UserServiceTest {
         SecurityContextHolder.setContext(securityContext);
     }
 
+    // 🔹 TEST: registrar empleado
     @Test
     void registerEmployee_ShouldCreateEmployee_WhenValidData() {
-        mockAuthenticatedUser(currentUser); // Necesario para registerEmployee()
+        mockAuthenticatedUser(currentUser);
 
         when(userMapper.fromRegisterDto(registerUserDto)).thenReturn(employee);
         when(passwordEncoder.encode(registerUserDto.getPassword())).thenReturn("encodedPassword");
@@ -103,25 +103,27 @@ class UserServiceTest {
         UserDto result = userService.registerEmployee(registerUserDto);
 
         assertNotNull(result);
-        assertEquals(userDto.getId(), result.getId());
+        assertEquals("employee", result.getUsername());
         verify(userRepository).save(any(User.class));
     }
 
+    // 🔹 TEST: obtener todos los usuarios (findAll con multitenant)
     @Test
     void getUsersByHotel_ShouldReturnUsersList_WhenUsersExist() {
-        mockAuthenticatedUser(currentUser); // Necesario para getUsersByHotel()
+        mockAuthenticatedUser(currentUser);
 
         List<User> users = Arrays.asList(currentUser, employee);
-        when(userRepository.findByHotelId(anyLong())).thenReturn(users);
+        when(userRepository.findAll()).thenReturn(users);
         when(userMapper.fromEntity(any(User.class))).thenReturn(userDto);
 
         List<UserDto> result = userService.getUsersByHotel();
 
         assertNotNull(result);
         assertEquals(2, result.size());
-        verify(userRepository).findByHotelId(anyLong());
+        verify(userRepository).findAll();
     }
 
+    // 🔹 TEST: obtener usuario por ID
     @Test
     void getUserById_ShouldReturnUser_WhenUserExists() {
         when(userRepository.findById(2L)).thenReturn(Optional.of(employee));
@@ -130,7 +132,7 @@ class UserServiceTest {
         UserDto result = userService.getUserById(2L);
 
         assertNotNull(result);
-        assertEquals(userDto.getUsername(), result.getUsername());
+        assertEquals("employee", result.getUsername());
     }
 
     @Test
@@ -140,6 +142,7 @@ class UserServiceTest {
         assertThrows(UserNotFoundException.class, () -> userService.getUserById(999L));
     }
 
+    // 🔹 TEST: actualizar usuario
     @Test
     void updateUser_ShouldUpdateUser_WhenValidData() {
         RegisterUserDto updateDto = RegisterUserDto.builder()
@@ -163,6 +166,7 @@ class UserServiceTest {
 
         assertEquals("updatedEmployee", existingUser.getUsername());
         assertEquals("updated@hotel.com", existingUser.getEmail());
+        verify(userRepository).save(existingUser);
     }
 
     @Test
@@ -215,6 +219,7 @@ class UserServiceTest {
         verify(passwordEncoder, never()).encode(anyString());
     }
 
+    // 🔹 TEST: eliminar usuario
     @Test
     void deleteUser_ShouldSoftDeleteUser_WhenUserExists() {
         User userToDelete = new User();

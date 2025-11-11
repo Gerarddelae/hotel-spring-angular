@@ -6,6 +6,7 @@ import com.hotelsa.backend.room.enums.RoomType;
 import com.hotelsa.backend.common.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
@@ -15,7 +16,7 @@ import org.hibernate.annotations.ParamDef;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @EqualsAndHashCode(callSuper = true)
 public class Room extends BaseEntity {
 
