@@ -7,9 +7,7 @@ import com.hotelsa.backend.common.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Filter;
-import org.hibernate.annotations.FilterDef;
-import org.hibernate.annotations.ParamDef;
+import org.hibernate.annotations.SQLDelete;
 
 @Entity
 @Table(name = "rooms")
@@ -18,6 +16,7 @@ import org.hibernate.annotations.ParamDef;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
+@SQLDelete(sql = "UPDATE rooms SET deleted = true WHERE id = ?")
 public class Room extends BaseEntity {
 
     @Column(nullable = false)
