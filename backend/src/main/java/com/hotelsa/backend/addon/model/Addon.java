@@ -7,6 +7,9 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLDelete;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "addons")
 @Getter
@@ -29,4 +32,9 @@ public class Addon extends BaseEntity {
     @NotNull
     @Column(name = "price", nullable = false)
     private Integer price;
+
+    // Relación inversa hacia BookingAddon (lectura semántica)
+    @OneToMany(mappedBy = "addon", fetch = FetchType.LAZY)
+    @ToString.Exclude
+    private List<com.hotelsa.backend.bookingaddon.entity.BookingAddon> bookings = new ArrayList<>();
 }

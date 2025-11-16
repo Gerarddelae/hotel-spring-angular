@@ -6,6 +6,11 @@ import com.hotelsa.backend.addon.exception.AddonNotFoundException;
 import com.hotelsa.backend.addon.mapper.AddonMapper;
 import com.hotelsa.backend.addon.model.Addon;
 import com.hotelsa.backend.addon.repository.AddonRepository;
+import com.hotelsa.backend.aop.annotation.AdminOnly;
+import com.hotelsa.backend.auth.service.AuthService;
+import com.hotelsa.backend.hotel.exception.HotelNotFoundException;
+import com.hotelsa.backend.hotel.model.Hotel;
+import com.hotelsa.backend.hotel.repository.HotelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,14 +25,27 @@ public class AddonService {
 
     private final AddonRepository addonRepository;
     private final AddonMapper addonMapper;
+    private final HotelRepository hotelRepository;
+    private final AuthService authService;
+
+    private Long getCurrentHotelId() {
+        return authService.getCurrentHotelId();
+    }
 
     @Transactional
+    @AdminOnly
     public AddonResponse create(AddonRequest request) {
         if (addonRepository.existsByNameIgnoreCase(request.getName())) {
             throw new IllegalArgumentException("Ya existe un addon con ese nombre");
         }
 
+        Long hotelId = getCurrentHotelId();
+
+        Hotel hotel = hotelRepository.findById(hotelId)
+                .orElseThrow(() -> new HotelNotFoundException("Hotel no encontrado"));
+
         Addon addon = addonMapper.fromRequestDto(request);
+        addon.setHotelId(hotelId);
         Addon saved = addonRepository.save(addon);
         log.debug("✅ Created addon {}", saved.getName());
         return addonMapper.fromEntity(saved);
@@ -47,6 +65,7 @@ public class AddonService {
     }
 
     @Transactional
+    @AdminOnly
     public AddonResponse update(Long id, AddonRequest request) {
         Addon addon = addonRepository.findById(id)
                 .orElseThrow(() -> new AddonNotFoundException("Addon no encontrado"));
@@ -66,6 +85,7 @@ public class AddonService {
     }
 
     @Transactional
+    @AdminOnly
     public void delete(Long id) {
         Addon addon = addonRepository.findById(id)
                 .orElseThrow(() -> new AddonNotFoundException("Addon no encontrado"));

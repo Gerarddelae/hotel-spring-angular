@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import com.hotelsa.backend.addon.dto.AddonResponse;
 
 @RestController
 @RequestMapping("/bookings")
@@ -139,5 +140,55 @@ public class BookingController {
     ) {
         List<BookingResponseDTO> bookings = bookingService.getBookingsBetween(start, end);
         return ResponseEntity.ok(bookings);
+    }
+
+    /**
+     * Añade una lista de addons a una reserva (soft-insert de la relación).
+     */
+    @PostMapping("/{id}/addons")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookingResponseDTO> addAddonsToBooking(
+            @PathVariable("id") Long bookingId,
+            @RequestBody List<com.hotelsa.backend.booking.dto.BookingAddonRequest> addonRequests
+    ) {
+        BookingResponseDTO response = bookingService.addAddonsToBooking(bookingId, addonRequests);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Elimina (soft delete) una relación addon de una reserva.
+     */
+    @DeleteMapping("/{id}/addons/{addonId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> removeAddonFromBooking(
+            @PathVariable("id") Long bookingId,
+            @PathVariable("addonId") Long addonId
+    ) {
+        bookingService.removeAddonFromBooking(bookingId, addonId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Lista los addons asociados a una reserva.
+     */
+    @GetMapping("/{id}/addons")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<List<AddonResponse>> getAddonsFromBooking(@PathVariable("id") Long bookingId) {
+        List<AddonResponse> addons = bookingService.getAddonsFromBooking(bookingId);
+        return ResponseEntity.ok(addons);
+    }
+
+    /**
+     * Actualiza la cantidad de un addon específico en una reserva.
+     */
+    @PatchMapping("/{id}/addons/{addonId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookingResponseDTO> updateAddonQuantity(
+            @PathVariable("id") Long bookingId,
+            @PathVariable("addonId") Long addonId,
+            @Valid @RequestBody com.hotelsa.backend.booking.dto.UpdateAddonQuantityRequest request
+    ) {
+        BookingResponseDTO response = bookingService.updateAddonQuantity(bookingId, addonId, request.getQuantity());
+        return ResponseEntity.ok(response);
     }
 }

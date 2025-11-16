@@ -12,6 +12,8 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLDelete;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "bookings")
@@ -62,4 +64,9 @@ public class Booking extends BaseEntity {
 
     @Column(name = "notes", length = 255)
     private String notes;
+
+    // Relación con BookingAddon (no orphanRemoval porque se usa soft-delete en BookingAddon)
+    @OneToMany(mappedBy = "booking", cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = false)
+    @ToString.Exclude
+    private List<com.hotelsa.backend.bookingaddon.entity.BookingAddon> addons = new ArrayList<>();
 }

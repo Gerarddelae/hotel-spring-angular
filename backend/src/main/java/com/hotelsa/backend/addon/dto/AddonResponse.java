@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
 public class AddonResponse {
 
     private Long id;
@@ -18,5 +19,10 @@ public class AddonResponse {
 
     // Exponer createdAt si se hace así en otros response DTOs
     private LocalDateTime createdAt;
-}
 
+    // Cantidad asociada cuando el addon forma parte de una reserva (BookingAddon.quantity)
+    private Integer quantity;
+
+    // Subtotal calculado: price * quantity
+    private Integer subtotal;
+}

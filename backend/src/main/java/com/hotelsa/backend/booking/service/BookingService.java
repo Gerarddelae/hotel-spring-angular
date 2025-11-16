@@ -5,9 +5,13 @@ import com.hotelsa.backend.auth.service.AuthService;
 import com.hotelsa.backend.booking.dto.BookingRequestDTO;
 import com.hotelsa.backend.booking.dto.BookingResponseDTO;
 import com.hotelsa.backend.booking.exception.BookingNotFoundException;
+import com.hotelsa.backend.booking.exception.BookingAddonNotFoundException;
 import com.hotelsa.backend.booking.mapper.BookingMapper;
 import com.hotelsa.backend.booking.model.Booking;
 import com.hotelsa.backend.booking.repository.BookingRepository;
+import com.hotelsa.backend.bookingaddon.entity.BookingAddon;
+import com.hotelsa.backend.bookingaddon.entity.BookingAddonId;
+import com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository;
 import com.hotelsa.backend.booking.enums.BookingStatus;
 import com.hotelsa.backend.guest.exception.GuestNotFoundException;
 import com.hotelsa.backend.guest.model.Guest;
@@ -18,6 +22,10 @@ import com.hotelsa.backend.hotel.repository.HotelRepository;
 import com.hotelsa.backend.room.exception.RoomNotFoundException;
 import com.hotelsa.backend.room.model.Room;
 import com.hotelsa.backend.room.repository.RoomRepository;
+import com.hotelsa.backend.addon.model.Addon;
+import com.hotelsa.backend.addon.repository.AddonRepository;
+import com.hotelsa.backend.addon.mapper.AddonMapper;
+import com.hotelsa.backend.common.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -37,6 +46,10 @@ public class BookingService {
     private final RoomRepository roomRepository;
     private final BookingMapper bookingMapper;
     private final AuthService authService;
+
+    private final AddonRepository addonRepository;
+    private final BookingAddonRepository bookingAddonRepository;
+    private final AddonMapper addonMapper;
 
     private Long getCurrentHotelId() {
         return authService.getCurrentHotelId();
@@ -105,7 +118,10 @@ public class BookingService {
         Booking updatedBooking = bookingRepository.save(booking);
         log.debug("✅ Updated booking {} for hotel {}", updatedBooking.getId(), booking.getHotelId());
 
-        return bookingMapper.fromEntity(updatedBooking);
+        BookingResponseDTO response = bookingMapper.fromEntity(updatedBooking);
+        // Asegurar que la respuesta incluya los addons con quantity y subtotal
+        response.setAddons(getAddonsFromBooking(id));
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -173,5 +189,143 @@ public class BookingService {
         }
         List<Booking> bookings = bookingRepository.findByCheckInDateBetween(start, end);
         return bookings.stream().map(bookingMapper::fromEntity).toList();
+    }
+
+    @Transactional
+    public BookingResponseDTO addAddonsToBooking(Long bookingId, List<com.hotelsa.backend.booking.dto.BookingAddonRequest> addonRequests) {
+        Long currentHotelId = getCurrentHotelId();
+        log.debug("Agregar addons a booking {} (currentHotelId={}) addonRequests={}", bookingId, currentHotelId, addonRequests);
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel"));
+
+        // Seguridad adicional: asegurarnos de que la reserva pertenece al tenant actual
+        if (currentHotelId != null && !currentHotelId.equals(booking.getHotelId())) {
+            throw new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel");
+        }
+
+        // Cargar todos los addons solicitados
+        List<Long> ids = addonRequests.stream().map(r -> r.getAddonId()).toList();
+        List<Addon> addons = addonRepository.findByIdIn(ids);
+        if (addons.size() != ids.size()) {
+            throw new com.hotelsa.backend.addon.exception.AddonNotFoundException("Algunos addons no existen");
+        }
+
+        // Procesar cada request (crear o actualizar cantidad)
+        for (com.hotelsa.backend.booking.dto.BookingAddonRequest req : addonRequests) {
+            Long addonId = req.getAddonId();
+            Integer qty = req.getQuantity() == null || req.getQuantity() < 1 ? 1 : req.getQuantity();
+
+            Addon addon = addons.stream().filter(a -> a.getId().equals(addonId)).findFirst().orElse(null);
+            if (addon == null) {
+                throw new com.hotelsa.backend.addon.exception.AddonNotFoundException("Addon no encontrado: " + addonId);
+            }
+
+            if (!java.util.Objects.equals(addon.getHotelId(), currentHotelId)) {
+                throw new BadRequestException("Addon no pertenece al mismo hotel");
+            }
+
+            BookingAddonId id = new BookingAddonId(bookingId, addonId);
+
+            // Si la relación existe, actualizar cantidad; si no, crear
+            if (bookingAddonRepository.existsByIdBookingIdAndIdAddonIdAndHotelId(bookingId, addonId, currentHotelId)) {
+                BookingAddon existing = bookingAddonRepository.findByIdAndHotelId(id, currentHotelId)
+                        .orElseThrow(() -> new BookingAddonNotFoundException("Relación booking-addon no encontrada"));
+
+                if (existing.isDeleted()) {
+                    existing.setDeleted(false);
+                    existing.setQuantity(qty);
+                } else {
+                    existing.setQuantity((existing.getQuantity() == null ? 0 : existing.getQuantity()) + qty);
+                }
+
+                bookingAddonRepository.save(existing);
+            } else {
+                BookingAddon link = BookingAddon.builder()
+                        .id(id)
+                        .booking(booking)
+                        .addon(addon)
+                        .hotelId(currentHotelId)
+                        .quantity(qty)
+                        .build();
+
+                bookingAddonRepository.save(link);
+            }
+        }
+
+        // Construir la respuesta manualmente para incluir los addons filtrados correctamente
+        BookingResponseDTO response = bookingMapper.fromEntity(booking);
+        response.setAddons(getAddonsFromBooking(bookingId));
+
+        return response;
+    }
+
+    @Transactional
+    public void removeAddonFromBooking(Long bookingId, Long addonId) {
+        Long currentHotelId = getCurrentHotelId();
+        BookingAddonId id = new BookingAddonId(bookingId, addonId);
+
+        BookingAddon link = bookingAddonRepository.findByIdAndHotelId(id, currentHotelId)
+                .orElseThrow(() -> new BookingAddonNotFoundException("Relación booking-addon no encontrada"));
+
+        link.setDeleted(true);
+        bookingAddonRepository.save(link);
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.hotelsa.backend.addon.dto.AddonResponse> getAddonsFromBooking(Long bookingId) {
+        Long currentHotelId = getCurrentHotelId();
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel"));
+
+        // Filtrar por hotelId explícitamente
+        List<BookingAddon> links = bookingAddonRepository.findByIdBookingIdAndHotelId(bookingId, currentHotelId);
+        return links.stream().map(l -> {
+            var resp = addonMapper.fromEntity(l.getAddon());
+            int qty = l.getQuantity() == null ? 1 : l.getQuantity();
+            resp.setQuantity(qty);
+            // calcular subtotal (price * quantity), protegiendo contra nulls
+            Integer price = resp.getPrice();
+            resp.setSubtotal((price == null ? 0 : price) * qty);
+            return resp;
+        }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public BookingResponseDTO updateAddonQuantity(Long bookingId, Long addonId, Integer newQuantity) {
+        Long currentHotelId = getCurrentHotelId();
+        log.debug("Actualizar cantidad del addon {} en booking {} a quantity={} (currentHotelId={})",
+                addonId, bookingId, newQuantity, currentHotelId);
+
+        // Validar que la reserva existe y pertenece al tenant actual
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel"));
+
+        if (currentHotelId != null && !currentHotelId.equals(booking.getHotelId())) {
+            throw new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel");
+        }
+
+        // Buscar la relación BookingAddon
+        BookingAddonId id = new BookingAddonId(bookingId, addonId);
+        BookingAddon link = bookingAddonRepository.findByIdAndHotelId(id, currentHotelId)
+                .orElseThrow(() -> new BookingAddonNotFoundException("Relación booking-addon no encontrada"));
+
+        // Validar que no esté soft-deleted
+        if (link.isDeleted()) {
+            throw new BookingAddonNotFoundException("El addon ya fue eliminado de esta reserva");
+        }
+
+        // Actualizar cantidad (reemplazo, no suma)
+        link.setQuantity(newQuantity);
+        bookingAddonRepository.save(link);
+
+        log.debug("✅ Actualizada cantidad del addon {} en booking {} a {}", addonId, bookingId, newQuantity);
+
+        // Construir respuesta con addons actualizados
+        BookingResponseDTO response = bookingMapper.fromEntity(booking);
+        response.setAddons(getAddonsFromBooking(bookingId));
+
+        return response;
     }
 }

@@ -6,13 +6,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BookingAddonRepository extends JpaRepository<BookingAddon, BookingAddonId> {
 
-    List<BookingAddon> findByIdBookingId(Long bookingId);
+    // Consultas que incluyen hotelId para filtrado de tenant
+    List<BookingAddon> findByIdBookingIdAndHotelId(Long bookingId, Long hotelId);
 
-    List<BookingAddon> findByIdAddonId(Long addonId);
+    List<BookingAddon> findByIdAddonIdAndHotelId(Long addonId, Long hotelId);
 
-    boolean existsByIdBookingIdAndIdAddonId(Long bookingId, Long addonId);
+    boolean existsByIdBookingIdAndIdAddonIdAndHotelId(Long bookingId, Long addonId, Long hotelId);
+
+    Optional<BookingAddon> findByIdAndHotelId(BookingAddonId id, Long hotelId);
 }

@@ -42,11 +42,18 @@ public class BookingAddon {
     @Column(nullable = false)
     private boolean deleted = false;
 
+    @Builder.Default
+    @Column(name = "quantity", nullable = false)
+    private Integer quantity = 1;
+
     @PrePersist
     @PreUpdate
     private void ensureHotelId() {
         if (this.hotelId == null && this.booking != null) {
             this.hotelId = this.booking.getHotelId();
+        }
+        if (this.quantity == null || this.quantity < 1) {
+            this.quantity = 1;
         }
     }
 }
