@@ -1,5 +1,6 @@
 package com.hotelsa.backend.common.exception;
 
+import com.hotelsa.backend.booking.exception.BookingNotFoundException;
 import com.hotelsa.backend.guest.exception.GuestNotFoundException;
 import com.hotelsa.backend.hotel.exception.HotelNotFoundException;
 import com.hotelsa.backend.room.exception.RoomNotFoundException;
@@ -46,6 +47,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(GuestNotFoundException.class)
     public ResponseEntity<ApiError> handleGuestNotFound(GuestNotFoundException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(BookingNotFoundException.class)
+    public ResponseEntity<ApiError> handleBookingNotFound(BookingNotFoundException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
