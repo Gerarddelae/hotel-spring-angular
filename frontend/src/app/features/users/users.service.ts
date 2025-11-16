@@ -12,11 +12,11 @@ export class UsersService {
   users$ = this.usersSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    this.loadUsers(); // Cargar usuarios al iniciar el servicio
+    this.loadUsers();
   }
 
   // Método para cargar usuarios
-  private loadUsers() {
+  loadUsers() {
     this.http.get<User[]>(this.apiUrl)
       .subscribe(users => this.usersSubject.next(users));
   }
@@ -49,5 +49,10 @@ export class UsersService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
       tap(() => this.loadUsers()) // Recargar usuarios después de eliminar
     );
+  }
+
+  // Método para limpiar el estado de usuarios
+  clearUsers() {
+    this.usersSubject.next([]);
   }
 }

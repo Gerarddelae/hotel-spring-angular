@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Observable } from 'rxjs';
+import { Observable, Subject, takeUntil } from 'rxjs';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { TableComponent } from '../../shared/components/table/table.component';
 import { RoomModalFormComponent } from '../../shared/components/room-modal-form/room-modal-form.component';
@@ -13,10 +13,11 @@ import { Room } from './models/room.interface';
   imports: [CommonModule, TableComponent, MatDialogModule],
   templateUrl: './rooms.component.html',
 })
-export class RoomsComponent {
+export class RoomsComponent implements OnDestroy {
   rooms$: Observable<Room[]>;
   showDeleteModal = false;
   roomToDelete: { id: number } | null = null;
+  private destroy$ = new Subject<void>();
 
   columns = [
     'id',
@@ -41,11 +42,22 @@ export class RoomsComponent {
   };
 
   constructor(private dialog: MatDialog, private roomService: RoomService) {
-    this.rooms$ = this.roomService.rooms$;
+    // Inicialmente cargamos las habitaciones y nos suscribimos al observable
+    this.roomService.loadRooms();
+    this.rooms$ = this.roomService.rooms$.pipe(
+      takeUntil(this.destroy$)
+    );
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   refreshRooms() {
-    this.rooms$ = this.roomService.getRooms();
+    this.rooms$ = this.roomService.getRooms().pipe(
+      takeUntil(this.destroy$)
+    );
   }
 
   /** Abrir modal para crear o editar habitación */

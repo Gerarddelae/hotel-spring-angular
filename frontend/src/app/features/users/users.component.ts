@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UsersService } from './users.service';
 import { TableComponent } from '../../shared/components/table/table.component';
-import { Observable } from 'rxjs';
+import { Observable, Subject, takeUntil } from 'rxjs';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { UserModalFormComponent } from '../../shared/components/user-modal-form/user-modal-form.component';
 import { User } from './models/user.interface';
@@ -13,10 +13,11 @@ import { User } from './models/user.interface';
   imports: [CommonModule, TableComponent, MatDialogModule],
   templateUrl: './users.component.html'
 })
-export class UsersComponent {
+export class UsersComponent implements OnDestroy {
   users$: Observable<User[]>;
   showDeleteModal = false;
   userToDelete: { id: number } | null = null;
+  private destroy$ = new Subject<void>();
 
   columns = ['id', 'username', 'email', 'role', 'hotelId'];
 
@@ -32,11 +33,22 @@ export class UsersComponent {
     private dialog: MatDialog,
     private usersService: UsersService
   ) {
-    this.users$ = this.usersService.users$;
+    // Inicialmente cargamos los usuarios y nos suscribimos al observable
+    this.usersService.loadUsers();
+    this.users$ = this.usersService.users$.pipe(
+      takeUntil(this.destroy$)
+    );
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   refreshUsers() {
-    this.users$ = this.usersService.getUsers();
+    this.users$ = this.usersService.getUsers().pipe(
+      takeUntil(this.destroy$)
+    );
   }
 
   /** Abrir modal para crear o editar usuario */

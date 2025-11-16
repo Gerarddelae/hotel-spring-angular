@@ -33,8 +33,8 @@ public class RoomMapper {
                 .capacity(room.getCapacity())
                 .pricePerNight(room.getPricePerNight())
                 .status(room.getStatus())
-                .hotelId(room.getHotel() != null ? room.getHotel().getId() : null)
-                .hotelName(room.getHotel() != null ? room.getHotel().getName() : null)
+                .hotelId(room.getHotelId())
+                .hotelName(room.getHotelId() != null ? room.getHotel().getName() : null)
                 .build();
     }
 }

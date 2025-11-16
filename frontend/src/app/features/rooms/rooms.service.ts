@@ -15,11 +15,16 @@ export class RoomService {
   }
 
   /** 🔹 Cargar todas las habitaciones desde el backend */
-  private loadRooms(): void {
+  loadRooms(): void {
     this.http.get<Room[]>(this.apiUrl).subscribe({
       next: (rooms) => this.roomsSubject.next(rooms),
       error: (err) => console.error('Error cargando habitaciones:', err),
     });
+  }
+
+  /** 🔹 Limpiar el estado de las habitaciones */
+  clearRooms(): void {
+    this.roomsSubject.next([]);
   }
 
   /** 🔹 Obtener flujo reactivo de habitaciones */

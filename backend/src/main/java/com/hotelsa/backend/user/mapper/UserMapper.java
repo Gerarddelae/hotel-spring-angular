@@ -22,7 +22,7 @@ public class UserMapper {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .role(user.getRole())
-                .hotelId(user.getHotel() != null ? user.getHotel().getId() : null)
+                .hotelId(user.getHotelId())
                 .build();
     }
 }

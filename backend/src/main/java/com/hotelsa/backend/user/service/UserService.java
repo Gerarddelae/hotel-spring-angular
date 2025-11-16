@@ -1,6 +1,7 @@
 package com.hotelsa.backend.user.service;
 
 import com.hotelsa.backend.aop.annotation.AdminOnly;
+import com.hotelsa.backend.tenant.TenantContext;
 import com.hotelsa.backend.user.dto.RegisterUserDto;
 import com.hotelsa.backend.user.dto.UserDto;
 import com.hotelsa.backend.user.enums.Role;
@@ -9,10 +10,8 @@ import com.hotelsa.backend.user.exception.UserNotFoundException;
 import com.hotelsa.backend.user.mapper.UserMapper;
 import com.hotelsa.backend.user.model.User;
 import com.hotelsa.backend.user.repository.UserRepository;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.Filter;
-import org.hibernate.Session;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -28,27 +28,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
-    private final EntityManager entityManager;
 
-    /**
-     * Activa automáticamente el filtro para "usuarios activos".
-     * Evita errores en entornos de prueba donde no hay sesión real de Hibernate.
-     */
-    private void activarFiltroSoftDelete() {
-        if (entityManager == null) {
-            return; // Evita NPE en tests unitarios
-        }
-        try {
-            Session session = entityManager.unwrap(Session.class);
-            if (session != null) {
-                Filter filter = session.enableFilter("deletedFilter");
-                filter.setParameter("isDeleted", false);
-            }
-        } catch (Exception e) {
-            // Estamos en un contexto donde no hay sesión real (mock o test)
-        }
-    }
-
+    // ✅ Obtener usuario autenticado
     private User getCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof User user) {
@@ -57,6 +38,16 @@ public class UserService {
         throw new AccessDeniedException("User is not authenticated");
     }
 
+    // ✅ Obtener tenant actual (del contexto)
+    private Long getCurrentTenantId() {
+        Long tenantId = TenantContext.getCurrentTenant();
+        if (tenantId == null) {
+            tenantId = getCurrentUser().getHotelId();
+        }
+        return tenantId;
+    }
+
+    // ✅ Registrar empleado (por admin)
     @AdminOnly
     @Transactional
     public UserDto registerEmployee(RegisterUserDto dto) {
@@ -64,35 +55,38 @@ public class UserService {
 
         User employee = userMapper.fromRegisterDto(dto);
         employee.setRole(Role.USER);
-        employee.setHotel(currentUser.getHotel());
+        employee.setHotelId(currentUser.getHotelId());
         employee.setPassword(passwordEncoder.encode(dto.getPassword()));
 
         User savedUser = userRepository.save(employee);
+        log.debug("Registered new employee: {} for hotel: {}", savedUser.getUsername(), savedUser.getHotelId());
+
         return userMapper.fromEntity(savedUser);
     }
 
+    // ✅ Obtener todos los usuarios del hotel (filtros ya aplicados automáticamente)
     @AdminOnly
     @Transactional(readOnly = true)
     public List<UserDto> getUsersByHotel() {
-        activarFiltroSoftDelete(); // Aplica el filtro automáticamente
-        User currentUser = getCurrentUser();
-        List<User> users = userRepository.findByHotelId(currentUser.getHotel().getId());
+        List<User> users = userRepository.findAll();
+        log.debug("Found {} users for hotel {}", users.size(), getCurrentTenantId());
         return users.stream().map(userMapper::fromEntity).toList();
     }
 
+    // ✅ Obtener usuario por ID (ya filtrado por tenant y deleted)
     @Transactional(readOnly = true)
     public UserDto getUserById(Long userId) {
-        activarFiltroSoftDelete(); // Filtra usuarios eliminados
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found or not accessible"));
         return userMapper.fromEntity(user);
     }
 
+    // ✅ Actualizar usuario
     @AdminOnly
     @Transactional
     public UserDto updateUser(Long id, RegisterUserDto dto) {
         User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found or not accessible"));
 
         if (!existingUser.getUsername().equals(dto.getUsername()) &&
                 userRepository.existsByUsername(dto.getUsername())) {
@@ -107,17 +101,21 @@ public class UserService {
         }
 
         User updatedUser = userRepository.save(existingUser);
+        log.debug("Updated user: {} for hotel: {}", updatedUser.getUsername(), updatedUser.getHotelId());
+
         return userMapper.fromEntity(updatedUser);
     }
 
+    // ✅ Soft delete (ya respetando tenant)
     @AdminOnly
     @Transactional
     public void deleteUser(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found or not accessible"));
 
-        // Soft delete
         user.setDeleted(true);
         userRepository.save(user);
+
+        log.debug("Soft deleted user: {} for hotel: {}", user.getUsername(), user.getHotelId());
     }
 }

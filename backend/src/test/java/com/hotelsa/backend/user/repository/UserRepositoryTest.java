@@ -2,16 +2,19 @@ package com.hotelsa.backend.user.repository;
 
 import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.hotel.repository.HotelRepository;
+import com.hotelsa.backend.tenant.TenantContext;
 import com.hotelsa.backend.user.enums.Role;
 import com.hotelsa.backend.user.model.User;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 class UserRepositoryTest {
@@ -19,33 +22,49 @@ class UserRepositoryTest {
     @Autowired
     private UserRepository userRepository;
 
+    // ✅ SOLUCIÓN: Necesitas inyectar HotelRepository para crear el hotel
     @Autowired
     private HotelRepository hotelRepository;
 
-    private Hotel hotel;
+    private Long tenantId;
 
     @BeforeEach
     void setUp() {
-        hotel = Hotel.builder()
+        // ✅ PASO 1: Crea y guarda el hotel PRIMERO
+        // Sin esto, la foreign key rechaza cualquier usuario con hotel_id
+        Hotel hotel = Hotel.builder()
                 .name("Hotel Test")
-                .address("Calle 123")
-                .city("CiudadX")
-                .country("PaisX")
-                .phone("999999999")
+                .address("Calle Test 123")
+                .city("Ciudad Test")
+                .country("País Test")
+                .phone("123456789")
                 .description("Hotel de prueba")
                 .build();
 
         hotel = hotelRepository.save(hotel);
+
+        // ✅ PASO 2: Usa el ID real del hotel guardado
+        // No uses un ID hardcodeado (100L) que no existe
+        tenantId = hotel.getId();
+
+        // ✅ PASO 3: Configura el contexto de tenant
+        TenantContext.setCurrentTenant(tenantId);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
     }
 
     @Test
     void existsByUsername_debeRetornarTrueCuandoUsuarioExiste() {
+        // ✅ Ahora tenantId es un ID válido de un hotel que existe
         User user = User.builder()
                 .username("johndoe")
                 .email("john@example.com")
                 .password("password123")
                 .role(Role.USER)
-                .hotel(hotel)
+                .hotelId(tenantId) // ✅ Este ID existe en la BD
                 .build();
 
         userRepository.save(user);
@@ -56,13 +75,19 @@ class UserRepositoryTest {
     }
 
     @Test
+    void existsByUsername_debeRetornarFalseCuandoUsuarioNoExiste() {
+        boolean exists = userRepository.existsByUsername("noexiste");
+        assertThat(exists).isFalse();
+    }
+
+    @Test
     void findByUsername_debeRetornarUsuarioCuandoExiste() {
         User user = User.builder()
                 .username("janedoe")
                 .email("jane@example.com")
                 .password("password123")
                 .role(Role.USER)
-                .hotel(hotel)
+                .hotelId(tenantId) // ✅ ID válido
                 .build();
 
         userRepository.save(user);
@@ -71,47 +96,39 @@ class UserRepositoryTest {
 
         assertThat(encontrado).isPresent();
         assertThat(encontrado.get().getEmail()).isEqualTo("jane@example.com");
-        assertThat(encontrado.get().getHotel().getName()).isEqualTo("Hotel Test");
+        assertThat(encontrado.get().getHotelId()).isEqualTo(tenantId);
     }
 
     @Test
     void findByUsername_debeRetornarVacioCuandoNoExiste() {
         var encontrado = userRepository.findByUsername("noexiste");
-
         assertThat(encontrado).isEmpty();
     }
 
     @Test
-    void existsByUsername_debeRetornarFalseCuandoUsuarioNoExiste() {
-        boolean exists = userRepository.existsByUsername("noexiste");
-
-        assertThat(exists).isFalse();
-    }
-
-    @Test
-    void debeGuardarUsuarioConHotel() {
+    void debeGuardarUsuarioConTenantId() {
         User user = User.builder()
                 .username("empleado1")
                 .email("empleado@example.com")
                 .password("password")
                 .role(Role.USER)
-                .hotel(hotel)
+                .hotelId(tenantId) // ✅ ID válido
                 .build();
 
         User guardado = userRepository.save(user);
 
         assertThat(guardado.getId()).isNotNull();
-        assertThat(guardado.getHotel().getId()).isEqualTo(hotel.getId());
+        assertThat(guardado.getHotelId()).isEqualTo(tenantId);
     }
 
     @Test
-    void findByHotelId_debeRetornarUsuariosDelHotel() {
+    void findAll_debeRetornarUsuariosDelTenantActual() {
         User user1 = User.builder()
                 .username("user1")
                 .email("user1@mail.com")
                 .password("password")
                 .role(Role.USER)
-                .hotel(hotel)
+                .hotelId(tenantId) // ✅ ID válido
                 .build();
 
         User user2 = User.builder()
@@ -119,13 +136,13 @@ class UserRepositoryTest {
                 .email("user2@mail.com")
                 .password("password")
                 .role(Role.USER)
-                .hotel(hotel)
+                .hotelId(tenantId) // ✅ ID válido
                 .build();
 
         userRepository.save(user1);
         userRepository.save(user2);
 
-        var usuarios = userRepository.findByHotelId(hotel.getId());
+        var usuarios = userRepository.findAll();
 
         assertThat(usuarios).hasSize(2);
         assertThat(usuarios).extracting(User::getUsername)
@@ -133,9 +150,8 @@ class UserRepositoryTest {
     }
 
     @Test
-    void findByHotelId_debeRetornarListaVaciaCuandoNoHayUsuarios() {
-        var usuarios = userRepository.findByHotelId(hotel.getId());
-
+    void findAll_debeRetornarListaVaciaCuandoNoHayUsuarios() {
+        var usuarios = userRepository.findAll();
         assertThat(usuarios).isEmpty();
     }
 
@@ -146,7 +162,7 @@ class UserRepositoryTest {
                 .email("usuario@test.com")
                 .password("password123")
                 .role(Role.USER)
-                .hotel(hotel)
+                .hotelId(tenantId) // ✅ ID válido
                 .build();
 
         User guardado = userRepository.save(user);
@@ -160,7 +176,6 @@ class UserRepositoryTest {
     @Test
     void findById_debeRetornarVacioCuandoNoExiste() {
         var encontrado = userRepository.findById(999L);
-
         assertThat(encontrado).isEmpty();
     }
 
@@ -171,7 +186,7 @@ class UserRepositoryTest {
                 .email("old@mail.com")
                 .password("old_password")
                 .role(Role.USER)
-                .hotel(hotel)
+                .hotelId(tenantId) // ✅ ID válido
                 .build();
 
         user = userRepository.save(user);

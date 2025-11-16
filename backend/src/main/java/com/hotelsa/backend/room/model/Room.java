@@ -3,25 +3,21 @@ package com.hotelsa.backend.room.model;
 import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.room.enums.RoomStatus;
 import com.hotelsa.backend.room.enums.RoomType;
+import com.hotelsa.backend.common.model.BaseEntity;
 import jakarta.persistence.*;
-import jakarta.persistence.Table;
 import lombok.*;
-import org.hibernate.annotations.*;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.SQLDelete;
 
 @Entity
 @Table(name = "rooms")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
 @SQLDelete(sql = "UPDATE rooms SET deleted = true WHERE id = ?")
-@FilterDef(name = "roomDeletedFilter", parameters = @ParamDef(name = "isDeleted", type = Boolean.class))
-@Filter(name = "roomDeletedFilter", condition = "deleted = :isDeleted")
-public class Room {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Room extends BaseEntity {
 
     @Column(nullable = false)
     private String number;
@@ -43,11 +39,9 @@ public class Room {
     @Column(nullable = false)
     private RoomStatus status; // AVAILABLE, OCCUPIED, MAINTENANCE
 
+    // Relación para navegar al hotel, sin modificar la columna hotel_id
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hotel_id", nullable = false)
+    @JoinColumn(name = "hotel_id", insertable = false, updatable = false)
     @ToString.Exclude
     private Hotel hotel;
-
-    @Column(nullable = false)
-    private boolean deleted = false;
 }

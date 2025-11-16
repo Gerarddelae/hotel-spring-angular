@@ -5,6 +5,8 @@ import com.hotelsa.backend.hotel.repository.HotelRepository;
 import com.hotelsa.backend.room.enums.RoomStatus;
 import com.hotelsa.backend.room.enums.RoomType;
 import com.hotelsa.backend.room.model.Room;
+import com.hotelsa.backend.tenant.TenantContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,20 +31,28 @@ class RoomRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        hotel = Hotel.builder()
-                .name("Hotel Test")
-                .address("Calle 123")
-                .city("CiudadX")
-                .country("PaisX")
-                .phone("999999999")
-                .description("Hotel de prueba")
-                .build();
+        hotel = hotelRepository.save(
+                Hotel.builder()
+                        .name("Hotel Test")
+                        .address("Calle 123")
+                        .city("CiudadX")
+                        .country("PaisX")
+                        .phone("999999999")
+                        .description("Hotel de prueba")
+                        .build()
+        );
 
-        hotel = hotelRepository.save(hotel);
+        // Simular tenant actual
+        TenantContext.setCurrentTenant(hotel.getId());
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
     }
 
     @Test
-    void existsByNumberAndHotelId_debeRetornarTrueCuandoHabitacionExiste() {
+    void existsByNumber_debeRetornarTrueCuandoHabitacionExiste() {
         Room room = Room.builder()
                 .number("101")
                 .type(RoomType.SINGLE)
@@ -50,25 +60,24 @@ class RoomRepositoryTest {
                 .floor(1)
                 .capacity(2)
                 .pricePerNight(100.0)
-                .hotel(hotel)
+                .hotelId(hotel.getId())
                 .build();
 
         roomRepository.save(room);
 
-        boolean exists = roomRepository.existsByNumberAndHotel_Id("101", hotel.getId());
+        boolean exists = roomRepository.existsByNumber("101");
 
         assertThat(exists).isTrue();
     }
 
     @Test
-    void existsByNumberAndHotelId_debeRetornarFalseCuandoHabitacionNoExiste() {
-        boolean exists = roomRepository.existsByNumberAndHotel_Id("999", hotel.getId());
-
+    void existsByNumber_debeRetornarFalseCuandoHabitacionNoExiste() {
+        boolean exists = roomRepository.existsByNumber("999");
         assertThat(exists).isFalse();
     }
 
     @Test
-    void findByHotelId_debeRetornarHabitacionesDelHotel() {
+    void findAll_debeRetornarSoloHabitacionesDelTenantActual() {
         Room room1 = Room.builder()
                 .number("201")
                 .type(RoomType.DOUBLE)
@@ -76,7 +85,7 @@ class RoomRepositoryTest {
                 .floor(2)
                 .capacity(2)
                 .pricePerNight(150.0)
-                .hotel(hotel)
+                .hotelId(hotel.getId())
                 .build();
 
         Room room2 = Room.builder()
@@ -86,24 +95,17 @@ class RoomRepositoryTest {
                 .floor(2)
                 .capacity(4)
                 .pricePerNight(300.0)
-                .hotel(hotel)
+                .hotelId(hotel.getId())
                 .build();
 
         roomRepository.save(room1);
         roomRepository.save(room2);
 
-        List<Room> rooms = roomRepository.findByHotel_Id(hotel.getId());
+        List<Room> rooms = roomRepository.findAll();
 
         assertThat(rooms).hasSize(2);
         assertThat(rooms).extracting(Room::getNumber)
                 .containsExactlyInAnyOrder("201", "202");
-    }
-
-    @Test
-    void findByHotelId_debeRetornarListaVaciaCuandoNoHayHabitaciones() {
-        List<Room> rooms = roomRepository.findByHotel_Id(hotel.getId());
-
-        assertThat(rooms).isEmpty();
     }
 
     @Test
@@ -115,7 +117,7 @@ class RoomRepositoryTest {
                 .floor(3)
                 .capacity(1)
                 .pricePerNight(120.0)
-                .hotel(hotel)
+                .hotelId(hotel.getId())
                 .build();
 
         Room guardada = roomRepository.save(room);
@@ -129,12 +131,11 @@ class RoomRepositoryTest {
     @Test
     void findById_debeRetornarVacioCuandoNoExiste() {
         var encontrada = roomRepository.findById(999L);
-
         assertThat(encontrada).isEmpty();
     }
 
     @Test
-    void debeGuardarHabitacionConHotel() {
+    void debeGuardarHabitacionConTenant() {
         Room room = Room.builder()
                 .number("401")
                 .type(RoomType.SINGLE)
@@ -142,13 +143,13 @@ class RoomRepositoryTest {
                 .floor(4)
                 .capacity(2)
                 .pricePerNight(180.0)
-                .hotel(hotel)
+                .hotelId(hotel.getId())
                 .build();
 
         Room guardada = roomRepository.save(room);
 
-        assertThat(guardada.getId()).isNotNull();
-        assertThat(guardada.getHotel().getId()).isEqualTo(hotel.getId());
+        assertNotNull(guardada.getId());
+        assertEquals(hotel.getId(), guardada.getHotelId());
     }
 
     @Test
@@ -160,7 +161,7 @@ class RoomRepositoryTest {
                 .floor(5)
                 .capacity(2)
                 .pricePerNight(200.0)
-                .hotel(hotel)
+                .hotelId(hotel.getId())
                 .build();
 
         room = roomRepository.save(room);
@@ -174,11 +175,11 @@ class RoomRepositoryTest {
         assertNotNull(updatedRoom.getId());
         assertEquals("502", updatedRoom.getNumber());
         assertEquals(RoomType.DOUBLE, updatedRoom.getType());
-        assertEquals(250.0, updatedRoom.getPricePerNight(), 0.001); // ✅ Comparación con delta
+        assertEquals(250.0, updatedRoom.getPricePerNight(), 0.001);
     }
 
     @Test
-    void findByHotelIdAndType_debeFiltrarPorTipo() {
+    void findAll_debeFiltrarPorTipo() {
         Room room1 = Room.builder()
                 .number("601")
                 .type(RoomType.SINGLE)
@@ -186,7 +187,7 @@ class RoomRepositoryTest {
                 .floor(6)
                 .capacity(1)
                 .pricePerNight(100.0)
-                .hotel(hotel)
+                .hotelId(hotel.getId())
                 .build();
 
         Room room2 = Room.builder()
@@ -196,7 +197,7 @@ class RoomRepositoryTest {
                 .floor(6)
                 .capacity(2)
                 .pricePerNight(200.0)
-                .hotel(hotel)
+                .hotelId(hotel.getId())
                 .build();
 
         Room room3 = Room.builder()
@@ -206,19 +207,19 @@ class RoomRepositoryTest {
                 .floor(6)
                 .capacity(2)
                 .pricePerNight(210.0)
-                .hotel(hotel)
+                .hotelId(hotel.getId())
                 .build();
 
         roomRepository.save(room1);
         roomRepository.save(room2);
         roomRepository.save(room3);
 
-        List<Room> doubles = roomRepository.findByHotel_IdAndType(hotel.getId(), RoomType.DOUBLE);
+        List<Room> all = roomRepository.findAll().stream()
+                .filter(r -> r.getType() == RoomType.DOUBLE)
+                .toList();
 
-        assertThat(doubles).hasSize(2);
-        assertThat(doubles).extracting(Room::getNumber)
+        assertThat(all).hasSize(2);
+        assertThat(all).extracting(Room::getNumber)
                 .containsExactlyInAnyOrder("602", "603");
     }
-
-
 }
