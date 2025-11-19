@@ -8,6 +8,8 @@ import com.hotelsa.backend.room.exception.RoomNotFoundException;
 import com.hotelsa.backend.user.exception.UserAlreadyExistsException;
 import com.hotelsa.backend.user.exception.UserNotFoundException;
 import com.hotelsa.backend.addon.exception.AddonNotFoundException;
+import com.hotelsa.backend.bill.exception.BillNotFoundException;
+import com.hotelsa.backend.billaddon.exception.BillAddonNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -69,6 +71,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BookingAddonNotFoundException.class)
     public ResponseEntity<ApiError> handleBookingAddonNotFound(BookingAddonNotFoundException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(BillNotFoundException.class)
+    public ResponseEntity<ApiError> handleBillNotFound(BillNotFoundException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(BillAddonNotFoundException.class)
+    public ResponseEntity<ApiError> handleBillAddonNotFound(BillAddonNotFoundException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 

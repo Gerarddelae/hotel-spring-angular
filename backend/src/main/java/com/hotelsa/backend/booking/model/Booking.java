@@ -5,6 +5,7 @@ import com.hotelsa.backend.guest.model.Guest;
 import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.room.model.Room;
 import com.hotelsa.backend.common.model.BaseEntity;
+import com.hotelsa.backend.bill.model.Bill;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -69,4 +70,9 @@ public class Booking extends BaseEntity {
     @OneToMany(mappedBy = "booking", cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = false)
     @ToString.Exclude
     private List<com.hotelsa.backend.bookingaddon.entity.BookingAddon> addons = new ArrayList<>();
+
+    // Relación inversa hacia Bill (OneToOne)
+    @OneToOne(mappedBy = "booking", fetch = FetchType.LAZY)
+    @ToString.Exclude
+    private Bill bill;
 }
