@@ -54,6 +54,7 @@ export class BookingModalFormComponent implements OnInit {
   availableRooms: any[] = [];
   availableAddons: any[] = [];
   selectedAddons: BookingAddon[] = [];
+  selectedRoom: any = null;
   
   isLoadingGuests = false;
   isLoadingRooms = false;
@@ -97,8 +98,19 @@ export class BookingModalFormComponent implements OnInit {
     this.setupGuestAutocomplete();
     this.setupRoomAvailabilityCheck();
     
-    if (this.data.booking?.guestName) {
-      this.bookingForm.patchValue({ guestSearch: this.data.booking.guestName });
+    // Si hay un booking con guestId, cargar el guest completo
+    if (this.data.booking?.guestId) {
+      this.guestService.get(this.data.booking.guestId).subscribe({
+        next: (guest) => {
+          this.bookingForm.patchValue({ guestSearch: guest });
+        },
+        error: () => {
+          // Fallback: usar el nombre si está disponible
+          if (this.data.booking?.guestName) {
+            this.bookingForm.patchValue({ guestSearch: this.data.booking.guestName });
+          }
+        }
+      });
     }
   }
 
@@ -111,6 +123,12 @@ export class BookingModalFormComponent implements OnInit {
       debounceTime(300),
       distinctUntilChanged(),
       switchMap(value => {
+        // Si es un objeto (guest seleccionado), no buscar
+        if (value && typeof value === 'object') {
+          this.isLoadingGuests = false;
+          return of([]);
+        }
+        // Si es string y tiene al menos 2 caracteres, buscar
         if (typeof value === 'string' && value.length >= 2) {
           this.isLoadingGuests = true;
           return this.guestService.search(value).pipe(
@@ -141,7 +159,8 @@ export class BookingModalFormComponent implements OnInit {
       this.checkRoomAvailability();
     });
 
-    this.bookingForm.get('roomId')?.valueChanges.subscribe(() => {
+    this.bookingForm.get('roomId')?.valueChanges.subscribe((roomId) => {
+      this.selectedRoom = this.availableRooms.find(r => r.id === roomId);
       this.checkRoomAvailability();
     });
 
@@ -250,7 +269,7 @@ export class BookingModalFormComponent implements OnInit {
   onGuestSelected(guest: any): void {
     this.bookingForm.patchValue({
       guestId: guest.id,
-      guestSearch: `${guest.firstName} ${guest.lastName}`
+      guestSearch: guest
     });
   }
 
@@ -258,7 +277,7 @@ export class BookingModalFormComponent implements OnInit {
    * Muestra el nombre del huésped en el autocomplete
    */
   displayGuest(guest: any): string {
-    return guest ? `${guest.firstName} ${guest.lastName}` : '';
+    return guest?.fullName || '';
   }
 
   /**
@@ -266,6 +285,30 @@ export class BookingModalFormComponent implements OnInit {
    */
   onAddonsChange(addons: BookingAddon[]): void {
     this.selectedAddons = addons;
+  }
+
+  /**
+   * Calcula el número de noches
+   */
+  calculateNights(): number {
+    const checkIn = this.bookingForm.get('checkInDate')?.value;
+    const checkOut = this.bookingForm.get('checkOutDate')?.value;
+    
+    if (!checkIn || !checkOut) return 0;
+    
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+    const diffTime = Math.abs(checkOutDate.getTime() - checkInDate.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  /**
+   * Calcula el total del hospedaje
+   */
+  calculateAccommodationTotal(): number {
+    if (!this.selectedRoom?.pricePerNight) return 0;
+    const nights = this.calculateNights();
+    return nights * this.selectedRoom.pricePerNight;
   }
 
   /**
@@ -281,9 +324,9 @@ export class BookingModalFormComponent implements OnInit {
    * Calcula el total de la reserva
    */
   calculateTotal(): number {
-    const bookingTotal = 0; // Aquí iría el cálculo basado en días y precio por noche
+    const accommodationTotal = this.calculateAccommodationTotal();
     const addonsTotal = this.calculateAddonsTotal();
-    return bookingTotal + addonsTotal;
+    return accommodationTotal + addonsTotal;
   }
 
   /**
@@ -301,13 +344,19 @@ export class BookingModalFormComponent implements OnInit {
       return;
     }
 
+    const guestName = typeof this.bookingForm.get('guestSearch')?.value === 'object' 
+      ? this.bookingForm.get('guestSearch')?.value?.fullName 
+      : this.bookingForm.get('guestSearch')?.value;
+    
     const confirmed = window.confirm(
       `¿Confirmar reserva?\n\n` +
-      `Huésped: ${this.bookingForm.get('guestSearch')?.value}\n` +
+      `Huésped: ${guestName}\n` +
       `Check-in: ${this.formatDate(this.bookingForm.get('checkInDate')?.value)}\n` +
       `Check-out: ${this.formatDate(this.bookingForm.get('checkOutDate')?.value)}\n` +
-      `Servicios adicionales: $${this.selectedAddons.reduce((sum, a) => sum + (a.subtotal || 0), 0)}\n` +
-      `Total: $${this.calculateTotal()}`
+      `Noches: ${this.calculateNights()}\n` +
+      `Hospedaje: $${this.calculateAccommodationTotal().toFixed(2)}\n` +
+      `Servicios adicionales: $${this.calculateAddonsTotal().toFixed(2)}\n` +
+      `Total: $${this.calculateTotal().toFixed(2)}`
     );
 
     if (!confirmed) {

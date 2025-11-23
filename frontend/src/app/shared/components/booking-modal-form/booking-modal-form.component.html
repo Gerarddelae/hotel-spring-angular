@@ -23,7 +23,7 @@
           [displayWith]="displayGuest"
           (optionSelected)="onGuestSelected($event.option.value)">
           <mat-option *ngFor="let guest of filteredGuests$ | async" [value]="guest">
-            {{ guest.firstName }} {{ guest.lastName }} - {{ guest.email }}
+            {{ guest.fullName }} - {{ guest.email }}
           </mat-option>
         </mat-autocomplete>
         <mat-error *ngIf="bookingForm.get('guestId')?.hasError('required')">
@@ -152,10 +152,18 @@
     </div>
 
     <!-- Resumen Total -->
-    <div class="total-summary" *ngIf="selectedAddons.length > 0">
-      <div class="summary-line">
-        <span>Total Servicios Adicionales:</span>
+    <div class="total-summary" *ngIf="calculateNights() > 0 || selectedAddons.length > 0">
+      <div class="summary-line" *ngIf="calculateNights() > 0 && selectedRoom">
+        <span>Hospedaje ({{ calculateNights() }} noche(s) × ${{ selectedRoom.pricePerNight | number:'1.2-2' }}):</span>
+        <strong>${{ calculateAccommodationTotal() | number:'1.2-2' }}</strong>
+      </div>
+      <div class="summary-line" *ngIf="selectedAddons.length > 0">
+        <span>Servicios Adicionales:</span>
         <strong>${{ calculateAddonsTotal() | number:'1.2-2' }}</strong>
+      </div>
+      <div class="summary-line total-line" *ngIf="calculateTotal() > 0">
+        <span>Total:</span>
+        <strong class="total-amount">${{ calculateTotal() | number:'1.2-2' }}</strong>
       </div>
     </div>
 

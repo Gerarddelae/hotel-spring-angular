@@ -193,16 +193,47 @@ export class BookingListComponent implements OnInit {
    * Abre el modal para editar una reserva
    */
   openEditDialog(booking: Booking): void {
-    const dialogRef = this.dialog.open(BookingModalFormComponent, {
-      width: '800px',
-      maxWidth: '90vw',
-      data: { booking },
-      disableClose: true
-    });
+    // Cargar los addons antes de abrir el modal
+    this.isLoading = true;
+    this.bookingService.getAddons(booking.id).subscribe({
+      next: (addons) => {
+        this.isLoading = false;
+        // Asegurar que cada addon tenga el subtotal calculado
+        const addonsWithSubtotal = addons.map(addon => ({
+          ...addon,
+          subtotal: addon.price * addon.quantity
+        }));
+        const bookingWithAddons = { ...booking, addons: addonsWithSubtotal };
+        
+        const dialogRef = this.dialog.open(BookingModalFormComponent, {
+          width: '800px',
+          maxWidth: '90vw',
+          data: { booking: bookingWithAddons },
+          disableClose: true
+        });
 
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.updateBooking(booking.id, result);
+        dialogRef.afterClosed().subscribe(result => {
+          if (result) {
+            this.updateBooking(booking.id, result);
+          }
+        });
+      },
+      error: (error) => {
+        this.isLoading = false;
+        console.error('Error al cargar addons:', error);
+        // Abrir el modal sin addons si hay error
+        const dialogRef = this.dialog.open(BookingModalFormComponent, {
+          width: '800px',
+          maxWidth: '90vw',
+          data: { booking },
+          disableClose: true
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+          if (result) {
+            this.updateBooking(booking.id, result);
+          }
+        });
       }
     });
   }
@@ -238,13 +269,8 @@ export class BookingListComponent implements OnInit {
     
     this.bookingService.update(id, data.booking).subscribe({
       next: (booking) => {
-        // Si hay addons, actualizarlos
-        if (data.addons && data.addons.length > 0) {
-          this.addBookingAddons(booking.id, data.addons);
-        } else {
-          this.showSuccess('Reserva actualizada exitosamente');
-          this.loadBookings();
-        }
+        // Sincronizar addons (crear, actualizar o eliminar)
+        this.syncBookingAddons(booking.id, data.addons || []);
       },
       error: (error) => {
         this.showError(error.message || 'Error al actualizar la reserva');
@@ -254,7 +280,7 @@ export class BookingListComponent implements OnInit {
   }
 
   /**
-   * Agrega addons a una reserva
+   * Agrega addons a una reserva nueva
    */
   private addBookingAddons(bookingId: number, addons: any[]): void {
     const addonRequests = addons.map(addon => ({
@@ -264,11 +290,141 @@ export class BookingListComponent implements OnInit {
 
     this.bookingService.addAddons(bookingId, addonRequests).subscribe({
       next: () => {
-        this.showSuccess('Reserva guardada con servicios adicionales');
+        this.showSuccess('Reserva creada con servicios adicionales');
         this.loadBookings();
       },
       error: (error) => {
         this.showError('Reserva creada, pero hubo un error al agregar los servicios adicionales');
+        this.loadBookings();
+      }
+    });
+  }
+
+  /**
+   * Sincroniza los addons de una reserva (para actualizaciones)
+   */
+  private syncBookingAddons(bookingId: number, newAddons: any[]): void {
+    this.bookingService.getAddons(bookingId).subscribe({
+      next: (existingAddons) => {
+        let operationsCompleted = 0;
+        let hasError = false;
+        const errors: string[] = [];
+        
+        console.log('Addons existentes:', existingAddons);
+        console.log('Addons nuevos:', newAddons);
+        
+        // Calcular operaciones necesarias - usar addonId para comparar
+        const addonsToDelete = existingAddons.filter(existing => 
+          !newAddons.some(newAddon => newAddon.addonId === existing.addonId)
+        );
+        const addonsToUpdate = newAddons.filter(newAddon => 
+          existingAddons.some(existing => existing.addonId === newAddon.addonId)
+        );
+        const addonsToCreate = newAddons.filter(newAddon => 
+          !existingAddons.some(existing => existing.addonId === newAddon.addonId)
+        );
+        
+        console.log('Para eliminar:', addonsToDelete);
+        console.log('Para actualizar:', addonsToUpdate);
+        console.log('Para crear:', addonsToCreate);
+        
+        const totalOperations = addonsToDelete.length + addonsToUpdate.length + addonsToCreate.length;
+        
+        // Si no hay operaciones, terminar
+        if (totalOperations === 0) {
+          this.showSuccess('Reserva actualizada exitosamente');
+          this.loadBookings();
+          return;
+        }
+
+        const checkCompletion = () => {
+          operationsCompleted++;
+          if (operationsCompleted >= totalOperations) {
+            if (hasError) {
+              console.error('Errores en sincronización de addons:', errors);
+              this.showError('Reserva actualizada pero algunos servicios adicionales no se pudieron sincronizar');
+            } else {
+              this.showSuccess('Reserva actualizada exitosamente');
+            }
+            this.loadBookings();
+          }
+        };
+
+        // Eliminar addons que ya no están
+        addonsToDelete.forEach(addon => {
+          const addonIdToDelete = addon.addonId;
+          console.log('Eliminando addon con addonId:', addonIdToDelete);
+          this.bookingService.removeAddon(bookingId, addonIdToDelete).subscribe({
+            next: () => {
+              console.log('Addon eliminado exitosamente:', addonIdToDelete);
+              checkCompletion();
+            },
+            error: (err) => {
+              console.error('Error eliminando addon:', addonIdToDelete, err);
+              hasError = true;
+              errors.push(`Error eliminando addon ${addonIdToDelete}`);
+              checkCompletion();
+            }
+          });
+        });
+
+        // Actualizar cantidades
+        addonsToUpdate.forEach(newAddon => {
+          const existing = existingAddons.find(e => e.addonId === newAddon.addonId);
+          const addonIdToUpdate = newAddon.addonId;
+          
+          if (!addonIdToUpdate) {
+            console.error('addonId undefined en newAddon:', newAddon);
+            hasError = true;
+            errors.push('Addon sin ID válido');
+            checkCompletion();
+            return;
+          }
+          
+          if (existing && existing.quantity !== newAddon.quantity) {
+            console.log('Actualizando cantidad addon:', addonIdToUpdate, 'de', existing.quantity, 'a', newAddon.quantity);
+            this.bookingService.updateAddonQuantity(bookingId, addonIdToUpdate, newAddon.quantity).subscribe({
+              next: () => {
+                console.log('Cantidad actualizada exitosamente:', addonIdToUpdate);
+                checkCompletion();
+              },
+              error: (err) => {
+                console.error('Error actualizando cantidad:', addonIdToUpdate, err);
+                hasError = true;
+                errors.push(`Error actualizando addon ${addonIdToUpdate}`);
+                checkCompletion();
+              }
+            });
+          } else {
+            console.log('Sin cambios en addon:', addonIdToUpdate);
+            checkCompletion();
+          }
+        });
+
+        // Crear nuevos addons
+        addonsToCreate.forEach(newAddon => {
+          const addonIdToCreate = newAddon.addonId;
+          console.log('Creando nuevo addon con addonId:', addonIdToCreate);
+          this.bookingService.addAddons(bookingId, [{
+            addonId: addonIdToCreate,
+            quantity: newAddon.quantity
+          }]).subscribe({
+            next: () => {
+              console.log('Addon creado exitosamente:', addonIdToCreate);
+              checkCompletion();
+            },
+            error: (err) => {
+              console.error('Error creando addon:', addonIdToCreate, err);
+              hasError = true;
+              errors.push(`Error creando addon ${addonIdToCreate}`);
+              checkCompletion();
+            }
+          });
+        });
+      },
+      error: (err) => {
+        console.error('Error cargando addons existentes:', err);
+        this.showError('Error al sincronizar servicios adicionales');
         this.loadBookings();
       }
     });

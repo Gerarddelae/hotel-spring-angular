@@ -49,9 +49,34 @@
 .availability-indicator.available { background:#ecfdf5; color:#166534; border-left:4px solid #16a34a; }
 .availability-indicator.unavailable { background:#fff1f2; color:#991b1b; border-left:4px solid #ef4444; }
 
-.total-summary { padding:14px; background:rgba(243,244,246,0.8); border-radius:8px; margin-top:8px; }
-.summary-line { display:flex; justify-content:space-between; align-items:center; font-size:16px; }
-.summary-line strong { color:#3f51b5; font-size:20px; }
+.total-summary { 
+  padding:14px; 
+  background:rgba(243,244,246,0.8); 
+  border-radius:8px; 
+  margin-top:8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.summary-line { 
+  display:flex; 
+  justify-content:space-between; 
+  align-items:center; 
+  font-size:15px; 
+}
+.summary-line strong { 
+  color:#3f51b5; 
+  font-size:17px; 
+}
+.summary-line.total-line {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 2px solid rgba(0,0,0,0.1);
+}
+.summary-line.total-line strong.total-amount {
+  font-size: 22px;
+  font-weight: 700;
+}
 
 /* Dialog content / actions consistency */
 mat-dialog-content { max-height: 78vh; overflow-y:auto; padding: 0 20px; }

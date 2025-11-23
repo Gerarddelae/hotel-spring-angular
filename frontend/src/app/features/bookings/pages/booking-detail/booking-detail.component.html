@@ -170,8 +170,8 @@
       </mat-card-header>
       <mat-card-content>
         <div class="info-row">
-          <span class="label">Subtotal Hospedaje:</span>
-          <span class="value">${{ booking.totalAmount || 0 | number:'1.2-2' }}</span>
+          <span class="label">Hospedaje ({{ calculateNights() }} noche(s)):</span>
+          <span class="value">${{ calculateAccommodationSubtotal() | number:'1.2-2' }}</span>
         </div>
         
         <div class="info-row">

@@ -81,7 +81,11 @@ export class BookingDetailComponent implements OnInit {
     this.bookingService.getAddons(this.booking.id).subscribe({
       next: (addons) => {
         if (this.booking) {
-          this.booking.addons = addons;
+          // Calcular subtotal para cada addon
+          this.booking.addons = addons.map(addon => ({
+            ...addon,
+            subtotal: addon.price * addon.quantity
+          }));
         }
       },
       error: (error) => {
@@ -96,10 +100,19 @@ export class BookingDetailComponent implements OnInit {
   editBooking(): void {
     if (!this.booking) return;
 
+    // Asegurar que los addons tengan subtotal calculado
+    const bookingWithSubtotals = {
+      ...this.booking,
+      addons: this.booking.addons?.map(addon => ({
+        ...addon,
+        subtotal: addon.subtotal || (addon.price * addon.quantity)
+      }))
+    };
+
     const dialogRef = this.dialog.open(BookingModalFormComponent, {
       width: '800px',
       maxWidth: '90vw',
-      data: { booking: this.booking },
+      data: { booking: bookingWithSubtotals },
       disableClose: true
     });
 
@@ -119,12 +132,96 @@ export class BookingDetailComponent implements OnInit {
     this.isLoading = true;
     this.bookingService.update(this.booking.id, data.booking).subscribe({
       next: (booking) => {
-        this.showSuccess('Reserva actualizada exitosamente');
-        this.loadBookingDetail();
+        // Si hay addons, sincronizarlos
+        if (data.addons) {
+          this.syncAddons(this.booking!.id, data.addons);
+        } else {
+          this.showSuccess('Reserva actualizada exitosamente');
+          this.loadBookingDetail();
+        }
       },
       error: (error) => {
         this.showError(error.message || 'Error al actualizar la reserva');
         this.isLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Sincroniza los addons de la reserva
+   */
+  private syncAddons(bookingId: number, newAddons: any[]): void {
+    this.bookingService.getAddons(bookingId).subscribe({
+      next: (existingAddons) => {
+        let operationsCompleted = 0;
+        let hasError = false;
+        
+        // Calcular operaciones necesarias
+        const addonsToDelete = existingAddons.filter(existing => 
+          !newAddons.some(newAddon => newAddon.addonId === existing.addonId)
+        );
+        const addonsToUpdate = newAddons.filter(newAddon => 
+          existingAddons.some(existing => existing.addonId === newAddon.addonId)
+        );
+        const addonsToCreate = newAddons.filter(newAddon => 
+          !existingAddons.some(existing => existing.addonId === newAddon.addonId)
+        );
+        
+        const totalOperations = addonsToDelete.length + addonsToUpdate.length + addonsToCreate.length;
+        
+        if (totalOperations === 0) {
+          this.showSuccess('Reserva actualizada exitosamente');
+          this.loadBookingDetail();
+          return;
+        }
+
+        const checkCompletion = () => {
+          operationsCompleted++;
+          if (operationsCompleted >= totalOperations) {
+            if (hasError) {
+              this.showError('Reserva actualizada con algunos errores en servicios adicionales');
+            } else {
+              this.showSuccess('Reserva actualizada exitosamente');
+            }
+            this.loadBookingDetail();
+          }
+        };
+
+        // Eliminar addons
+        addonsToDelete.forEach(addon => {
+          this.bookingService.removeAddon(bookingId, addon.addonId).subscribe({
+            next: () => checkCompletion(),
+            error: () => { hasError = true; checkCompletion(); }
+          });
+        });
+
+        // Actualizar cantidades
+        addonsToUpdate.forEach(newAddon => {
+          const existing = existingAddons.find(e => e.addonId === newAddon.addonId);
+          if (existing && existing.quantity !== newAddon.quantity) {
+            this.bookingService.updateAddonQuantity(bookingId, newAddon.addonId, newAddon.quantity).subscribe({
+              next: () => checkCompletion(),
+              error: () => { hasError = true; checkCompletion(); }
+            });
+          } else {
+            checkCompletion();
+          }
+        });
+
+        // Crear nuevos
+        addonsToCreate.forEach(newAddon => {
+          this.bookingService.addAddons(bookingId, [{
+            addonId: newAddon.addonId,
+            quantity: newAddon.quantity
+          }]).subscribe({
+            next: () => checkCompletion(),
+            error: () => { hasError = true; checkCompletion(); }
+          });
+        });
+      },
+      error: () => {
+        this.showError('Error al sincronizar servicios adicionales');
+        this.loadBookingDetail();
       }
     });
   }
@@ -220,6 +317,13 @@ export class BookingDetailComponent implements OnInit {
     const checkOut = new Date(this.booking.checkOutDate);
     const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  /**
+   * Calcula el subtotal del hospedaje (sin addons)
+   */
+  calculateAccommodationSubtotal(): number {
+    return this.booking?.totalAmount || 0;
   }
 
   /**
