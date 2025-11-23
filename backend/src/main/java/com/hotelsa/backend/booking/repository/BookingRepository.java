@@ -22,4 +22,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByRoomIdAndStatus(Long roomId, BookingStatus status);
 
     List<Booking> findByCheckInDateBetween(LocalDate start, LocalDate end);
+
+    // Comprueba si existe al menos una reserva (no CANCELLED) para la habitación que se solapa con el rango
+    boolean existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelId(
+            Long roomId,
+            BookingStatus statusNot,
+            LocalDate checkOut,
+            LocalDate checkIn,
+            Long hotelId
+    );
 }

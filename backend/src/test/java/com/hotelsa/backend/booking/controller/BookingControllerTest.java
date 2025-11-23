@@ -208,4 +208,26 @@ class BookingControllerTest {
 
         verify(bookingService, times(1)).cancelBooking(1L);
     }
+
+    // Nuevo test: check availability - disponible
+    @Test
+    void shouldReturnRoomAvailable() throws Exception {
+        when(bookingService.isRoomAvailable(eq(3L), any(LocalDate.class), any(LocalDate.class))).thenReturn(true);
+
+        mockMvc.perform(get("/bookings/room/3/availability")
+                        .param("checkIn", "2025-12-01")
+                        .param("checkOut", "2025-12-05"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomId").value(3))
+                .andExpect(jsonPath("$.available").value(true));
+    }
+
+    // Nuevo test: check availability - bad request (fechas inválidas)
+    @Test
+    void shouldReturnBadRequestWhenAvailabilityDatesInvalid() throws Exception {
+        mockMvc.perform(get("/bookings/room/3/availability")
+                        .param("checkIn", "2025-12-05")
+                        .param("checkOut", "2025-12-05"))
+                .andExpect(status().isBadRequest());
+    }
 }

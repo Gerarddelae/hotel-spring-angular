@@ -132,4 +132,28 @@ class RoomControllerTest {
 
         verify(roomService, times(1)).deleteRoom(roomId);
     }
+
+    // Nuevo test: obtener habitaciones disponibles (caso feliz)
+    @Test
+    void shouldGetAvailableRooms() throws Exception {
+        List<RoomResponseDTO> rooms = List.of(roomResponseDTO);
+        when(roomService.getAvailableRooms(any(java.time.LocalDate.class), any(java.time.LocalDate.class)))
+                .thenReturn(rooms);
+
+        mockMvc.perform(get("/rooms/available")
+                        .param("checkIn", "2025-12-01")
+                        .param("checkOut", "2025-12-05"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(1))
+                .andExpect(jsonPath("$[0].number").value("101"));
+    }
+
+    // Nuevo test: fechas inválidas -> 400 Bad Request
+    @Test
+    void shouldReturnBadRequestWhenDatesInvalid() throws Exception {
+        mockMvc.perform(get("/rooms/available")
+                        .param("checkIn", "2025-12-05")
+                        .param("checkOut", "2025-12-05"))
+                .andExpect(status().isBadRequest());
+    }
 }

@@ -12,11 +12,13 @@ import com.hotelsa.backend.room.exception.RoomNotFoundException;
 import com.hotelsa.backend.room.mapper.RoomMapper;
 import com.hotelsa.backend.room.model.Room;
 import com.hotelsa.backend.room.repository.RoomRepository;
+import com.hotelsa.backend.booking.enums.BookingStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -72,6 +74,14 @@ public class RoomService {
     @Transactional(readOnly = true)
     public List<RoomResponseDTO> getRoomsByType(RoomType type) {
         List<Room> rooms = roomRepository.findByType(type);
+        return rooms.stream().map(roomMapper::fromEntity).toList();
+    }
+
+    // Nuevo: obtiene habitaciones disponibles en el rango dado para el hotel del usuario autenticado
+    @Transactional(readOnly = true)
+    public List<RoomResponseDTO> getAvailableRooms(LocalDate checkIn, LocalDate checkOut) {
+        Long hotelId = getCurrentHotelId();
+        List<Room> rooms = roomRepository.findAvailableRooms(hotelId, checkIn, checkOut, BookingStatus.CANCELLED);
         return rooms.stream().map(roomMapper::fromEntity).toList();
     }
 

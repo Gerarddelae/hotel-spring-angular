@@ -24,7 +24,6 @@ import com.hotelsa.backend.room.model.Room;
 import com.hotelsa.backend.room.repository.RoomRepository;
 import com.hotelsa.backend.addon.model.Addon;
 import com.hotelsa.backend.addon.repository.AddonRepository;
-import com.hotelsa.backend.addon.mapper.AddonMapper;
 import com.hotelsa.backend.common.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -359,6 +358,36 @@ public class BookingService {
         return response;
     }
 
+    // Nuevo método: verifica si una habitación está disponible en un rango de fechas
+    @Transactional(readOnly = true)
+    public boolean isRoomAvailable(Long roomId, LocalDate checkIn, LocalDate checkOut) {
+        Long hotelId = getCurrentHotelId();
+
+        // Validar existencia de la habitación y pertenencia al tenant actual
+        com.hotelsa.backend.room.model.Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new com.hotelsa.backend.room.exception.RoomNotFoundException("Habitación no encontrada o no pertenece a tu hotel"));
+
+        if (hotelId != null && !hotelId.equals(room.getHotelId())) {
+            throw new com.hotelsa.backend.room.exception.RoomNotFoundException("Habitación no encontrada o no pertenece a tu hotel");
+        }
+
+        // Si la habitación está en MAINTENANCE, siempre se considera no disponible
+        if (room.getStatus() == com.hotelsa.backend.room.enums.RoomStatus.MAINTENANCE) {
+            return false;
+        }
+
+        // Para OCCUPIED dejamos la decisión a la presencia de reservas activas (solapadas).
+        // Existe una reserva no-CANCELLED que se solapa?
+        boolean existsOverlap = bookingRepository.existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelId(
+                roomId,
+                BookingStatus.CANCELLED,
+                checkOut,
+                checkIn,
+                hotelId
+        );
+        return !existsOverlap;
+    }
+
     @AdminOnly
     @Transactional
     public BookingResponseDTO cancelBooking(Long id) {
@@ -368,7 +397,7 @@ public class BookingService {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel"));
 
-        // Seguridad adicional: asegurarnos de que la reserva pertenece al tenant actual
+        // Seguridad adicional: asegurarnos de que la reserva pertenece al tenant current
         if (currentHotelId != null && !currentHotelId.equals(booking.getHotelId())) {
             throw new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel");
         }

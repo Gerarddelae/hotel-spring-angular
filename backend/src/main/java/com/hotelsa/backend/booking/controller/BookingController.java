@@ -130,6 +130,32 @@ public class BookingController {
     }
 
     /**
+     * Comprueba si una habitación está disponible en un rango de fechas.
+     * URL: GET /bookings/room/{roomId}/availability?checkIn=yyyy-MM-dd&checkOut=yyyy-MM-dd
+     */
+    @GetMapping("/room/{roomId}/availability")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<?> checkRoomAvailability(
+            @PathVariable Long roomId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut
+    ) {
+        if (checkIn == null || checkOut == null) {
+            return ResponseEntity.badRequest().body("Faltan parámetros de fecha");
+        }
+        if (!checkIn.isBefore(checkOut)) {
+            return ResponseEntity.badRequest().body("checkIn debe ser anterior a checkOut");
+        }
+
+        boolean available = bookingService.isRoomAvailable(roomId, checkIn, checkOut);
+        java.util.Map<String, Object> body = java.util.Map.of(
+                "roomId", roomId,
+                "available", available
+        );
+        return ResponseEntity.ok(body);
+    }
+
+    /**
      * Obtiene las reservas dentro de un rango de fechas.
      */
     @GetMapping("/range")
