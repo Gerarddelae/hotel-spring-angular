@@ -85,6 +85,19 @@ export const routes: Routes = [
         },
       },
       {
+        path: 'addons',
+        loadComponent: () =>
+          import('./features/addons/addons.component').then(
+            (m) => m.AddonsComponent
+          ),
+        canActivate: [() => roleGuard(['ADMIN', 'EMPLOYEE'])],
+        data: {
+          title: 'Servicios Adicionales',
+          subtitle: 'Gestión de servicios adicionales del hotel',
+          icon: 'pi-shopping-cart',
+        },
+      },
+      {
         path: '',
         redirectTo: 'reservations',
         pathMatch: 'full',

@@ -49,7 +49,6 @@ public class BookingService {
 
     private final AddonRepository addonRepository;
     private final BookingAddonRepository bookingAddonRepository;
-    private final AddonMapper addonMapper;
 
     private Long getCurrentHotelId() {
         return authService.getCurrentHotelId();
@@ -299,7 +298,7 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public List<com.hotelsa.backend.addon.dto.AddonResponse> getAddonsFromBooking(Long bookingId) {
+    public List<com.hotelsa.backend.booking.dto.BookingAddonResponse> getAddonsFromBooking(Long bookingId) {
         Long currentHotelId = getCurrentHotelId();
 
         Booking booking = bookingRepository.findById(bookingId)
@@ -308,13 +307,18 @@ public class BookingService {
         // Filtrar por hotelId explícitamente
         List<BookingAddon> links = bookingAddonRepository.findByIdBookingIdAndHotelId(bookingId, currentHotelId);
         return links.stream().map(l -> {
-            var resp = addonMapper.fromEntity(l.getAddon());
+            var addon = l.getAddon();
             int qty = l.getQuantity() == null ? 1 : l.getQuantity();
-            resp.setQuantity(qty);
-            // calcular subtotal (price * quantity), protegiendo contra nulls
-            Integer price = resp.getPrice();
-            resp.setSubtotal((price == null ? 0 : price) * qty);
-            return resp;
+            Integer price = addon.getPrice() == null ? 0 : addon.getPrice();
+            return com.hotelsa.backend.booking.dto.BookingAddonResponse.builder()
+                    .id(addon.getId())
+                    .name(addon.getName())
+                    .description(addon.getDescription())
+                    .price(price)
+                    .createdAt(addon.getCreatedAt())
+                    .quantity(qty)
+                    .subtotal(price * qty)
+                    .build();
         }).collect(Collectors.toList());
     }
 

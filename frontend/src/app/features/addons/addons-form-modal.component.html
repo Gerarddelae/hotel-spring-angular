@@ -1,0 +1,67 @@
+<div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-6 rounded-lg">
+  <h2 mat-dialog-title class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+    {{ data.addon ? 'Editar Servicio Adicional' : 'Nuevo Servicio Adicional' }}
+  </h2>
+
+  <mat-dialog-content class="!p-0">
+    <form [formGroup]="addonForm" (ngSubmit)="onSubmit()" class="space-y-4">
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label class="text-gray-600 dark:text-gray-300">Nombre</mat-label>
+        <input
+          matInput
+          formControlName="name"
+          placeholder="Ingrese el nombre del servicio"
+          maxlength="100"
+          class="text-gray-900 dark:text-gray-100 bg-transparent"
+        />
+        <mat-error *ngIf="addonForm.get('name')?.hasError('required')">
+          El nombre es requerido
+        </mat-error>
+        <mat-error *ngIf="addonForm.get('name')?.hasError('maxlength')">
+          El nombre no debe exceder 100 caracteres
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label class="text-gray-600 dark:text-gray-300">Descripción</mat-label>
+        <textarea
+          matInput
+          formControlName="description"
+          placeholder="Ingrese la descripción"
+          rows="3"
+          maxlength="255"
+          class="text-gray-900 dark:text-gray-100 bg-transparent"
+        ></textarea>
+        <mat-error *ngIf="addonForm.get('description')?.hasError('maxlength')">
+          La descripción no debe exceder 255 caracteres
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label class="text-gray-600 dark:text-gray-300">Precio</mat-label>
+        <input
+          matInput
+          type="number"
+          formControlName="price"
+          placeholder="Ingrese el precio"
+          min="0"
+          step="0.01"
+          class="text-gray-900 dark:text-gray-100 bg-transparent"
+        />
+        <mat-error *ngIf="addonForm.get('price')?.hasError('required')">
+          El precio es requerido
+        </mat-error>
+        <mat-error *ngIf="addonForm.get('price')?.hasError('min')">
+          El precio debe ser mayor o igual a 0
+        </mat-error>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="!p-0 mt-4 space-x-2">
+    <button mat-button (click)="close()" class="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Cancelar</button>
+    <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="addonForm.invalid" class="!bg-cyan-600 hover:!bg-cyan-700 disabled:!bg-gray-600 disabled:!text-gray-400">
+      {{ data.addon ? 'Actualizar' : 'Crear' }}
+    </button>
+  </mat-dialog-actions>
+</div>
