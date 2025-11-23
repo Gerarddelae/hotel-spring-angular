@@ -72,6 +72,19 @@ export const routes: Routes = [
         },
       },
       {
+        path: 'guests',
+        loadComponent: () =>
+          import('./features/guests/guests.component').then(
+            (m) => m.GuestsComponent
+          ),
+        canActivate: [() => roleGuard(['ADMIN', 'EMPLOYEE', 'USER'])],
+        data: {
+          title: 'Huéspedes',
+          subtitle: 'Gestión de huéspedes del hotel',
+          icon: 'pi-users',
+        },
+      },
+      {
         path: '',
         redirectTo: 'reservations',
         pathMatch: 'full',

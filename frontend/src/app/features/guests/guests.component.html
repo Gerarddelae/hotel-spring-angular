@@ -1,0 +1,10 @@
+<section class="p-6">
+    <app-table
+      [data$]="guests$"
+      [columnHeadersMap]="headersMap"
+      (create)="openForm()"
+      (edit)="openForm($event)"
+      (delete)="onDelete($event)"
+    ></app-table>
+</section>
+

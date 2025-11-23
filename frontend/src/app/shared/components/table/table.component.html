@@ -3,7 +3,7 @@
   <div class="flex justify-end">
     <button
       (click)="onCreate()"
-      class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow"
+      class="bg-blue-600 inline-add hover:bg-blue-700 text-white font-semibold shadow"
     >
       + Agregar
     </button>
@@ -57,21 +57,23 @@
         >
           <!-- Columna acciones -->
           <ng-container *ngIf="column === 'actions'; else normalCell">
-            <div class="flex items-center gap-2">
+            <div class="action-buttons">
               <button
                 (click)="onEdit(element)"
-                class="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm shadow-sm hover:shadow-md transition-all duration-150 active:scale-95"
+                title="Editar"
+                class="action-btn edit"
+                aria-label="Editar"
               >
-                <i class="pi pi-pencil text-xs"></i>
-                <span>Editar</span>
+                <i class="pi pi-pencil"></i>
               </button>
 
               <button
                 (click)="onDelete(element.id)"
-                class="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-sm shadow-sm hover:shadow-md transition-all duration-150 active:scale-95"
+                title="Eliminar"
+                class="action-btn delete"
+                aria-label="Eliminar"
               >
-                <i class="pi pi-trash text-xs"></i>
-                <span>Eliminar</span>
+                <i class="pi pi-trash"></i>
               </button>
             </div>
           </ng-container>
