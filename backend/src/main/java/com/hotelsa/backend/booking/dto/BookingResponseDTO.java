@@ -7,8 +7,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.hotelsa.backend.addon.dto.AddonResponse;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -28,5 +26,5 @@ public class BookingResponseDTO {
     private String createdBy;
     private LocalDate bookingLeadTime;
     private String notes;
-    private List<AddonResponse> addons;
+    private List<BookingAddonResponse> addons;
 }

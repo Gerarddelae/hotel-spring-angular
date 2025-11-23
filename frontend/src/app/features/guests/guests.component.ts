@@ -19,6 +19,8 @@ import { GuestResponse } from './models/guest-response.interface';
 export class GuestsComponent implements OnDestroy {
   guests$: Observable<GuestResponse[]>;
   private destroy$ = new Subject<void>();
+  showDeleteModal = false;
+  guestToDelete: { id: number } | null = null;
 
   // hide hotel info and analytics metrics from table view
   columns = ['id', 'fullName', 'documentType', 'documentNumber', 'email', 'phone'];
@@ -71,6 +73,21 @@ export class GuestsComponent implements OnDestroy {
   }
 
   onDelete(id: number) {
-    this.guestsService.delete(id).subscribe(() => this.refresh());
+    this.guestToDelete = { id };
+    this.showDeleteModal = true;
+  }
+
+  confirmDelete() {
+    if (this.guestToDelete) {
+      this.guestsService.delete(this.guestToDelete.id).subscribe(() => {
+        this.refresh();
+        this.cancelDelete();
+      });
+    }
+  }
+
+  cancelDelete() {
+    this.showDeleteModal = false;
+    this.guestToDelete = null;
   }
 }

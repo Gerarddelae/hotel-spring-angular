@@ -1,0 +1,13 @@
+/* addons.component.css */
+:host {
+  display: block;
+  width: 100%;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.h-14 {
+  height: 56px;
+}

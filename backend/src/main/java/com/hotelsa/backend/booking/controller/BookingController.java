@@ -2,6 +2,7 @@ package com.hotelsa.backend.booking.controller;
 
 import com.hotelsa.backend.booking.dto.BookingRequestDTO;
 import com.hotelsa.backend.booking.dto.BookingResponseDTO;
+import com.hotelsa.backend.booking.dto.BookingAddonResponse;
 import com.hotelsa.backend.booking.enums.BookingStatus;
 import com.hotelsa.backend.booking.service.BookingService;
 import jakarta.validation.Valid;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
-import com.hotelsa.backend.addon.dto.AddonResponse;
 
 @RestController
 @RequestMapping("/bookings")
@@ -173,8 +173,8 @@ public class BookingController {
      */
     @GetMapping("/{id}/addons")
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
-    public ResponseEntity<List<AddonResponse>> getAddonsFromBooking(@PathVariable("id") Long bookingId) {
-        List<AddonResponse> addons = bookingService.getAddonsFromBooking(bookingId);
+    public ResponseEntity<List<BookingAddonResponse>> getAddonsFromBooking(@PathVariable("id") Long bookingId) {
+        List<BookingAddonResponse> addons = bookingService.getAddonsFromBooking(bookingId);
         return ResponseEntity.ok(addons);
     }
 

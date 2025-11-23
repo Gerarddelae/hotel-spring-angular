@@ -1,0 +1,17 @@
+/* addons-form-modal.component.css */
+:host { display: block; }
+
+/* Use the same container approach as other modals: the HTML wrapper provides background and padding.
+   Keep component-specific minor adjustments here (no ::ng-deep to override global Material behavior). */
+
+mat-dialog-content {
+  min-width: 420px;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+mat-dialog-actions {
+  padding-top: 0;
+}

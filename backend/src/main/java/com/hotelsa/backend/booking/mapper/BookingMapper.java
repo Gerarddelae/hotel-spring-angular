@@ -3,7 +3,6 @@ package com.hotelsa.backend.booking.mapper;
 import com.hotelsa.backend.booking.dto.BookingRequestDTO;
 import com.hotelsa.backend.booking.dto.BookingResponseDTO;
 import com.hotelsa.backend.booking.model.Booking;
-import com.hotelsa.backend.addon.mapper.AddonMapper;
 import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 
@@ -11,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BookingMapper {
 
-    private final AddonMapper addonMapper;
+    private final BookingAddonMapper bookingAddonMapper;
 
     // Mapea un DTO de request a una entidad Booking (sin gestionar relaciones)
     public Booking fromRequestDto(BookingRequestDTO dto) {
@@ -50,12 +49,8 @@ public class BookingMapper {
                 .notes(booking.getNotes())
                 .addons(includeAddons && booking.getAddons() != null ?
                     booking.getAddons().stream()
-                        .map(ba -> {
-                            Integer quantity = ba.getQuantity() != null ? ba.getQuantity() : 1;
-                            Integer price = ba.getAddon().getPrice() != null ? ba.getAddon().getPrice() : 0;
-                            Integer subtotal = price * quantity;
-                            return addonMapper.fromEntityWithQuantity(ba.getAddon(), quantity, subtotal);
-                        })
+                        .filter(ba -> !ba.isDeleted())
+                        .map(bookingAddonMapper::fromEntity)
                         .toList() : null)
                 .build();
     }
