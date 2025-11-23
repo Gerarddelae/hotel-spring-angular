@@ -1,6 +1,7 @@
 package com.hotelsa.backend.addon.model;
 
 import com.hotelsa.backend.common.model.BaseEntity;
+import com.hotelsa.backend.billaddon.entity.BillAddon;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;

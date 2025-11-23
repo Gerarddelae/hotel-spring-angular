@@ -129,13 +129,13 @@ public class BookingService {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel"));
 
-        return bookingMapper.fromEntity(booking);
+        return bookingMapper.fromEntity(booking, true);
     }
 
     @Transactional(readOnly = true)
     public List<BookingResponseDTO> findAll() {
         List<Booking> bookings = bookingRepository.findAll();
-        return bookings.stream().map(bookingMapper::fromEntity).toList();
+        return bookings.stream().map(b -> bookingMapper.fromEntity(b, false)).toList();
     }
 
     @AdminOnly
@@ -153,33 +153,33 @@ public class BookingService {
     public List<BookingResponseDTO> getBookingsCheckingOutToday() {
         LocalDate today = LocalDate.now();
         List<Booking> bookings = bookingRepository.findByCheckOutDate(today);
-        return bookings.stream().map(bookingMapper::fromEntity).toList();
+        return bookings.stream().map(b -> bookingMapper.fromEntity(b, false)).toList();
     }
 
     @Transactional(readOnly = true)
     public List<BookingResponseDTO> getExpiredBookings() {
         LocalDate today = LocalDate.now();
         List<Booking> bookings = bookingRepository.findByCheckOutDateBefore(today);
-        return bookings.stream().map(bookingMapper::fromEntity).toList();
+        return bookings.stream().map(b -> bookingMapper.fromEntity(b, false)).toList();
     }
 
     @Transactional(readOnly = true)
     public List<BookingResponseDTO> getBookingsStartingToday() {
         LocalDate today = LocalDate.now();
         List<Booking> bookings = bookingRepository.findByCheckInDate(today);
-        return bookings.stream().map(bookingMapper::fromEntity).toList();
+        return bookings.stream().map(b -> bookingMapper.fromEntity(b, false)).toList();
     }
 
     @Transactional(readOnly = true)
     public List<BookingResponseDTO> getBookingsByGuest(Long guestId) {
         List<Booking> bookings = bookingRepository.findByGuestId(guestId);
-        return bookings.stream().map(bookingMapper::fromEntity).toList();
+        return bookings.stream().map(b -> bookingMapper.fromEntity(b, false)).toList();
     }
 
     @Transactional(readOnly = true)
     public List<BookingResponseDTO> getBookingsByRoomAndStatus(Long roomId, BookingStatus status) {
         List<Booking> bookings = bookingRepository.findByRoomIdAndStatus(roomId, status);
-        return bookings.stream().map(bookingMapper::fromEntity).toList();
+        return bookings.stream().map(b -> bookingMapper.fromEntity(b, false)).toList();
     }
 
     @Transactional(readOnly = true)
@@ -188,7 +188,7 @@ public class BookingService {
             throw new IllegalArgumentException("La fecha de fin debe ser posterior a la fecha de inicio");
         }
         List<Booking> bookings = bookingRepository.findByCheckInDateBetween(start, end);
-        return bookings.stream().map(bookingMapper::fromEntity).toList();
+        return bookings.stream().map(b -> bookingMapper.fromEntity(b, false)).toList();
     }
 
     @Transactional

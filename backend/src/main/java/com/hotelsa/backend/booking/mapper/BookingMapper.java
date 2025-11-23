@@ -26,8 +26,13 @@ public class BookingMapper {
         return booking;
     }
 
-    // Mapea una entidad Booking a un DTO de respuesta
+    // Mapea una entidad Booking a un DTO de respuesta (sin addons)
     public BookingResponseDTO fromEntity(Booking booking) {
+        return fromEntity(booking, false);
+    }
+
+    // Mapea una entidad Booking a un DTO de respuesta con opción de incluir addons
+    public BookingResponseDTO fromEntity(Booking booking, boolean includeAddons) {
         return BookingResponseDTO.builder()
                 .id(booking.getId())
                 .guestId(booking.getGuest() != null ? booking.getGuest().getId() : null)
@@ -43,7 +48,15 @@ public class BookingMapper {
                 .createdBy(booking.getCreatedBy())
                 .bookingLeadTime(booking.getBookingLeadTime())
                 .notes(booking.getNotes())
-                .addons(booking.getAddons() != null ? booking.getAddons().stream().map(ba -> addonMapper.fromEntity(ba.getAddon())).toList() : null)
+                .addons(includeAddons && booking.getAddons() != null ?
+                    booking.getAddons().stream()
+                        .map(ba -> {
+                            Integer quantity = ba.getQuantity() != null ? ba.getQuantity() : 1;
+                            Integer price = ba.getAddon().getPrice() != null ? ba.getAddon().getPrice() : 0;
+                            Integer subtotal = price * quantity;
+                            return addonMapper.fromEntityWithQuantity(ba.getAddon(), quantity, subtotal);
+                        })
+                        .toList() : null)
                 .build();
     }
 }

@@ -31,6 +31,19 @@ public class AddonMapper {
                 .build();
     }
 
+    // Mapea una entidad Addon a un DTO de respuesta con cantidad y subtotal (para BookingAddon)
+    public AddonResponse fromEntityWithQuantity(Addon addon, Integer quantity, Integer subtotal) {
+        return AddonResponse.builder()
+                .id(addon.getId())
+                .name(addon.getName())
+                .description(addon.getDescription())
+                .price(addon.getPrice())
+                .createdAt(addon.getCreatedAt())
+                .quantity(quantity)
+                .subtotal(subtotal)
+                .build();
+    }
+
     public List<AddonResponse> fromEntityList(List<Addon> addons) {
         return addons.stream().map(this::fromEntity).collect(Collectors.toList());
     }
