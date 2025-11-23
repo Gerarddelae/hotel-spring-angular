@@ -1,0 +1,198 @@
+<div class="booking-detail-container" *ngIf="!isLoading && booking">
+  
+  <!-- Header con acciones -->
+  <div class="header">
+    <div class="title-section">
+      <button mat-icon-button (click)="goBack()" class="back-button">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1>Reserva #{{ booking.id }}</h1>
+      <mat-chip [color]="getStatusColor(booking.status)" selected>
+        {{ getStatusLabel(booking.status) }}
+      </mat-chip>
+    </div>
+    
+    <div class="action-buttons">
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="editBooking()"
+        [disabled]="!canEdit()">
+        <mat-icon>edit</mat-icon>
+        Editar
+      </button>
+      
+      <button 
+        mat-raised-button 
+        color="warn" 
+        (click)="cancelBooking()"
+        [disabled]="!canCancel()">
+        <mat-icon>cancel</mat-icon>
+        Cancelar Reserva
+      </button>
+      
+      <button 
+        mat-button 
+        color="warn" 
+        (click)="deleteBooking()">
+        <mat-icon>delete</mat-icon>
+        Eliminar
+      </button>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    
+    <!-- Información del Huésped -->
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>person</mat-icon>
+        <mat-card-title>Información del Huésped</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-row">
+          <span class="label">Nombre:</span>
+          <span class="value">{{ booking.guestName || 'N/A' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">ID Huésped:</span>
+          <span class="value">#{{ booking.guestId }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Información de la Habitación -->
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>hotel</mat-icon>
+        <mat-card-title>Información de la Habitación</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-row">
+          <span class="label">Número de Habitación:</span>
+          <span class="value">{{ booking.roomNumber || 'N/A' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">ID Habitación:</span>
+          <span class="value">#{{ booking.roomId }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Información de Fechas -->
+    <mat-card class="info-card dates-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>calendar_today</mat-icon>
+        <mat-card-title>Fechas de Estadía</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="dates-grid">
+          <div class="date-box">
+            <span class="date-label">Check-in</span>
+            <span class="date-value">{{ booking.checkInDate | date:'dd/MM/yyyy' }}</span>
+            <span class="date-time">{{ booking.checkInDate | date:'EEEE' }}</span>
+          </div>
+          
+          <div class="nights-indicator">
+            <mat-icon>nights_stay</mat-icon>
+            <span>{{ calculateNights() }} noche(s)</span>
+          </div>
+          
+          <div class="date-box">
+            <span class="date-label">Check-out</span>
+            <span class="date-value">{{ booking.checkOutDate | date:'dd/MM/yyyy' }}</span>
+            <span class="date-time">{{ booking.checkOutDate | date:'EEEE' }}</span>
+          </div>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div class="info-row">
+          <span class="label">Fecha de Reserva (Lead Time):</span>
+          <span class="value">{{ booking.bookingLeadTime | date:'dd/MM/yyyy' }}</span>
+        </div>
+        
+        <div class="info-row">
+          <span class="label">Creado por:</span>
+          <span class="value">{{ booking.createdBy }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Notas -->
+    <mat-card class="info-card" *ngIf="booking.notes">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>note</mat-icon>
+        <mat-card-title>Notas</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p class="notes-text">{{ booking.notes }}</p>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Servicios Adicionales -->
+    <mat-card class="info-card addons-card" *ngIf="booking.addons && booking.addons.length > 0">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>room_service</mat-icon>
+        <mat-card-title>Servicios Adicionales</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-list>
+          <mat-list-item *ngFor="let addon of booking.addons">
+            <div class="addon-item">
+              <div class="addon-info">
+                <span class="addon-name">{{ addon.addonName }}</span>
+                <span class="addon-details">
+                  ${{ addon.price | number:'1.2-2' }} × {{ addon.quantity }}
+                </span>
+              </div>
+              <div class="addon-subtotal">
+                ${{ addon.subtotal | number:'1.2-2' }}
+              </div>
+            </div>
+          </mat-list-item>
+        </mat-list>
+        
+        <mat-divider></mat-divider>
+        
+        <div class="addons-total">
+          <span class="label">Total Servicios Adicionales:</span>
+          <span class="value">${{ calculateAddonsTotal() | number:'1.2-2' }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Resumen Financiero -->
+    <mat-card class="info-card financial-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>attach_money</mat-icon>
+        <mat-card-title>Resumen Financiero</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-row">
+          <span class="label">Subtotal Hospedaje:</span>
+          <span class="value">${{ booking.totalAmount || 0 | number:'1.2-2' }}</span>
+        </div>
+        
+        <div class="info-row">
+          <span class="label">Servicios Adicionales:</span>
+          <span class="value">${{ calculateAddonsTotal() | number:'1.2-2' }}</span>
+        </div>
+        
+        <mat-divider></mat-divider>
+        
+        <div class="info-row total-row">
+          <span class="label">Total:</span>
+          <span class="value total-amount">${{ calculateTotal() | number:'1.2-2' }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+</div>
+
+<!-- Loading spinner -->
+<div class="loading-container" *ngIf="isLoading">
+  <mat-spinner></mat-spinner>
+  <p>Cargando detalles de la reserva...</p>
+</div>

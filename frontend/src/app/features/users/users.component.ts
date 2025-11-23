@@ -11,7 +11,8 @@ import { User } from './models/user.interface';
   selector: 'app-users',
   standalone: true,
   imports: [CommonModule, TableComponent, MatDialogModule],
-  templateUrl: './users.component.html'
+  templateUrl: './users.component.html',
+  styleUrls: ['./users.component.css']
 })
 export class UsersComponent implements OnDestroy {
   users$: Observable<User[]>;

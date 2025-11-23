@@ -1,0 +1,175 @@
+<h2 mat-dialog-title>{{ data.booking ? 'Editar Reserva' : 'Nueva Reserva' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="bookingForm" class="booking-form">
+    
+    <!-- Sección de Huésped -->
+    <div class="form-section">
+      <h3>Información del Huésped</h3>
+      
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Buscar huésped</mat-label>
+        <input 
+          type="text"
+          matInput
+          formControlName="guestSearch"
+          [matAutocomplete]="autoGuest"
+          placeholder="Escriba para buscar..."
+          required>
+        <mat-icon matSuffix>search</mat-icon>
+        <mat-spinner *ngIf="isLoadingGuests" diameter="20" matSuffix></mat-spinner>
+        <mat-autocomplete 
+          #autoGuest="matAutocomplete" 
+          [displayWith]="displayGuest"
+          (optionSelected)="onGuestSelected($event.option.value)">
+          <mat-option *ngFor="let guest of filteredGuests$ | async" [value]="guest">
+            {{ guest.firstName }} {{ guest.lastName }} - {{ guest.email }}
+          </mat-option>
+        </mat-autocomplete>
+        <mat-error *ngIf="bookingForm.get('guestId')?.hasError('required')">
+          Debe seleccionar un huésped
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <!-- Sección de Fechas -->
+    <div class="form-section">
+      <h3>Fechas de la Reserva</h3>
+      
+      <div class="date-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Check-in</mat-label>
+          <input 
+            matInput 
+            [matDatepicker]="pickerCheckIn"
+            formControlName="checkInDate"
+            [min]="minDate"
+            required>
+          <mat-datepicker-toggle matSuffix [for]="pickerCheckIn"></mat-datepicker-toggle>
+          <mat-datepicker #pickerCheckIn></mat-datepicker>
+          <mat-error>{{ getErrorMessage('checkInDate') }}</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Check-out</mat-label>
+          <input 
+            matInput 
+            [matDatepicker]="pickerCheckOut"
+            formControlName="checkOutDate"
+            [min]="minDate"
+            required>
+          <mat-datepicker-toggle matSuffix [for]="pickerCheckOut"></mat-datepicker-toggle>
+          <mat-datepicker #pickerCheckOut></mat-datepicker>
+          <mat-error>{{ getErrorMessage('checkOutDate') }}</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="error-message" *ngIf="bookingForm.hasError('dateRange') && bookingForm.touched">
+        <mat-icon>error</mat-icon>
+        <span>La fecha de check-out debe ser posterior a la fecha de check-in</span>
+      </div>
+    </div>
+
+    <!-- Sección de Habitación -->
+    <div class="form-section">
+      <h3>Habitación</h3>
+      
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Seleccionar habitación</mat-label>
+        <mat-select formControlName="roomId" required>
+          <mat-option *ngIf="isLoadingRooms" disabled>
+            <mat-spinner diameter="20"></mat-spinner> Cargando habitaciones...
+          </mat-option>
+          <mat-option *ngFor="let room of availableRooms" [value]="room.id">
+            Habitación {{ room.number }} - {{ room.type }} - ${{ room.pricePerNight }}/noche
+          </mat-option>
+        </mat-select>
+        <mat-error>{{ getErrorMessage('roomId') }}</mat-error>
+      </mat-form-field>
+
+      <!-- Indicador de disponibilidad -->
+      <div class="availability-status">
+        <mat-spinner *ngIf="isCheckingAvailability" diameter="20"></mat-spinner>
+        <div *ngIf="!isCheckingAvailability && bookingForm.get('roomId')?.value">
+          <div class="availability-indicator available" *ngIf="isRoomAvailable">
+            <mat-icon>check_circle</mat-icon>
+            <span>Habitación disponible</span>
+          </div>
+          <div class="availability-indicator unavailable" *ngIf="!isRoomAvailable">
+            <mat-icon>cancel</mat-icon>
+            <span>Habitación no disponible en las fechas seleccionadas</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Estado y Lead Time -->
+    <div class="form-section">
+      <h3>Detalles de la Reserva</h3>
+      
+      <div class="detail-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Estado</mat-label>
+          <mat-select formControlName="status" required>
+            <mat-option *ngFor="let status of statusOptions" [value]="status.value">
+              {{ status.label }}
+            </mat-option>
+          </mat-select>
+          <mat-error>{{ getErrorMessage('status') }}</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Fecha de Lead Time</mat-label>
+          <input 
+            matInput 
+            [matDatepicker]="pickerLeadTime"
+            formControlName="bookingLeadTime"
+            [max]="minDate"
+            required>
+          <mat-datepicker-toggle matSuffix [for]="pickerLeadTime"></mat-datepicker-toggle>
+          <mat-datepicker #pickerLeadTime></mat-datepicker>
+          <mat-error>{{ getErrorMessage('bookingLeadTime') }}</mat-error>
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Notas (opcional)</mat-label>
+        <textarea 
+          matInput 
+          formControlName="notes"
+          rows="3"
+          placeholder="Información adicional sobre la reserva..."></textarea>
+      </mat-form-field>
+    </div>
+
+    <!-- Sección de Servicios Adicionales -->
+    <div class="form-section">
+      <app-addon-selector
+        [availableAddons]="availableAddons"
+        [selectedAddons]="selectedAddons"
+        (addonsChange)="onAddonsChange($event)">
+      </app-addon-selector>
+    </div>
+
+    <!-- Resumen Total -->
+    <div class="total-summary" *ngIf="selectedAddons.length > 0">
+      <div class="summary-line">
+        <span>Total Servicios Adicionales:</span>
+        <strong>${{ calculateAddonsTotal() | number:'1.2-2' }}</strong>
+      </div>
+    </div>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Cancelar</button>
+  <button 
+    mat-raised-button 
+    color="primary" 
+    (click)="onSubmit()"
+    [disabled]="bookingForm.invalid || !isRoomAvailable || isCheckingAvailability">
+    <mat-icon>save</mat-icon>
+    {{ data.booking ? 'Actualizar' : 'Crear' }} Reserva
+  </button>
+</mat-dialog-actions>
