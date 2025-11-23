@@ -191,4 +191,14 @@ public class BookingController {
         BookingResponseDTO response = bookingService.updateAddonQuantity(bookingId, addonId, request.getQuantity());
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Cancela una reserva cambiando su estado a CANCELLED.
+     */
+    @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookingResponseDTO> cancelBooking(@PathVariable Long id) {
+        BookingResponseDTO response = bookingService.cancelBooking(id);
+        return ResponseEntity.ok(response);
+    }
 }

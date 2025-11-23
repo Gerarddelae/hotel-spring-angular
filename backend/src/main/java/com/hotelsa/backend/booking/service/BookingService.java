@@ -81,6 +81,10 @@ public class BookingService {
         booking.setGuest(guest);
         booking.setRoom(room);
 
+        // Cambiar estado de la habitación a OCCUPIED
+        room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.OCCUPIED);
+        roomRepository.save(room);
+
         Booking savedBooking = bookingRepository.save(booking);
         log.debug("✅ Created booking {} for guest {} in room {} at hotel {}",
                 savedBooking.getId(), guest.getFullName(), room.getNumber(), hotelId);
@@ -110,6 +114,20 @@ public class BookingService {
         booking.setRoom(room);
         booking.setCheckInDate(dto.getCheckInDate());
         booking.setCheckOutDate(dto.getCheckOutDate());
+
+        // Si se cancela la reserva, liberar la habitación
+        if (dto.getStatus() == BookingStatus.CANCELLED && booking.getStatus() != BookingStatus.CANCELLED) {
+            room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.AVAILABLE);
+            roomRepository.save(room);
+            log.debug("🔓 Habitación {} liberada por cancelación de booking {}", room.getNumber(), id);
+        }
+        // Si se reactiva una reserva cancelada, ocupar la habitación
+        else if (booking.getStatus() == BookingStatus.CANCELLED && dto.getStatus() != BookingStatus.CANCELLED) {
+            room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.OCCUPIED);
+            roomRepository.save(room);
+            log.debug("🔒 Habitación {} ocupada por reactivación de booking {}", room.getNumber(), id);
+        }
+
         booking.setStatus(dto.getStatus());
         booking.setCreatedBy(dto.getCreatedBy());
         booking.setBookingLeadTime(dto.getBookingLeadTime());
@@ -143,6 +161,14 @@ public class BookingService {
     public void delete(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel"));
+
+        // Liberar la habitación al eliminar la reserva
+        Room room = booking.getRoom();
+        if (room != null) {
+            room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.AVAILABLE);
+            roomRepository.save(room);
+            log.debug("🔓 Habitación {} liberada por eliminación de booking {}", room.getNumber(), id);
+        }
 
         booking.setDeleted(true);
         bookingRepository.save(booking);
@@ -326,6 +352,40 @@ public class BookingService {
         BookingResponseDTO response = bookingMapper.fromEntity(booking);
         response.setAddons(getAddonsFromBooking(bookingId));
 
+        return response;
+    }
+
+    @AdminOnly
+    @Transactional
+    public BookingResponseDTO cancelBooking(Long id) {
+        Long currentHotelId = getCurrentHotelId();
+        log.debug("Intentando cancelar booking {} (currentHotelId={})", id, currentHotelId);
+
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel"));
+
+        // Seguridad adicional: asegurarnos de que la reserva pertenece al tenant actual
+        if (currentHotelId != null && !currentHotelId.equals(booking.getHotelId())) {
+            throw new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel");
+        }
+
+        // Liberar la habitación al cancelar la reserva
+        Room room = booking.getRoom();
+        if (room != null && booking.getStatus() != BookingStatus.CANCELLED) {
+            room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.AVAILABLE);
+            roomRepository.save(room);
+            log.debug("🔓 Habitación {} liberada por cancelación de booking {}", room.getNumber(), id);
+        }
+
+        // Cambiar el estado a CANCELLED y persistir
+        booking.setStatus(BookingStatus.CANCELLED);
+        Booking saved = bookingRepository.save(booking);
+
+        log.debug("✅ Cancelada booking {} para hotel {}", saved.getId(), saved.getHotelId());
+
+        BookingResponseDTO response = bookingMapper.fromEntity(saved);
+        // Incluir los addons correctamente filtrados
+        response.setAddons(getAddonsFromBooking(id));
         return response;
     }
 }

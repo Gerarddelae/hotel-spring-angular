@@ -184,4 +184,28 @@ class BookingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L));
     }
+
+    @Test
+    void shouldCancelBookingSuccessfully() throws Exception {
+        BookingResponseDTO cancelledBooking = BookingResponseDTO.builder()
+                .id(1L)
+                .hotelId(10L)
+                .guestId(2L)
+                .roomId(3L)
+                .status(BookingStatus.CANCELLED)
+                .checkInDate(LocalDate.of(2025, 6, 1))
+                .checkOutDate(LocalDate.of(2025, 6, 5))
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .build();
+
+        when(bookingService.cancelBooking(1L)).thenReturn(cancelledBooking);
+
+        mockMvc.perform(patch("/bookings/1/cancel"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        verify(bookingService, times(1)).cancelBooking(1L);
+    }
 }

@@ -244,4 +244,119 @@ class BookingServiceTest {
         assertTrue(link.isDeleted());
         verify(bookingAddonRepository).save(link);
     }
+
+    @Test
+    void cancelBooking_ShouldCancelBookingSuccessfully() {
+        Long bookingId = booking.getId();
+        booking.setStatus(BookingStatus.CONFIRMED);
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(booking)).thenReturn(booking);
+        when(bookingMapper.fromEntity(booking)).thenReturn(bookingResponseDTO);
+        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
+
+        BookingResponseDTO response = bookingService.cancelBooking(bookingId);
+
+        assertNotNull(response);
+        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
+        verify(bookingRepository).save(booking);
+    }
+
+    @Test
+    void cancelBooking_ShouldThrow_WhenBookingNotFound() {
+        Long nonExistentBookingId = 9999L;
+
+        when(bookingRepository.findById(nonExistentBookingId)).thenReturn(Optional.empty());
+        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
+
+        assertThrows(BookingNotFoundException.class, () -> bookingService.cancelBooking(nonExistentBookingId));
+    }
+
+    @Test
+    void cancelBooking_ShouldThrow_WhenBookingBelongsToDifferentHotel() {
+        Long bookingId = booking.getId();
+        Long differentHotelId = 999L;
+        booking.setHotelId(differentHotelId);
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
+
+        assertThrows(BookingNotFoundException.class, () -> bookingService.cancelBooking(bookingId));
+    }
+
+    @Test
+    void createBooking_ShouldSetRoomStatusToOccupied() {
+        when(hotelRepository.findById(hotel.getId())).thenReturn(Optional.of(hotel));
+        when(guestRepository.findById(guest.getId())).thenReturn(Optional.of(guest));
+        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
+        when(bookingMapper.fromRequestDto(bookingRequestDTO)).thenReturn(booking);
+        when(bookingRepository.save(booking)).thenReturn(booking);
+        when(bookingMapper.fromEntity(booking)).thenReturn(bookingResponseDTO);
+
+        bookingService.create(bookingRequestDTO);
+
+        assertEquals(com.hotelsa.backend.room.enums.RoomStatus.OCCUPIED, room.getStatus());
+        verify(roomRepository).save(room);
+    }
+
+    @Test
+    void cancelBooking_ShouldSetRoomStatusToAvailable() {
+        Long bookingId = booking.getId();
+        booking.setStatus(BookingStatus.CONFIRMED);
+        room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.OCCUPIED);
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(booking)).thenReturn(booking);
+        when(bookingMapper.fromEntity(booking)).thenReturn(bookingResponseDTO);
+        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
+
+        bookingService.cancelBooking(bookingId);
+
+        assertEquals(com.hotelsa.backend.room.enums.RoomStatus.AVAILABLE, room.getStatus());
+        verify(roomRepository).save(room);
+    }
+
+    @Test
+    void deleteBooking_ShouldSetRoomStatusToAvailable() {
+        Long bookingId = booking.getId();
+        room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.OCCUPIED);
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
+
+        bookingService.delete(bookingId);
+
+        assertEquals(com.hotelsa.backend.room.enums.RoomStatus.AVAILABLE, room.getStatus());
+        verify(roomRepository).save(room);
+        assertTrue(booking.isDeleted());
+    }
+
+    @Test
+    void updateBooking_ShouldSetRoomStatusToAvailableWhenCancelling() {
+        Long bookingId = booking.getId();
+        booking.setStatus(BookingStatus.CONFIRMED);
+        room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.OCCUPIED);
+
+        BookingRequestDTO cancelDto = BookingRequestDTO.builder()
+                .guestId(guest.getId())
+                .roomId(room.getId())
+                .checkInDate(LocalDate.of(2025, 2, 1))
+                .checkOutDate(LocalDate.of(2025, 2, 5))
+                .status(BookingStatus.CANCELLED)
+                .createdBy("user")
+                .bookingLeadTime(LocalDate.now())
+                .build();
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+        when(guestRepository.findById(guest.getId())).thenReturn(Optional.of(guest));
+        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
+        when(bookingRepository.save(booking)).thenReturn(booking);
+        when(bookingMapper.fromEntity(booking)).thenReturn(bookingResponseDTO);
+        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
+
+        bookingService.update(bookingId, cancelDto);
+
+        assertEquals(com.hotelsa.backend.room.enums.RoomStatus.AVAILABLE, room.getStatus());
+        verify(roomRepository).save(room);
+    }
 }
