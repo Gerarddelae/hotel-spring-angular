@@ -20,5 +20,7 @@ public interface AddonRepository extends JpaRepository<Addon, Long> {
 
     // Listado ordenado por nombre ascendente
     List<Addon> findAllByOrderByNameAsc();
-}
 
+    // Retorna solo los addons activos
+    List<Addon> findAllByActiveTrue();
+}

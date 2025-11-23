@@ -36,9 +36,21 @@ public class AddonController {
         return ResponseEntity.ok(list);
     }
 
+    @GetMapping("/active")
+    public ResponseEntity<List<AddonResponse>> getAllActive() {
+        List<AddonResponse> list = addonService.getAllActive();
+        return ResponseEntity.ok(list);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<AddonResponse> update(@PathVariable Long id, @Valid @RequestBody AddonRequest request) {
         AddonResponse response = addonService.update(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/toggle-active")
+    public ResponseEntity<AddonResponse> toggleActive(@PathVariable Long id) {
+        AddonResponse response = addonService.toggleActive(id);
         return ResponseEntity.ok(response);
     }
 
@@ -54,4 +66,3 @@ public class AddonController {
         return ResponseEntity.ok(list);
     }
 }
-

@@ -112,14 +112,14 @@ class GuestControllerTest {
     @Test
     void shouldSearchGuestsByName() throws Exception {
         List<GuestResponseDTO> guests = List.of(guestResponseDTO);
-        when(guestService.searchGuestsByName("John")).thenReturn(guests);
+        when(guestService.searchGuests("John")).thenReturn(guests);
 
-        mockMvc.perform(get("/guests/search").param("name", "John"))
+        mockMvc.perform(get("/guests/search").param("query", "John"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size()").value(1))
                 .andExpect(jsonPath("$[0].fullName").value("John Doe"));
 
-        verify(guestService, times(1)).searchGuestsByName("John");
+        verify(guestService, times(1)).searchGuests("John");
     }
 
     @Test

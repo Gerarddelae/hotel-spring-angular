@@ -73,8 +73,13 @@ public class GuestService {
     }
 
     @Transactional(readOnly = true)
-    public List<GuestResponseDTO> searchGuestsByName(String fullName) {
-        List<Guest> guests = guestRepository.findByFullNameContainingIgnoreCase(fullName);
+    public List<GuestResponseDTO> searchGuests(String query) {
+        // Si query es nulo o vacío, retornar lista vacía (como solicita el frontend)
+        if (query == null || query.trim().isEmpty()) {
+            return List.of();
+        }
+
+        List<Guest> guests = guestRepository.search(query.trim());
         return guests.stream().map(guestMapper::fromEntity).toList();
     }
 
@@ -130,4 +135,3 @@ public class GuestService {
         log.debug("🗑️ Soft deleted guest {} for hotel {}", guest.getFullName(), guest.getHotelId());
     }
 }
-

@@ -28,6 +28,7 @@ public class AddonMapper {
                 .description(addon.getDescription())
                 .price(addon.getPrice())
                 .createdAt(addon.getCreatedAt())
+                .active(addon.isActive())
                 .build();
     }
 
