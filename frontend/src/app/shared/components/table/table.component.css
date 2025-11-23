@@ -1,0 +1,46 @@
+/* Compact action buttons for table rows */
+.action-buttons {
+	display: flex;
+	gap: 6px;
+}
+
+.action-btn {
+	width: 34px;
+	height: 34px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 8px;
+	border: none;
+	cursor: pointer;
+	color: #fff;
+	font-size: 14px;
+	transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.action-btn i {
+	font-size: 14px;
+}
+
+.action-btn.edit {
+	background-color: #06b6d4; /* cyan-500 */
+}
+.action-btn.edit:hover { background-color: #0891b2; }
+
+.action-btn.delete {
+	background-color: #ef4444; /* red-500 */
+}
+.action-btn.delete:hover { background-color: #dc2626; }
+
+.action-btn:active { transform: scale(.97); }
+
+/* Make the add button slightly more compact */
+.bg-blue-600.inline-add {
+	padding-left: 10px;
+	padding-right: 10px;
+	padding-top: 6px;
+	padding-bottom: 6px;
+	border-radius: 8px;
+}
+

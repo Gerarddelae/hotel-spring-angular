@@ -1,0 +1,51 @@
+<div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-6 rounded-lg">
+  <h2 mat-dialog-title class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+    {{ data.guest ? 'Editar Huésped' : 'Agregar Huésped' }}
+  </h2>
+
+  <mat-dialog-content class="!p-0">
+    <form [formGroup]="guestForm" (ngSubmit)="onSubmit()" class="space-y-4">
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label class="text-gray-600 dark:text-gray-300">Nombre completo</mat-label>
+        <input matInput formControlName="fullName" class="text-gray-900 dark:text-gray-100 bg-transparent" placeholder="Nombre completo" />
+        <mat-error *ngIf="guestForm.get('fullName')?.hasError('required')">El nombre es requerido</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label class="text-gray-600 dark:text-gray-300">Tipo de documento</mat-label>
+        <mat-select formControlName="documentType" class="text-gray-900 dark:text-gray-100 bg-transparent">
+          <mat-option *ngFor="let t of documentTypes" [value]="t">{{ t }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label class="text-gray-600 dark:text-gray-300">Número de documento</mat-label>
+        <input matInput formControlName="documentNumber" class="text-gray-900 dark:text-gray-100 bg-transparent" placeholder="Número" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label class="text-gray-600 dark:text-gray-300">Correo</mat-label>
+        <input matInput formControlName="email" class="text-gray-900 dark:text-gray-100 bg-transparent" placeholder="correo@ejemplo.com" />
+        <mat-error *ngIf="guestForm.get('email')?.hasError('required')">El email es requerido</mat-error>
+        <mat-error *ngIf="guestForm.get('email')?.hasError('email')">Email inválido</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label class="text-gray-600 dark:text-gray-300">Teléfono</mat-label>
+        <input matInput formControlName="phone" class="text-gray-900 dark:text-gray-100 bg-transparent" placeholder="Teléfono" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label class="text-gray-600 dark:text-gray-300">Dirección</mat-label>
+        <input matInput formControlName="address" class="text-gray-900 dark:text-gray-100 bg-transparent" placeholder="Dirección" />
+      </mat-form-field>
+
+      <!-- metrics (previousCancellations, totalBookingsClient) intentionally hidden from modal UI -->
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="!p-0 mt-4 space-x-2">
+    <button mat-button (click)="close()" class="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Cancelar</button>
+    <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="guestForm.invalid" class="!bg-cyan-600 hover:!bg-cyan-700 disabled:!bg-gray-600 disabled:!text-gray-400">Guardar</button>
+  </mat-dialog-actions>
+</div>

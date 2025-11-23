@@ -1,6 +1,7 @@
 import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Observable, Subject, takeUntil } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { TableComponent } from '../../shared/components/table/table.component';
 import { RoomModalFormComponent } from '../../shared/components/room-modal-form/room-modal-form.component';
@@ -19,6 +20,7 @@ export class RoomsComponent implements OnDestroy {
   roomToDelete: { id: number } | null = null;
   private destroy$ = new Subject<void>();
 
+  // hide hotel-related columns (hotelId / hotelName) from table view
   columns = [
     'id',
     'number',
@@ -27,7 +29,6 @@ export class RoomsComponent implements OnDestroy {
     'capacity',
     'pricePerNight',
     'status',
-    'hotelId',
   ];
 
   headersMap = {
@@ -38,13 +39,17 @@ export class RoomsComponent implements OnDestroy {
     capacity: 'Capacidad',
     pricePerNight: 'Precio/Noche',
     status: 'Estado',
-    hotelId: 'Hotel',
   };
 
   constructor(private dialog: MatDialog, private roomService: RoomService) {
     // Inicialmente cargamos las habitaciones y nos suscribimos al observable
     this.roomService.loadRooms();
+    // strip hotel-related fields before sending to table
     this.rooms$ = this.roomService.rooms$.pipe(
+      map(items => items.map(it => {
+        const { hotelId, hotelName, ...rest } = it as any;
+        return rest;
+      })),
       takeUntil(this.destroy$)
     );
   }
