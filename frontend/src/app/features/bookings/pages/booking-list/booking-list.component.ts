@@ -16,7 +16,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
 import { Router } from '@angular/router';
-import { Booking, BOOKING_STATUS_OPTIONS } from '../../models/booking.interface';
+import { Booking, BOOKING_STATUS_OPTIONS, BookingStatus } from '../../models/booking.interface';
 import { BookingFilters } from '../../models/booking-filters.interface';
 import { BookingService } from '../../services/booking.service';
 import { BookingModalFormComponent } from '../../../../shared/components/booking-modal-form/booking-modal-form.component';
@@ -60,6 +60,10 @@ export class BookingListComponent implements OnInit {
   bookings: Booking[] = [];
   filteredBookings: Booking[] = [];
   isLoading = false;
+  showDeleteModal = false;
+  bookingToDelete: Booking | null = null;
+  showCancelModal = false;
+  bookingToCancel: Booking | null = null;
   
   filterForm: FormGroup;
   statusOptions = BOOKING_STATUS_OPTIONS;
@@ -92,9 +96,9 @@ export class BookingListComponent implements OnInit {
   /**
    * Carga todas las reservas
    */
-  loadBookings(): void {
+  loadBookings(forceRefresh = false): void {
     this.isLoading = true;
-    this.bookingService.getCachedAll().subscribe({
+    this.bookingService.getCachedAll(forceRefresh).subscribe({
       next: (bookings) => {
         this.bookings = bookings || [];
         this.applyFilters();
@@ -207,10 +211,9 @@ export class BookingListComponent implements OnInit {
    */
   openEditDialog(booking: Booking): void {
     // Cargar los addons antes de abrir el modal
-    this.isLoading = true;
+    // Use a local loading flow so the global `isLoading` spinner doesn't flash the table
     this.bookingService.getAddons(booking.id).subscribe({
       next: (addons) => {
-        this.isLoading = false;
         // Asegurar que cada addon tenga el subtotal calculado
         const addonsWithSubtotal = addons.map(addon => ({
           ...addon,
@@ -232,7 +235,6 @@ export class BookingListComponent implements OnInit {
         });
       },
       error: (error) => {
-        this.isLoading = false;
         console.error('Error al cargar addons:', error);
         // Abrir el modal sin addons si hay error
         const dialogRef = this.dialog.open(BookingModalFormComponent, {
@@ -255,16 +257,46 @@ export class BookingListComponent implements OnInit {
    * Crea una nueva reserva
    */
   private createBooking(data: any): void {
-    this.isLoading = true;
-    
-    this.bookingService.create(data.booking).subscribe({
+    // Optimistic UI: insert a temporary booking so the list updates immediately
+    const tempId = -Date.now();
+    const payload = data.booking as any;
+    const tempBooking: Booking = {
+      id: tempId,
+      guestId: payload.guestId,
+      guestName: (data && data.booking && data.booking.guestName) || 'Creando...',
+      roomId: payload.roomId,
+      roomNumber: '',
+      checkInDate: payload.checkInDate,
+      checkOutDate: payload.checkOutDate,
+      status: payload.status,
+      createdBy: payload.createdBy || 'system',
+      bookingLeadTime: payload.bookingLeadTime || '',
+      notes: payload.notes || '',
+      hotelId: payload.hotelId || 0,
+      totalAmount: undefined
+    } as Booking;
+
+    // Insert at top for immediate feedback
+    this.bookings.unshift(tempBooking);
+    this.applyFilters();
+
+    // Call backend to create; on success replace temp entry, on error rollback
+    this.bookingService.create(payload).subscribe({
       next: (booking) => {
-        // Si hay addons, usar el endpoint idempotente que reemplaza la lista completa
+        // Replace temp booking with actual server response
+        const idx = this.bookings.findIndex(b => b.id === tempId);
+        if (idx !== -1) {
+          this.bookings[idx] = { ...this.bookings[idx], ...booking } as Booking;
+        } else {
+          this.bookings.unshift(booking);
+        }
+
+        // If there are addons, call replaceBookingAddons and then refresh booking
         if (data.addons && data.addons.length > 0) {
           const addonRequests = data.addons.map((addon: any) => ({ addonId: addon.addonId, quantity: addon.quantity ?? 1 }));
           this.bookingService.replaceBookingAddons(booking.id, addonRequests).subscribe({
             next: (updatedBooking) => {
-              // Normalize addons with subtotal and name
+              // Normalize and set
               if (updatedBooking?.addons && Array.isArray(updatedBooking.addons)) {
                 updatedBooking.addons = updatedBooking.addons.map((a: any) => ({
                   ...a,
@@ -273,58 +305,55 @@ export class BookingListComponent implements OnInit {
                 }));
               }
 
-              // Insert or update local list
-              const idx = this.bookings.findIndex(b => b.id === updatedBooking.id);
-              if (idx !== -1) {
-                this.bookings[idx] = { ...this.bookings[idx], ...updatedBooking };
-              } else {
-                this.bookings.unshift(updatedBooking);
-              }
+              const i = this.bookings.findIndex(b => b.id === updatedBooking.id);
+              if (i !== -1) this.bookings[i] = { ...this.bookings[i], ...updatedBooking };
 
-              // Refresh full booking from backend to ensure totals are correct
+              // Final authoritative fetch
               this.bookingService.getById(updatedBooking.id).subscribe({
                 next: (fullBooking) => {
-                  const i = this.bookings.findIndex(b => b.id === fullBooking.id);
-                  if (i !== -1) this.bookings[i] = { ...this.bookings[i], ...fullBooking };
+                  const j = this.bookings.findIndex(b => b.id === fullBooking.id);
+                  if (j !== -1) this.bookings[j] = { ...this.bookings[j], ...fullBooking };
                   else this.bookings.unshift(fullBooking);
                   this.applyFilters();
                   this.showSuccess('Reserva creada exitosamente');
-                  this.isLoading = false;
                 },
                 error: () => {
                   this.applyFilters();
                   this.showSuccess('Reserva creada exitosamente');
-                  this.isLoading = false;
                 }
               });
             },
-            error: (err) => {
-              // Fallback: cargar lista
+            error: () => {
               this.showError('Reserva creada, pero no se pudieron asignar los servicios adicionales');
-              this.loadBookings();
+              // Refresh full list to reconcile
+              this.loadBookings(true);
             }
           });
         } else {
-          // No addons: refresh the created booking from backend to get totals
+          // No addons: fetch authoritative booking
           this.bookingService.getById(booking.id).subscribe({
             next: (fullBooking) => {
-              const idx = this.bookings.findIndex(b => b.id === fullBooking.id);
-              if (idx !== -1) this.bookings[idx] = { ...this.bookings[idx], ...fullBooking };
+              const i = this.bookings.findIndex(b => b.id === fullBooking.id);
+              if (i !== -1) this.bookings[i] = { ...this.bookings[i], ...fullBooking };
               else this.bookings.unshift(fullBooking);
               this.applyFilters();
               this.showSuccess('Reserva creada exitosamente');
-              this.isLoading = false;
             },
             error: () => {
               this.showSuccess('Reserva creada exitosamente');
-              this.loadBookings();
+              this.loadBookings(true);
             }
           });
         }
       },
       error: (error) => {
+        // Rollback optimistic insert
+        const idx = this.bookings.findIndex(b => b.id === tempId);
+        if (idx !== -1) {
+          this.bookings.splice(idx, 1);
+        }
+        this.applyFilters();
         this.showError(error.message || 'Error al crear la reserva');
-        this.isLoading = false;
       }
     });
   }
@@ -333,8 +362,24 @@ export class BookingListComponent implements OnInit {
    * Actualiza una reserva existente
    */
   private updateBooking(id: number, data: any): void {
-    this.isLoading = true;
+    // Optimistic UI update: apply local changes immediately and rollback on error
+    const idx = this.bookings.findIndex(b => b.id === id);
+    const originalBooking = idx !== -1 ? { ...this.bookings[idx] } : null;
 
+    // Apply optimistic update locally
+    if (idx !== -1) {
+      const payload = { ...data.booking } as any;
+      const optimistic = {
+        ...this.bookings[idx],
+        ...payload,
+        addons: (data.addons || []).map((a: any) => ({ addonId: a.addonId, quantity: a.quantity ?? 1 }))
+      } as Booking;
+
+      this.bookings[idx] = optimistic;
+      this.applyFilters();
+    }
+
+    // Call backend
     const payload = { ...data.booking } as any;
     payload.addons = (data.addons || []).map((a: any) => ({ addonId: a.addonId, quantity: a.quantity ?? 1 }));
 
@@ -349,26 +394,24 @@ export class BookingListComponent implements OnInit {
             }));
           }
 
-          const idx = this.bookings.findIndex(b => b.id === updatedBooking.id);
-          if (idx !== -1) {
-            this.bookings[idx] = { ...this.bookings[idx], ...updatedBooking };
+          const index = this.bookings.findIndex(b => b.id === updatedBooking.id);
+          if (index !== -1) {
+            this.bookings[index] = { ...this.bookings[index], ...updatedBooking };
           } else {
             this.bookings.push(updatedBooking);
           }
 
-          // Refresh full booking from backend to ensure totals and addons are authoritative
+          // Refresh authoritative booking
           this.bookingService.getById(updatedBooking.id).subscribe({
             next: (fullBooking) => {
               const i = this.bookings.findIndex(b => b.id === fullBooking.id);
               if (i !== -1) this.bookings[i] = { ...this.bookings[i], ...fullBooking };
               this.applyFilters();
               this.showSuccess('Reserva actualizada exitosamente');
-              this.isLoading = false;
             },
             error: () => {
               this.applyFilters();
               this.showSuccess('Reserva actualizada exitosamente');
-              this.isLoading = false;
             }
           });
           return;
@@ -376,9 +419,15 @@ export class BookingListComponent implements OnInit {
 
         // Fallback: reload all
         this.showSuccess('Reserva actualizada exitosamente');
-        this.loadBookings();
+        this.loadBookings(true);
       },
       error: (error) => {
+        // Rollback optimistic update if present
+        if (originalBooking && idx !== -1) {
+          this.bookings[idx] = originalBooking;
+          this.applyFilters();
+        }
+
         if (error?.status === 409) {
           this.showError('La habitación no está disponible para las fechas solicitadas. Cambie fechas o habitación.');
         } else if (error?.status === 400 && error?.details) {
@@ -388,8 +437,6 @@ export class BookingListComponent implements OnInit {
         } else {
           this.showError(error.message || 'Error al actualizar la reserva');
         }
-
-        this.isLoading = false;
       }
     });
   }
@@ -578,55 +625,120 @@ export class BookingListComponent implements OnInit {
    * Cancela una reserva
    */
   cancelBooking(booking: Booking): void {
-    const confirmed = confirm(
-      `¿Está seguro de cancelar la reserva #${booking.id}?\n` +
-      `Huésped: ${booking.guestName}\n` +
-      `Habitación: ${booking.roomNumber}`
-    );
+    // Open confirmation modal instead of using native confirm()
+    this.bookingToCancel = booking;
+    this.showCancelModal = true;
+  }
 
-    if (!confirmed) {
-      return;
+  /** Confirmación desde el modal: realiza la cancelación */
+  confirmCancel(): void {
+    if (!this.bookingToCancel) return;
+
+    const id = this.bookingToCancel.id;
+
+    // Optimistic UI update: mark the booking as CANCELLED locally so the table updates immediately
+    const idx = this.bookings.findIndex(b => b.id === id);
+    let originalStatus: BookingStatus | null = null;
+    let localBookingRef: Booking | null = null;
+    if (idx !== -1) {
+      localBookingRef = this.bookings[idx];
+      originalStatus = localBookingRef.status;
+      localBookingRef.status = 'CANCELLED';
+      this.applyFilters();
     }
 
-    this.isLoading = true;
-    this.bookingService.cancel(booking.id).subscribe({
+    // Close modal immediately
+    this.cancelCancel();
+
+    // Call backend; refresh cache in background to keep authoritative state
+    this.bookingService.cancel(id).subscribe({
       next: () => {
         this.showSuccess('Reserva cancelada exitosamente');
-        this.loadBookings();
+        // update cache in background without showing global loading spinner
+        this.bookingService.refreshAll().subscribe({
+          next: (bookings) => {
+            this.bookings = bookings || [];
+            this.applyFilters();
+          },
+          error: () => {
+            // silent: keep optimistic UI, will be reconciled later
+          }
+        });
       },
       error: (error) => {
+        // Rollback optimistic update
+        if (localBookingRef && originalStatus !== null) {
+          localBookingRef.status = originalStatus;
+          this.applyFilters();
+        }
         this.showError(error.message || 'Error al cancelar la reserva');
-        this.isLoading = false;
       }
     });
+  }
+
+  /** Cierra el modal de cancelación sin realizar acción */
+  cancelCancel(): void {
+    this.showCancelModal = false;
+    this.bookingToCancel = null;
   }
 
   /**
    * Elimina una reserva
    */
   deleteBooking(booking: Booking): void {
-    const confirmed = confirm(
-      `¿Está seguro de eliminar la reserva #${booking.id}?\n` +
-      `Esta acción no se puede deshacer.\n\n` +
-      `Huésped: ${booking.guestName}\n` +
-      `Habitación: ${booking.roomNumber}`
-    );
+    // Open confirmation modal instead of using native confirm()
+    this.bookingToDelete = booking;
+    this.showDeleteModal = true;
+  }
 
-    if (!confirmed) {
-      return;
+  /** Confirmación desde el modal: realiza la eliminación */
+  confirmDelete(): void {
+    if (!this.bookingToDelete) return;
+
+    const id = this.bookingToDelete.id;
+
+    // Optimistic UI update: remove the booking from local array immediately
+    const idx = this.bookings.findIndex(b => b.id === id);
+    let removed: Booking | null = null;
+    if (idx !== -1) {
+      removed = this.bookings.splice(idx, 1)[0];
+      this.applyFilters();
     }
 
-    this.isLoading = true;
-    this.bookingService.delete(booking.id).subscribe({
+    // Close modal immediately
+    this.cancelDelete();
+
+    // Call backend; refresh cache in background to keep authoritative state
+    this.bookingService.delete(id).subscribe({
       next: () => {
         this.showSuccess('Reserva eliminada exitosamente');
-        this.loadBookings();
+        this.bookingService.refreshAll().subscribe({
+          next: (bookings) => {
+            this.bookings = bookings || [];
+            this.applyFilters();
+          },
+          error: () => {
+            // silent: keep optimistic UI
+          }
+        });
       },
       error: (error) => {
+        // Rollback optimistic deletion
+        if (removed) {
+          // insert back at original index if possible
+          const insertAt = Math.min(idx, this.bookings.length);
+          this.bookings.splice(insertAt, 0, removed);
+          this.applyFilters();
+        }
         this.showError(error.message || 'Error al eliminar la reserva');
-        this.isLoading = false;
       }
     });
+  }
+
+  /** Cierra el modal de eliminación sin realizar acción */
+  cancelDelete(): void {
+    this.showDeleteModal = false;
+    this.bookingToDelete = null;
   }
 
   /**

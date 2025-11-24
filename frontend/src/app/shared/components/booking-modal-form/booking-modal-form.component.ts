@@ -54,6 +54,8 @@ interface BookingModalData {
 export class BookingModalFormComponent implements OnInit {
   bookingForm: FormGroup;
   statusOptions = BOOKING_STATUS_OPTIONS;
+  showSummaryModal = false;
+  summaryGuestName = '';
   
   filteredGuests$!: Observable<any[]>;
   availableRooms: any[] = [];
@@ -67,7 +69,8 @@ export class BookingModalFormComponent implements OnInit {
   isRoomAvailable = true;
   
   currentUser: any;
-  minDate = new Date();
+  minDate: Date | null = null;
+  isEditMode: boolean;
 
   constructor(
     private fb: FormBuilder,
@@ -80,15 +83,25 @@ export class BookingModalFormComponent implements OnInit {
     private snackBar: MatSnackBar
   ) {
     this.currentUser = this.authService.getCurrentUser();
+    this.isEditMode = !!data.booking;
+    
+    // Only apply minDate restriction in create mode
+    this.minDate = this.isEditMode ? null : new Date();
+    
+    // Convert date strings to Date objects for Angular Material Datepicker
+    // Use local date to avoid timezone conversion issues
+    const checkInDate = data.booking?.checkInDate ? this.parseLocalDate(data.booking.checkInDate) : '';
+    const checkOutDate = data.booking?.checkOutDate ? this.parseLocalDate(data.booking.checkOutDate) : '';
+    const leadTime = data.booking?.bookingLeadTime ? this.parseLocalDate(data.booking.bookingLeadTime) : '';
     
     this.bookingForm = this.fb.group({
       guestId: [data.booking?.guestId || null, Validators.required],
       guestSearch: [''],
       roomId: [data.booking?.roomId || null, Validators.required],
-      checkInDate: [data.booking?.checkInDate || '', Validators.required],
-      checkOutDate: [data.booking?.checkOutDate || '', Validators.required],
+      checkInDate: [checkInDate, Validators.required],
+      checkOutDate: [checkOutDate, Validators.required],
       status: [data.booking?.status || 'PENDING', Validators.required],
-      bookingLeadTime: [data.booking?.bookingLeadTime || '', Validators.required],
+      bookingLeadTime: [leadTime, Validators.required],
       notes: [data.booking?.notes || '']
     }, {
       validators: [dateRangeValidator('checkInDate', 'checkOutDate')]
@@ -116,6 +129,16 @@ export class BookingModalFormComponent implements OnInit {
         }
       });
     }
+
+  }
+
+  /**
+   * Parse date string to local Date object without timezone conversion
+   * Input: "2024-11-25" -> Output: Date object for Nov 25 in local timezone
+   */
+  private parseLocalDate(dateString: string): Date {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
   }
 
   /**
@@ -389,30 +412,24 @@ export class BookingModalFormComponent implements OnInit {
       return;
     }
 
-    const guestName = typeof this.bookingForm.get('guestSearch')?.value === 'object' 
+    // Prepare summary and show confirmation modal inside the dialog
+    this.summaryGuestName = typeof this.bookingForm.get('guestSearch')?.value === 'object' 
       ? this.bookingForm.get('guestSearch')?.value?.fullName 
       : this.bookingForm.get('guestSearch')?.value;
-    
-    const confirmed = window.confirm(
-      `¿Confirmar reserva?\n\n` +
-      `Huésped: ${guestName}\n` +
-      `Check-in: ${this.formatDate(this.bookingForm.get('checkInDate')?.value)}\n` +
-      `Check-out: ${this.formatDate(this.bookingForm.get('checkOutDate')?.value)}\n` +
-      `Noches: ${this.calculateNights()}\n` +
-      `\nEl total final será calculado por el servidor al guardar la reserva.`
-    );
 
-    if (!confirmed) {
-      return;
-    }
-
-    // Validate addon quantities
+    // Validate addon quantities before showing summary
     const invalidAddon = this.selectedAddons.find(a => !a.quantity || a.quantity < 1);
     if (invalidAddon) {
       this.showError('La cantidad de los servicios adicionales debe ser al menos 1');
       return;
     }
 
+    this.showSummaryModal = true;
+  }
+
+  /** Confirma el resumen y cierra el diálogo retornando los datos */
+  confirmSummary(): void {
+    // Build payload and close dialog (same as original confirmed path)
     const bookingData: BookingRequest = {
       guestId: this.bookingForm.get('guestId')?.value,
       roomId: this.bookingForm.get('roomId')?.value,
@@ -424,19 +441,19 @@ export class BookingModalFormComponent implements OnInit {
       notes: this.bookingForm.get('notes')?.value
     };
 
-    // Añadir lista completa de addons al payload (el backend espera lista completa y la reemplaza)
     const addonRequests = this.selectedAddons.map(a => ({
       addonId: a.addonId,
       quantity: a.quantity ?? 1
     }));
 
-    // Incluir addons en el booking request (frontend envía la lista completa deseada)
     (bookingData as any).addons = addonRequests;
 
-    this.dialogRef.close({ 
-      booking: bookingData, 
-      addons: addonRequests 
-    });
+    this.showSummaryModal = false;
+    this.dialogRef.close({ booking: bookingData, addons: addonRequests });
+  }
+
+  cancelSummary(): void {
+    this.showSummaryModal = false;
   }
 
   /**
@@ -449,7 +466,7 @@ export class BookingModalFormComponent implements OnInit {
   /**
    * Formatea una fecha a YYYY-MM-DD
    */
-  private formatDate(date: any): string {
+  formatDate(date: any): string {
     if (!date) return '';
     const d = new Date(date);
     const y = d.getFullYear();
