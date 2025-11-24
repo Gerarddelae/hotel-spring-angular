@@ -11,6 +11,8 @@ export interface Booking {
   bookingLeadTime: string;
   notes?: string;
   totalAmount?: number;
+  accommodationSubtotal?: number;
+  addonsSubtotal?: number;
   hotelId: number;
   addons?: BookingAddon[];
 }
@@ -25,6 +27,7 @@ export interface BookingRequest {
   bookingLeadTime: string;
   notes?: string;
   hotelId?: number;
+  addons?: BookingAddonRequest[];
 }
 
 export interface BookingResponseDTO extends Booking {

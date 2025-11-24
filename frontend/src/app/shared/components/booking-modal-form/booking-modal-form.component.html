@@ -151,19 +151,42 @@
       </app-addon-selector>
     </div>
 
-    <!-- Resumen Total -->
-    <div class="total-summary" *ngIf="calculateNights() > 0 || selectedAddons.length > 0">
-      <div class="summary-line" *ngIf="calculateNights() > 0 && selectedRoom">
-        <span>Hospedaje ({{ calculateNights() }} noche(s) × ${{ selectedRoom.pricePerNight | number:'1.2-2' }}):</span>
-        <strong>${{ calculateAccommodationTotal() | number:'1.2-2' }}</strong>
+    <!-- Resumen Total (calculado por backend) -->
+    <!-- Live Preview: muestra totales estimados según selección actual -->
+    <mat-card class="preview-card">
+      <mat-card-header>
+        <mat-card-title>Previsualización</mat-card-title>
+        <mat-card-subtitle>Estimación en tiempo real (no vinculante)</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="preview-row">
+          <span class="label">Noches:</span>
+          <span class="value">{{ calculateNights() }}</span>
+        </div>
+        <div class="preview-row">
+          <span class="label">Hospedaje (estimado):</span>
+          <span class="value">${{ calculateAccommodationTotal() | number:'1.2-2' }}</span>
+        </div>
+        <div class="preview-row">
+          <span class="label">Servicios Adicionales (estimado):</span>
+          <span class="value">${{ calculateAddonsTotal() | number:'1.2-2' }}</span>
+        </div>
+        <mat-divider></mat-divider>
+        <div class="preview-row total">
+          <span class="label">Total (estimado):</span>
+          <strong class="value">${{ calculateTotal() | number:'1.2-2' }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="total-summary">
+      <div class="summary-line">
+        <span>Nota:</span>
+        <span>El total final será calculado por el servidor al guardar la reserva.</span>
       </div>
-      <div class="summary-line" *ngIf="selectedAddons.length > 0">
-        <span>Servicios Adicionales:</span>
-        <strong>${{ calculateAddonsTotal() | number:'1.2-2' }}</strong>
-      </div>
-      <div class="summary-line total-line" *ngIf="calculateTotal() > 0">
-        <span>Total:</span>
-        <strong class="total-amount">${{ calculateTotal() | number:'1.2-2' }}</strong>
+      <div class="summary-line" *ngIf="data.booking && data.booking.totalAmount">
+        <span>Total (servidor):</span>
+        <strong class="total-amount">${{ data.booking.totalAmount | number:'1.2-2' }}</strong>
       </div>
     </div>
 

@@ -11,6 +11,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { Booking, BOOKING_STATUS_OPTIONS } from '../../models/booking.interface';
+import { RoomService } from '../../../rooms/rooms.service';
 import { BookingService } from '../../services/booking.service';
 import { BookingModalFormComponent } from '../../../../shared/components/booking-modal-form/booking-modal-form.component';
 
@@ -40,8 +41,10 @@ export class BookingDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private bookingService: BookingService,
+    private roomService: RoomService,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    
   ) {}
 
   ngOnInit(): void {
@@ -60,9 +63,26 @@ export class BookingDetailComponent implements OnInit {
     this.isLoading = true;
     this.bookingService.getById(this.bookingId).subscribe({
       next: (booking) => {
-        this.booking = booking;
-        this.loadBookingAddons();
-        this.isLoading = false;
+            this.booking = booking;
+
+            // If backend did not return an accommodation subtotal, try to derive it from the room's pricePerNight
+            if ((this.booking.accommodationSubtotal === undefined || this.booking.accommodationSubtotal === null) && this.booking.roomId) {
+              this.roomService.getRoomById(this.booking.roomId).subscribe({
+                next: (room) => {
+                  const nights = this.calculateNights();
+                  if (nights > 0 && room?.pricePerNight) {
+                    this.booking!.accommodationSubtotal = Math.round((room.pricePerNight * nights) * 100) / 100;
+                  }
+                },
+                error: (err) => {
+                  // If room lookup fails, just continue; UI will show '-' for missing subtotal
+                  console.warn('No se pudo obtener habitación para derivar subtotal:', err);
+                }
+              });
+            }
+
+            // Load addons and keep the loading spinner until addons (and fallback totals) are processed
+            this.loadBookingAddons();
       },
       error: (error) => {
         this.showError('Error al cargar los detalles de la reserva');
@@ -82,14 +102,29 @@ export class BookingDetailComponent implements OnInit {
       next: (addons) => {
         if (this.booking) {
           // Calcular subtotal para cada addon
-          this.booking.addons = addons.map(addon => ({
-            ...addon,
-            subtotal: addon.price * addon.quantity
-          }));
+          this.booking.addons = addons.map(addon => {
+            const a: any = addon;
+            return {
+              ...a,
+              addonName: a.addonName ?? a.name ?? a.addon?.name ?? '',
+              price: a.price ?? a.addon?.price ?? 0,
+              quantity: a.quantity ?? 1,
+              subtotal: a.subtotal ?? ((a.price ?? a.addon?.price ?? 0) * (a.quantity ?? 1))
+            };
+          });
+          // If backend hasn't returned a totalAmount yet, compute a client-side fallback
+          const addonsTotal = this.booking.addons.reduce((s: number, it: any) => s + (it.subtotal || 0), 0);
+          if (this.booking && (this.booking.totalAmount === undefined || this.booking.totalAmount === null || this.booking.totalAmount === 0)) {
+            this.booking.totalAmount = (this.booking.accommodationSubtotal ?? 0) + addonsTotal;
+          }
         }
+        // Done loading booking details and addons
+        this.isLoading = false;
       },
       error: (error) => {
         console.error('Error al cargar addons:', error);
+        // Even on error, stop the loading spinner so the UI is usable
+        this.isLoading = false;
       }
     });
   }
@@ -130,25 +165,70 @@ export class BookingDetailComponent implements OnInit {
     if (!this.booking) return;
 
     this.isLoading = true;
-    this.bookingService.update(this.booking.id, data.booking).subscribe({
-      next: (booking) => {
-        // Si hay addons, sincronizarlos
-        if (data.addons) {
-          this.syncAddons(this.booking!.id, data.addons);
-        } else {
-          this.showSuccess('Reserva actualizada exitosamente');
-          this.loadBookingDetail();
-        }
+    // El backend espera el payload con la lista completa de addons para reemplazar la actual.
+    const payload = { ...data.booking } as any;
+    if (data.addons) {
+      payload.addons = data.addons.map((a: any) => ({ addonId: a.addonId, quantity: a.quantity ?? 1 }));
+    } else {
+      payload.addons = [];
+    }
+
+    this.bookingService.update(this.booking.id, payload).subscribe({
+      next: (bookingResp) => {
+        this.showSuccess('Reserva actualizada exitosamente');
+        this.loadBookingDetail();
       },
       error: (error) => {
-        this.showError(error.message || 'Error al actualizar la reserva');
+        // Manejo de errores específicos según status
+        if (error?.status === 409) {
+          this.showError('La habitación no está disponible para las fechas solicitadas. Por favor, cambie las fechas o la habitación.');
+        } else if (error?.status === 400) {
+          // Mostrar errores por campo si el backend los devuelve en details
+          const details = error?.details;
+          if (details && typeof details === 'object') {
+            // Intentar mapear a mensajes por campo
+            const fieldMessages = Object.entries(details).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join('\n');
+            this.showError(`Error en los datos: \n${fieldMessages}`);
+          } else {
+            this.showError(error.message || 'Datos inválidos');
+          }
+        } else if (error?.status === 404) {
+          this.showError('Reserva o recurso no encontrado');
+          this.router.navigate(['/bookings']);
+        } else {
+          this.showError(error?.message || 'Error al actualizar la reserva');
+        }
+
         this.isLoading = false;
       }
     });
   }
 
   /**
-   * Sincroniza los addons de la reserva
+   * Reemplaza completamente los addons de una reserva (método simplificado)
+   */
+  private replaceAddons(bookingId: number, addons: any[]): void {
+    // Preparar payload con solo addonId y quantity
+    const addonRequests = addons.map(addon => ({
+      addonId: addon.addonId,
+      quantity: addon.quantity
+    }));
+
+    this.bookingService.replaceBookingAddons(bookingId, addonRequests).subscribe({
+      next: () => {
+        this.showSuccess('Reserva actualizada exitosamente');
+        this.loadBookingDetail();
+      },
+      error: (error) => {
+        this.showError('Error al actualizar los servicios adicionales');
+        this.loadBookingDetail();
+      }
+    });
+  }
+
+  /**
+   * Sincroniza los addons de la reserva - LEGACY
+   * @deprecated Reemplazado por replaceAddons
    */
   private syncAddons(bookingId: number, newAddons: any[]): void {
     this.bookingService.getAddons(bookingId).subscribe({
@@ -320,10 +400,28 @@ export class BookingDetailComponent implements OnInit {
   }
 
   /**
+   * Obtiene el precio por noche derivado del `accommodationSubtotal` si el backend
+   * no proporciona explícitamente el `pricePerNight` en la reserva.
+   * Retorna null si no es posible determinarlo.
+   */
+  getAccommodationPricePerNight(): number | null {
+    if (!this.booking) return null;
+    const nights = this.calculateNights();
+    if (!nights || nights <= 0) return null;
+
+    const acc = this.booking.accommodationSubtotal;
+    if (acc === undefined || acc === null) return null;
+
+    // Derivar precio por noche a partir del subtotal (round a 2 decimales)
+    const price = acc / nights;
+    return Math.round(price * 100) / 100;
+  }
+
+  /**
    * Calcula el subtotal del hospedaje (sin addons)
    */
   calculateAccommodationSubtotal(): number {
-    return this.booking?.totalAmount || 0;
+    return this.booking?.accommodationSubtotal ?? 0;
   }
 
   /**
@@ -338,8 +436,7 @@ export class BookingDetailComponent implements OnInit {
    * Calcula el total de la reserva
    */
   calculateTotal(): number {
-    if (!this.booking) return 0;
-    return (this.booking.totalAmount || 0) + this.calculateAddonsTotal();
+    return this.booking?.totalAmount ?? 0;
   }
 
   /**

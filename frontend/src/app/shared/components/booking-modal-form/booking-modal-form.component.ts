@@ -12,9 +12,12 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
 import { Observable, debounceTime, distinctUntilChanged, switchMap, startWith, map, of } from 'rxjs';
 import { Booking, BookingRequest, BookingAddon, BOOKING_STATUS_OPTIONS } from '../../../features/bookings/models/booking.interface';
 import { BookingService } from '../../../features/bookings/services/booking.service';
+import { RoomService } from '../../../features/rooms/rooms.service';
 import { GuestsService } from '../../../features/guests/guests.service';
 import { AuthService } from '../../../auth/auth.service';
 import { dateRangeValidator } from '../../validators/date.validators';
@@ -41,6 +44,8 @@ interface BookingModalData {
     MatProgressSpinnerModule,
     MatSnackBarModule,
     MatIconModule,
+    MatCardModule,
+    MatDividerModule,
     AddonSelectorComponent
   ],
   templateUrl: './booking-modal-form.component.html',
@@ -69,6 +74,7 @@ export class BookingModalFormComponent implements OnInit {
     private dialogRef: MatDialogRef<BookingModalFormComponent>,
     @Inject(MAT_DIALOG_DATA) public data: BookingModalData,
     private bookingService: BookingService,
+    private roomService: RoomService,
     private guestService: GuestsService,
     private authService: AuthService,
     private snackBar: MatSnackBar
@@ -88,9 +94,7 @@ export class BookingModalFormComponent implements OnInit {
       validators: [dateRangeValidator('checkInDate', 'checkOutDate')]
     });
 
-    if (data.booking?.addons) {
-      this.selectedAddons = [...data.booking.addons];
-    }
+    // Do not copy addons here; we'll enrich them once availableAddons are loaded
   }
 
   ngOnInit(): void {
@@ -195,11 +199,32 @@ export class BookingModalFormComponent implements OnInit {
         if (this.data.booking && this.data.booking.roomId) {
           const currentRoomExists = rooms.some(r => r.id === this.data.booking!.roomId);
           if (!currentRoomExists) {
-            this.availableRooms.push({
-              id: this.data.booking.roomId,
-              number: this.data.booking.roomNumber,
-              type: 'CURRENT'
+            // Intentar obtener la habitación completa (con pricePerNight) y añadirla
+            this.roomService.getRoomById(this.data.booking.roomId).subscribe({
+              next: (room) => {
+                // Añadir la habitación completa al listado
+                this.availableRooms.push(room);
+                // Si el formulario ya tiene roomId seleccionado, actualizar selectedRoom
+                const selectedId = this.bookingForm.get('roomId')?.value;
+                if (selectedId === room.id) {
+                  this.selectedRoom = room;
+                }
+              },
+              error: () => {
+                // Fallback: push minimal info si no se puede obtener
+                this.availableRooms.push({
+                  id: this.data.booking!.roomId,
+                  number: this.data.booking!.roomNumber,
+                  type: 'CURRENT'
+                });
+              }
             });
+          } else {
+            // si ya existe en la lista, asegurarse de setear selectedRoom si aplica
+            const selectedId = this.bookingForm.get('roomId')?.value;
+            if (selectedId) {
+              this.selectedRoom = this.availableRooms.find(r => r.id === selectedId) ?? null;
+            }
           }
         }
       },
@@ -256,6 +281,26 @@ export class BookingModalFormComponent implements OnInit {
     this.bookingService.getActiveAddons().subscribe({
       next: (addons) => {
         this.availableAddons = addons;
+
+        // Si la ventana de edición recibió addons desde el backend, enriquecerlos
+        // con los datos completos (nombre, precio) usando la lista de addons activos.
+        if (this.data.booking?.addons) {
+          this.selectedAddons = this.data.booking.addons.map((a: any) => {
+            const addonId = a.addonId ?? a.id ?? (a.addon && a.addon.id);
+            const found = this.availableAddons.find((x: any) => x.id === addonId || x.addonId === addonId);
+            const price = found?.price ?? a.price ?? (a.addon && a.addon.price) ?? 0;
+            const name = found?.name ?? a.addonName ?? (a.addon && a.addon.name) ?? '';
+            const quantity = a.quantity ?? 1;
+
+            return {
+              addonId,
+              addonName: name,
+              price,
+              quantity,
+              subtotal: price * quantity
+            } as BookingAddon;
+          });
+        }
       },
       error: (error) => {
         console.error('Error al cargar addons:', error);
@@ -354,12 +399,17 @@ export class BookingModalFormComponent implements OnInit {
       `Check-in: ${this.formatDate(this.bookingForm.get('checkInDate')?.value)}\n` +
       `Check-out: ${this.formatDate(this.bookingForm.get('checkOutDate')?.value)}\n` +
       `Noches: ${this.calculateNights()}\n` +
-      `Hospedaje: $${this.calculateAccommodationTotal().toFixed(2)}\n` +
-      `Servicios adicionales: $${this.calculateAddonsTotal().toFixed(2)}\n` +
-      `Total: $${this.calculateTotal().toFixed(2)}`
+      `\nEl total final será calculado por el servidor al guardar la reserva.`
     );
 
     if (!confirmed) {
+      return;
+    }
+
+    // Validate addon quantities
+    const invalidAddon = this.selectedAddons.find(a => !a.quantity || a.quantity < 1);
+    if (invalidAddon) {
+      this.showError('La cantidad de los servicios adicionales debe ser al menos 1');
       return;
     }
 
@@ -374,9 +424,18 @@ export class BookingModalFormComponent implements OnInit {
       notes: this.bookingForm.get('notes')?.value
     };
 
+    // Añadir lista completa de addons al payload (el backend espera lista completa y la reemplaza)
+    const addonRequests = this.selectedAddons.map(a => ({
+      addonId: a.addonId,
+      quantity: a.quantity ?? 1
+    }));
+
+    // Incluir addons en el booking request (frontend envía la lista completa deseada)
+    (bookingData as any).addons = addonRequests;
+
     this.dialogRef.close({ 
       booking: bookingData, 
-      addons: this.selectedAddons 
+      addons: addonRequests 
     });
   }
 
@@ -393,7 +452,10 @@ export class BookingModalFormComponent implements OnInit {
   private formatDate(date: any): string {
     if (!date) return '';
     const d = new Date(date);
-    return d.toISOString().split('T')[0];
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   /**

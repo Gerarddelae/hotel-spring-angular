@@ -75,4 +75,8 @@ public class Booking extends BaseEntity {
     @OneToOne(mappedBy = "booking", fetch = FetchType.LAZY)
     @ToString.Exclude
     private Bill bill;
+
+    // Total de la reserva (estadia + addons)
+    @Column(name = "total_amount")
+    private java.math.BigDecimal totalAmount;
 }

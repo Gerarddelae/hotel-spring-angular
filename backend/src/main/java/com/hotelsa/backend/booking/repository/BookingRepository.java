@@ -31,4 +31,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             LocalDate checkIn,
             Long hotelId
     );
+
+    // Similar a la anterior pero excluyendo un booking (útil al validar disponibilidad al actualizar la misma reserva)
+    boolean existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelIdAndIdNot(
+            Long roomId,
+            BookingStatus statusNot,
+            LocalDate checkOut,
+            LocalDate checkIn,
+            Long hotelId,
+            Long excludeId
+    );
 }

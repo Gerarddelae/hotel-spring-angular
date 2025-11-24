@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, map, catchError, throwError } from 'rxjs';
+import { Observable, map, catchError, throwError, BehaviorSubject, of, tap } from 'rxjs';
 import { 
   Booking, 
   BookingRequest, 
@@ -23,6 +23,35 @@ export class BookingService {
   private readonly ADDONS_API_URL = 'http://localhost:8080/api/addons';
 
   constructor(private http: HttpClient) {}
+
+  // Simple in-memory cache to avoid reloading the list on every navigation
+  private bookingsSubject = new BehaviorSubject<Booking[] | null>(null);
+
+  /**
+   * Devuelve las reservas desde cache o carga desde el backend si no existe.
+   * @param forceRefresh fuerza recarga desde servidor
+   */
+  getCachedAll(forceRefresh = false): Observable<Booking[]> {
+    const cached = this.bookingsSubject.value;
+    if (!forceRefresh && cached && Array.isArray(cached) && cached.length > 0) {
+      return of(cached);
+    }
+
+    return this.http.get<Booking[]>(this.API_URL).pipe(
+      tap(bookings => this.bookingsSubject.next(bookings)),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Fuerza la recarga de reservas desde el backend y actualiza el cache.
+   */
+  refreshAll(): Observable<Booking[]> {
+    return this.http.get<Booking[]>(this.API_URL).pipe(
+      tap(bookings => this.bookingsSubject.next(bookings)),
+      catchError(this.handleError)
+    );
+  }
 
   /**
    * Obtiene todas las reservas con filtros opcionales
@@ -65,10 +94,12 @@ export class BookingService {
   }
 
   /**
-   * Actualiza una reserva existente
+   * Actualiza una reserva existente (PUT /bookings/{id}).
+   * En esta API el body representa el estado final deseado y puede incluir `addons`.
+   * Devuelve un BookingResponseDTO enriquecido (puede incluir version/updatedAt/ETag).
    */
-  update(id: number, booking: BookingRequest): Observable<Booking> {
-    return this.http.put<Booking>(`${this.API_URL}/${id}`, booking).pipe(
+  update(id: number, booking: BookingRequest): Observable<BookingResponseDTO> {
+    return this.http.put<BookingResponseDTO>(`${this.API_URL}/${id}`, booking).pipe(
       catchError(this.handleError)
     );
   }
@@ -108,9 +139,14 @@ export class BookingService {
    * Verifica disponibilidad de una habitación en un rango de fechas
    */
   checkRoomAvailability(request: AvailabilityCheckRequest): Observable<boolean> {
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('checkIn', request.checkInDate)
       .set('checkOut', request.checkOutDate);
+
+    // If editing an existing booking, backend can exclude that booking from the check
+    if (request.excludeBookingId) {
+      params = params.set('excludeBookingId', request.excludeBookingId.toString());
+    }
 
     return this.http.get<AvailabilityCheckResponse>(
       `${this.API_URL}/room/${request.roomId}/availability`, 
@@ -162,7 +198,20 @@ export class BookingService {
   }
 
   /**
+   * Reemplaza completamente la lista de addons de una reserva (NUEVO - Idempotente)
+   * @param bookingId ID de la reserva
+   * @param addons Lista completa de addons a asignar
+   * @returns BookingResponseDTO con addons actualizados
+   */
+  replaceBookingAddons(bookingId: number, addons: BookingAddonRequest[]): Observable<BookingResponseDTO> {
+    return this.http.put<BookingResponseDTO>(`${this.API_URL}/${bookingId}/addons`, addons).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
    * Añade addons a una reserva
+   * @deprecated Usar replaceBookingAddons para gestión idempotente
    */
   addAddons(bookingId: number, addons: BookingAddonRequest[]): Observable<void> {
     return this.http.post<void>(`${this.API_URL}/${bookingId}/addons`, addons).pipe(
@@ -172,6 +221,7 @@ export class BookingService {
 
   /**
    * Actualiza la cantidad de un addon en una reserva
+   * @deprecated Usar replaceBookingAddons para gestión idempotente
    */
   updateAddonQuantity(bookingId: number, addonId: number, quantity: number): Observable<void> {
     return this.http.patch<void>(
@@ -184,6 +234,7 @@ export class BookingService {
 
   /**
    * Elimina un addon de una reserva
+   * @deprecated Usar replaceBookingAddons para gestión idempotente
    */
   removeAddon(bookingId: number, addonId: number): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${bookingId}/addons/${addonId}`).pipe(
@@ -203,17 +254,7 @@ export class BookingService {
   /**
    * Calcula el total de una reserva incluyendo addons
    */
-  calculateTotal(booking: Booking): number {
-    if (!booking.addons || booking.addons.length === 0) {
-      return booking.totalAmount || 0;
-    }
-
-    const addonsTotal = booking.addons.reduce((sum, addon) => {
-      return sum + (addon.price * addon.quantity);
-    }, 0);
-
-    return (booking.totalAmount || 0) + addonsTotal;
-  }
+  // NOTE: total calculation must be performed by backend. Frontend should use booking.totalAmount.
 
   /**
    * Valida que las fechas sean correctas
@@ -247,9 +288,13 @@ export class BookingService {
       errorMessage = 'Error de lógica de negocio';
     }
 
+    // Preserve backend error body/details so caller can show field errors when available
+    const backendErrorBody = error.error ?? null;
+
     return throwError(() => ({ 
       status: error.status, 
       message: errorMessage,
+      details: backendErrorBody,
       timestamp: new Date().toISOString()
     }));
   }

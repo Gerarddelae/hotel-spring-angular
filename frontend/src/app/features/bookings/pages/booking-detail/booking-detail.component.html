@@ -17,7 +17,7 @@
         mat-raised-button 
         color="primary" 
         (click)="editBooking()"
-        [disabled]="!canEdit()">
+        [disabled]="!canEdit() || isLoading">
         <mat-icon>edit</mat-icon>
         Editar
       </button>
@@ -171,9 +171,21 @@
       <mat-card-content>
         <div class="info-row">
           <span class="label">Hospedaje ({{ calculateNights() }} noche(s)):</span>
-          <span class="value">${{ calculateAccommodationSubtotal() | number:'1.2-2' }}</span>
+          <ng-container *ngIf="booking.accommodationSubtotal !== undefined && booking.accommodationSubtotal !== null; else noAcc">
+            <span class="value">
+              <ng-container *ngIf="getAccommodationPricePerNight() !== null; else simpleAcc">
+                ${{ getAccommodationPricePerNight() | number:'1.2-2' }} × {{ calculateNights() }} noches
+              </ng-container>
+              <ng-template #simpleAcc>
+                ${{ booking.accommodationSubtotal | number:'1.2-2' }}
+              </ng-template>
+            </span>
+          </ng-container>
+          <ng-template #noAcc>
+            <span class="value">-</span>
+          </ng-template>
         </div>
-        
+
         <div class="info-row">
           <span class="label">Servicios Adicionales:</span>
           <span class="value">${{ calculateAddonsTotal() | number:'1.2-2' }}</span>
@@ -183,7 +195,7 @@
         
         <div class="info-row total-row">
           <span class="label">Total:</span>
-          <span class="value total-amount">${{ calculateTotal() | number:'1.2-2' }}</span>
+          <span class="value total-amount">${{ booking.totalAmount | number:'1.2-2' }}</span>
         </div>
       </mat-card-content>
     </mat-card>

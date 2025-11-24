@@ -107,10 +107,10 @@
       <ng-container matColumnDef="totalAmount">
         <th mat-header-cell *matHeaderCellDef>Total</th>
         <td mat-cell *matCellDef="let booking">
-          <strong *ngIf="booking.totalAmount">
+          <strong *ngIf="booking.totalAmount !== undefined && booking.totalAmount !== null">
             ${{ booking.totalAmount | number:'1.2-2' }}
           </strong>
-          <span *ngIf="!booking.totalAmount">-</span>
+          <span *ngIf="booking.totalAmount === undefined || booking.totalAmount === null">-</span>
         </td>
       </ng-container>
 

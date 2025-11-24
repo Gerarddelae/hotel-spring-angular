@@ -3,6 +3,7 @@ package com.hotelsa.backend.booking.dto;
 import com.hotelsa.backend.booking.enums.BookingStatus;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,4 +28,5 @@ public class BookingResponseDTO {
     private LocalDate bookingLeadTime;
     private String notes;
     private List<BookingAddonResponse> addons;
+    private BigDecimal totalAmount;
 }

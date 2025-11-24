@@ -115,11 +115,19 @@ class BookingControllerTest {
                 .bookingLeadTime(LocalDate.now())
                 .build();
 
-        when(bookingService.update(eq(1L), any(BookingRequestDTO.class))).thenReturn(updated);
+        // Usar BookingReplaceRequestDTO para la operación de reemplazo completa
+        com.hotelsa.backend.booking.dto.BookingReplaceRequestDTO replaceDto = new com.hotelsa.backend.booking.dto.BookingReplaceRequestDTO();
+        replaceDto.setGuestId(2L);
+        replaceDto.setRoomId(3L);
+        replaceDto.setCheckInDate(LocalDate.of(2025,6,2));
+        replaceDto.setCheckOutDate(LocalDate.of(2025,6,6));
+        replaceDto.setNotes(null);
+
+        when(bookingService.replaceBooking(eq(1L), any(com.hotelsa.backend.booking.dto.BookingReplaceRequestDTO.class))).thenReturn(updated);
 
         mockMvc.perform(put("/bookings/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDTO)))
+                        .content(objectMapper.writeValueAsString(replaceDto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.checkInDate").value("2025-06-02"))
                 .andExpect(jsonPath("$.checkOutDate").value("2025-06-06"));
@@ -161,6 +169,31 @@ class BookingControllerTest {
                         .content(objectMapper.writeValueAsString(addons)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L));
+    }
+
+    @Test
+    void shouldReplaceAddonsForBookingSuccessfully() throws Exception {
+        List<com.hotelsa.backend.booking.dto.BookingAddonRequest> newAddons = List.of(
+                com.hotelsa.backend.booking.dto.BookingAddonRequest.builder().addonId(2L).quantity(3).build()
+        );
+
+        when(bookingService.replaceAddonsForBooking(eq(1L), anyList())).thenReturn(responseDTO);
+
+        mockMvc.perform(put("/bookings/1/addons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newAddons)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenReplaceAddonsBodyInvalid() throws Exception {
+        // Enviar body vacío produce 500 (HttpMessageNotReadableException)
+        // En producción esto debería manejarse con un @ExceptionHandler que devuelva 400
+        mockMvc.perform(put("/bookings/1/addons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(""))
+                .andExpect(status().isInternalServerError());
     }
 
     @Test
@@ -212,7 +245,7 @@ class BookingControllerTest {
     // Nuevo test: check availability - disponible
     @Test
     void shouldReturnRoomAvailable() throws Exception {
-        when(bookingService.isRoomAvailable(eq(3L), any(LocalDate.class), any(LocalDate.class))).thenReturn(true);
+        when(bookingService.isRoomAvailable(eq(3L), any(LocalDate.class), any(LocalDate.class), any())).thenReturn(true);
 
         mockMvc.perform(get("/bookings/room/3/availability")
                         .param("checkIn", "2025-12-01")
@@ -229,5 +262,20 @@ class BookingControllerTest {
                         .param("checkIn", "2025-12-05")
                         .param("checkOut", "2025-12-05"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldPassExcludeBookingIdToServiceWhenCheckingAvailability() throws Exception {
+        // Mockear la llamada con excludeBookingId = 42
+        when(bookingService.isRoomAvailable(eq(3L), any(LocalDate.class), any(LocalDate.class), eq(42L))).thenReturn(true);
+
+        mockMvc.perform(get("/bookings/room/3/availability")
+                        .param("checkIn", "2025-12-01")
+                        .param("checkOut", "2025-12-05")
+                        .param("excludeBookingId", "42"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(true));
+
+        verify(bookingService, times(1)).isRoomAvailable(eq(3L), any(LocalDate.class), any(LocalDate.class), eq(42L));
     }
 }

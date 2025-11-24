@@ -82,8 +82,11 @@ export class BookingListComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Use cached load to avoid flashing the list when returning from detail view
     this.loadBookings();
     this.setupFilters();
+
+    // Rely on backend `totalAmount`; no client-side room price cache required
   }
 
   /**
@@ -91,15 +94,25 @@ export class BookingListComponent implements OnInit {
    */
   loadBookings(): void {
     this.isLoading = true;
-    this.bookingService.getAll().subscribe({
+    this.bookingService.getCachedAll().subscribe({
       next: (bookings) => {
-        this.bookings = bookings;
+        this.bookings = bookings || [];
         this.applyFilters();
         this.isLoading = false;
       },
       error: (error) => {
-        this.showError('Error al cargar las reservas');
-        this.isLoading = false;
+        // If cache read fails, try a full refresh
+        this.bookingService.refreshAll().subscribe({
+          next: (bookings) => {
+            this.bookings = bookings || [];
+            this.applyFilters();
+            this.isLoading = false;
+          },
+          error: () => {
+            this.showError('Error al cargar las reservas');
+            this.isLoading = false;
+          }
+        });
       }
     });
   }
@@ -246,12 +259,67 @@ export class BookingListComponent implements OnInit {
     
     this.bookingService.create(data.booking).subscribe({
       next: (booking) => {
-        // Si hay addons, agregarlos
+        // Si hay addons, usar el endpoint idempotente que reemplaza la lista completa
         if (data.addons && data.addons.length > 0) {
-          this.addBookingAddons(booking.id, data.addons);
+          const addonRequests = data.addons.map((addon: any) => ({ addonId: addon.addonId, quantity: addon.quantity ?? 1 }));
+          this.bookingService.replaceBookingAddons(booking.id, addonRequests).subscribe({
+            next: (updatedBooking) => {
+              // Normalize addons with subtotal and name
+              if (updatedBooking?.addons && Array.isArray(updatedBooking.addons)) {
+                updatedBooking.addons = updatedBooking.addons.map((a: any) => ({
+                  ...a,
+                  addonName: a.addonName ?? a.name ?? a.addon?.name ?? '',
+                  subtotal: a.subtotal ?? ((a.price ?? a.addon?.price ?? 0) * (a.quantity ?? 1))
+                }));
+              }
+
+              // Insert or update local list
+              const idx = this.bookings.findIndex(b => b.id === updatedBooking.id);
+              if (idx !== -1) {
+                this.bookings[idx] = { ...this.bookings[idx], ...updatedBooking };
+              } else {
+                this.bookings.unshift(updatedBooking);
+              }
+
+              // Refresh full booking from backend to ensure totals are correct
+              this.bookingService.getById(updatedBooking.id).subscribe({
+                next: (fullBooking) => {
+                  const i = this.bookings.findIndex(b => b.id === fullBooking.id);
+                  if (i !== -1) this.bookings[i] = { ...this.bookings[i], ...fullBooking };
+                  else this.bookings.unshift(fullBooking);
+                  this.applyFilters();
+                  this.showSuccess('Reserva creada exitosamente');
+                  this.isLoading = false;
+                },
+                error: () => {
+                  this.applyFilters();
+                  this.showSuccess('Reserva creada exitosamente');
+                  this.isLoading = false;
+                }
+              });
+            },
+            error: (err) => {
+              // Fallback: cargar lista
+              this.showError('Reserva creada, pero no se pudieron asignar los servicios adicionales');
+              this.loadBookings();
+            }
+          });
         } else {
-          this.showSuccess('Reserva creada exitosamente');
-          this.loadBookings();
+          // No addons: refresh the created booking from backend to get totals
+          this.bookingService.getById(booking.id).subscribe({
+            next: (fullBooking) => {
+              const idx = this.bookings.findIndex(b => b.id === fullBooking.id);
+              if (idx !== -1) this.bookings[idx] = { ...this.bookings[idx], ...fullBooking };
+              else this.bookings.unshift(fullBooking);
+              this.applyFilters();
+              this.showSuccess('Reserva creada exitosamente');
+              this.isLoading = false;
+            },
+            error: () => {
+              this.showSuccess('Reserva creada exitosamente');
+              this.loadBookings();
+            }
+          });
         }
       },
       error: (error) => {
@@ -266,14 +334,61 @@ export class BookingListComponent implements OnInit {
    */
   private updateBooking(id: number, data: any): void {
     this.isLoading = true;
-    
-    this.bookingService.update(id, data.booking).subscribe({
-      next: (booking) => {
-        // Sincronizar addons (crear, actualizar o eliminar)
-        this.syncBookingAddons(booking.id, data.addons || []);
+
+    const payload = { ...data.booking } as any;
+    payload.addons = (data.addons || []).map((a: any) => ({ addonId: a.addonId, quantity: a.quantity ?? 1 }));
+
+    this.bookingService.update(id, payload).subscribe({
+      next: (updatedBooking: any) => {
+        if (updatedBooking && updatedBooking.id) {
+          // Normalize addons subtotal if present
+          if (updatedBooking.addons && Array.isArray(updatedBooking.addons)) {
+            updatedBooking.addons = updatedBooking.addons.map((a: any) => ({
+              ...a,
+              subtotal: a.subtotal ?? ((a.price ?? a.addon?.price ?? 0) * (a.quantity ?? 1))
+            }));
+          }
+
+          const idx = this.bookings.findIndex(b => b.id === updatedBooking.id);
+          if (idx !== -1) {
+            this.bookings[idx] = { ...this.bookings[idx], ...updatedBooking };
+          } else {
+            this.bookings.push(updatedBooking);
+          }
+
+          // Refresh full booking from backend to ensure totals and addons are authoritative
+          this.bookingService.getById(updatedBooking.id).subscribe({
+            next: (fullBooking) => {
+              const i = this.bookings.findIndex(b => b.id === fullBooking.id);
+              if (i !== -1) this.bookings[i] = { ...this.bookings[i], ...fullBooking };
+              this.applyFilters();
+              this.showSuccess('Reserva actualizada exitosamente');
+              this.isLoading = false;
+            },
+            error: () => {
+              this.applyFilters();
+              this.showSuccess('Reserva actualizada exitosamente');
+              this.isLoading = false;
+            }
+          });
+          return;
+        }
+
+        // Fallback: reload all
+        this.showSuccess('Reserva actualizada exitosamente');
+        this.loadBookings();
       },
       error: (error) => {
-        this.showError(error.message || 'Error al actualizar la reserva');
+        if (error?.status === 409) {
+          this.showError('La habitación no está disponible para las fechas solicitadas. Cambie fechas o habitación.');
+        } else if (error?.status === 400 && error?.details) {
+          const details = error.details;
+          const fieldMessages = Object.entries(details).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join('\n');
+          this.showError(`Error en los datos:\n${fieldMessages}`);
+        } else {
+          this.showError(error.message || 'Error al actualizar la reserva');
+        }
+
         this.isLoading = false;
       }
     });
@@ -301,7 +416,36 @@ export class BookingListComponent implements OnInit {
   }
 
   /**
-   * Sincroniza los addons de una reserva (para actualizaciones)
+   * Compute booking total for display when backend doesn't provide `totalAmount`.
+   * Returns null when not possible to compute.
+   */
+  
+
+  /**
+   * Reemplaza completamente los addons de una reserva (método simplificado con nuevo endpoint)
+   */
+  private replaceBookingAddons(bookingId: number, addons: any[]): void {
+    // Preparar payload con solo addonId y quantity
+    const addonRequests = addons.map(addon => ({
+      addonId: addon.addonId,
+      quantity: addon.quantity
+    }));
+
+    this.bookingService.replaceBookingAddons(bookingId, addonRequests).subscribe({
+      next: () => {
+        this.showSuccess('Reserva actualizada exitosamente');
+        this.loadBookings();
+      },
+      error: (error) => {
+        this.showError('Error al actualizar los servicios adicionales');
+        this.loadBookings();
+      }
+    });
+  }
+
+  /**
+   * Sincroniza los addons de una reserva (para actualizaciones) - LEGACY
+   * @deprecated Reemplazado por replaceBookingAddons
    */
   private syncBookingAddons(bookingId: number, newAddons: any[]): void {
     this.bookingService.getAddons(bookingId).subscribe({
