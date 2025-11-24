@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -9,7 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Booking, BOOKING_STATUS_OPTIONS } from '../../models/booking.interface';
 import { RoomService } from '../../../rooms/rooms.service';
 import { BookingService } from '../../services/booking.service';
@@ -27,7 +27,8 @@ import { BookingModalFormComponent } from '../../../../shared/components/booking
     MatProgressSpinnerModule,
     MatDividerModule,
     MatListModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatDialogModule
   ],
   templateUrl: './booking-detail.component.html',
   styleUrls: ['./booking-detail.component.scss']
@@ -36,6 +37,8 @@ export class BookingDetailComponent implements OnInit {
   booking: Booking | null = null;
   isLoading = false;
   bookingId: number = 0;
+  @ViewChild('cancelDialog') cancelDialogTpl!: TemplateRef<any>;
+  @ViewChild('deleteDialog') deleteDialogTpl!: TemplateRef<any>;
 
   constructor(
     private route: ActivatedRoute,
@@ -311,14 +314,27 @@ export class BookingDetailComponent implements OnInit {
    */
   cancelBooking(): void {
     if (!this.booking) return;
+    // Open confirmation dialog (template)
+    this.dialog.open(this.cancelDialogTpl, { width: '480px' });
+  }
 
-    const confirmed = confirm(
-      `¿Está seguro de cancelar la reserva #${this.booking.id}?\n` +
-      `Esta acción no se puede deshacer.`
-    );
+  /**
+   * Elimina la reserva
+   */
+  deleteBooking(): void {
+    if (!this.booking) return;
+    this.dialog.open(this.deleteDialogTpl, { width: '480px' });
+  }
 
-    if (!confirmed) return;
+  /** Close any open dialog (used by template buttons) */
+  closeDialog(): void {
+    this.dialog.closeAll();
+  }
 
+  /** Called from the cancel confirmation dialog */
+  confirmCancel(): void {
+    if (!this.booking) return;
+    this.dialog.closeAll();
     this.isLoading = true;
     this.bookingService.cancel(this.booking.id).subscribe({
       next: () => {
@@ -332,19 +348,10 @@ export class BookingDetailComponent implements OnInit {
     });
   }
 
-  /**
-   * Elimina la reserva
-   */
-  deleteBooking(): void {
+  /** Called from the delete confirmation dialog */
+  confirmDelete(): void {
     if (!this.booking) return;
-
-    const confirmed = confirm(
-      `¿Está seguro de eliminar la reserva #${this.booking.id}?\n` +
-      `Esta acción no se puede deshacer y eliminará todos los datos asociados.`
-    );
-
-    if (!confirmed) return;
-
+    this.dialog.closeAll();
     this.isLoading = true;
     this.bookingService.delete(this.booking.id).subscribe({
       next: () => {

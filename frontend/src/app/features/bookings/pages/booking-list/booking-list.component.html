@@ -57,13 +57,13 @@
       
       <!-- Columna ID -->
       <ng-container matColumnDef="id">
-        <th mat-header-cell *matHeaderCellDef>ID</th>
+        <th mat-header-cell *matHeaderCellDef class="px-4 py-2 bg-blue-100 dark:bg-blue-600 border-b border-blue-200 dark:border-blue-500">ID</th>
         <td mat-cell *matCellDef="let booking">#{{ booking.id }}</td>
       </ng-container>
 
       <!-- Columna Huésped -->
       <ng-container matColumnDef="guestName">
-        <th mat-header-cell *matHeaderCellDef>Huésped</th>
+        <th mat-header-cell *matHeaderCellDef class="px-4 py-2 bg-blue-100 dark:bg-blue-600 border-b border-blue-200 dark:border-blue-500">Huésped</th>
         <td mat-cell *matCellDef="let booking">
           {{ booking.guestName || 'N/A' }}
         </td>
@@ -71,7 +71,7 @@
 
       <!-- Columna Habitación -->
       <ng-container matColumnDef="roomNumber">
-        <th mat-header-cell *matHeaderCellDef>Habitación</th>
+        <th mat-header-cell *matHeaderCellDef class="px-4 py-2 bg-blue-100 dark:bg-blue-600 border-b border-blue-200 dark:border-blue-500">Habitación</th>
         <td mat-cell *matCellDef="let booking">
           {{ booking.roomNumber || 'N/A' }}
         </td>
@@ -79,7 +79,7 @@
 
       <!-- Columna Check-in -->
       <ng-container matColumnDef="checkInDate">
-        <th mat-header-cell *matHeaderCellDef>Check-in</th>
+        <th mat-header-cell *matHeaderCellDef class="px-4 py-2 bg-blue-100 dark:bg-blue-600 border-b border-blue-200 dark:border-blue-500">Check-in</th>
         <td mat-cell *matCellDef="let booking">
           {{ booking.checkInDate | date:'dd/MM/yyyy' }}
         </td>
@@ -87,7 +87,7 @@
 
       <!-- Columna Check-out -->
       <ng-container matColumnDef="checkOutDate">
-        <th mat-header-cell *matHeaderCellDef>Check-out</th>
+        <th mat-header-cell *matHeaderCellDef class="px-4 py-2 bg-blue-100 dark:bg-blue-600 border-b border-blue-200 dark:border-blue-500">Check-out</th>
         <td mat-cell *matCellDef="let booking">
           {{ booking.checkOutDate | date:'dd/MM/yyyy' }}
         </td>
@@ -95,7 +95,7 @@
 
       <!-- Columna Estado -->
       <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <th mat-header-cell *matHeaderCellDef class="px-4 py-2 bg-blue-100 dark:bg-blue-600 border-b border-blue-200 dark:border-blue-500">Estado</th>
         <td mat-cell *matCellDef="let booking">
           <mat-chip [color]="getStatusColor(booking.status)" selected>
             {{ getStatusLabel(booking.status) }}
@@ -105,7 +105,7 @@
 
       <!-- Columna Total -->
       <ng-container matColumnDef="totalAmount">
-        <th mat-header-cell *matHeaderCellDef>Total</th>
+        <th mat-header-cell *matHeaderCellDef class="px-4 py-2 bg-blue-100 dark:bg-blue-600 border-b border-blue-200 dark:border-blue-500">Total</th>
         <td mat-cell *matCellDef="let booking">
           <strong *ngIf="booking.totalAmount !== undefined && booking.totalAmount !== null">
             ${{ booking.totalAmount | number:'1.2-2' }}
@@ -116,7 +116,7 @@
 
       <!-- Columna Acciones -->
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>Acciones</th>
+        <th mat-header-cell *matHeaderCellDef class="px-4 py-2 bg-blue-100 dark:bg-blue-600 border-b border-blue-200 dark:border-blue-500">Acciones</th>
         <td mat-cell *matCellDef="let booking">
           <div class="action-buttons">
             <button 

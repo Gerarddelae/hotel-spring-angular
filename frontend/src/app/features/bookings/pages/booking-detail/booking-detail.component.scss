@@ -8,6 +8,12 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 32px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: #ffffff;
+    padding: 12px 0;
+    box-shadow: 0 2px 6px rgba(16,24,40,0.04);
     flex-wrap: wrap;
     gap: 16px;
 
@@ -39,6 +45,36 @@
         mat-icon {
           margin-right: 8px;
         }
+      }
+    }
+  }
+
+  /* Dark mode button styles for action buttons - matching booking-list */
+  :host-context(.dark) .header .action-buttons {
+    button[mat-raised-button][color="primary"] {
+      background-color: #1E3160 !important;
+      color: #ffffff !important;
+      box-shadow: 0 6px 12px rgba(8,145,178,0.18) !important;
+
+      &:hover {
+        background-color: #2462EA !important;
+      }
+    }
+
+    button[mat-raised-button][color="warn"] {
+      background-color: #991b1b !important;
+      color: #ffffff !important;
+
+      &:hover {
+        background-color: #b91c1c !important;
+      }
+    }
+
+    button[mat-button][color="warn"] {
+      color: #fca5a5 !important;
+
+      &:hover {
+        background-color: rgba(185,28,28,0.1) !important;
       }
     }
   }
@@ -257,6 +293,71 @@
         color: #333;
         line-height: 1.6;
         margin: 0;
+      }
+    }
+  }
+}
+
+/* Dark mode adjustments to match project cyan/blue palette */
+:host-context(.dark) {
+  .booking-detail-container {
+    h1 { color: rgba(230,238,248,0.95); }
+
+    .header {
+      .title-section {
+        .back-button { mat-icon { color: rgba(230,238,248,0.9); } }
+        h1 { color: rgba(230,238,248,0.95); }
+      }
+
+      .action-buttons button { color: rgba(230,238,248,0.95); }
+
+      /* Override sticky header background in dark mode */
+      background: #0b1220;
+      box-shadow: 0 2px 8px rgba(2,6,23,0.6);
+    }
+
+    .content-grid {
+      .info-card {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.04);
+        color: rgba(230,238,248,0.95);
+
+        mat-card-header {
+          mat-icon[mat-card-avatar] {
+            background-color: #0ea5b5; /* cyan-500 */
+            color: #062023;
+          }
+          mat-card-title { color: rgba(230,238,248,0.95); }
+          mat-card-subtitle { color: rgba(230,238,248,0.65); }
+        }
+
+        mat-card-content {
+          .info-row { border-bottom-color: rgba(255,255,255,0.04);
+            .label { color: rgba(230,238,248,0.6); }
+            .value { color: rgba(230,238,248,0.95); }
+            &.total-row .total-amount { color: #60a5fa; }
+          }
+        }
+
+        &.dates-card {
+          .dates-grid {
+            .nights-indicator { background: rgba(255,255,255,0.02); mat-icon { color: #60a5fa; } span { color: rgba(230,238,248,0.95); } }
+            .date-box { .date-value { color: #60a5fa; } .date-time { color: rgba(230,238,248,0.6); } }
+          }
+        }
+
+        &.addons-card {
+          .addon-item { .addon-name, .addon-details { color: rgba(230,238,248,0.9); } .addon-subtotal { color: #60a5fa; } }
+          .addons-total { .value { color: #60a5fa; } }
+        }
+
+        &.financial-card {
+          background: linear-gradient(135deg, #0ea5b5 0%, #3b82f6 100%);
+          mat-card-header mat-card-title { color: #062023; }
+          mat-card-content { .label, .value { color: #062023; } mat-divider { background-color: rgba(6,32,35,0.12); } }
+        }
+
+        .notes-text { background: rgba(255,255,255,0.02); color: rgba(230,238,248,0.85); border-left-color: #60a5fa; }
       }
     }
   }

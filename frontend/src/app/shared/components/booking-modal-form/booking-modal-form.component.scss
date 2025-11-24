@@ -94,6 +94,108 @@ mat-option mat-spinner { margin-right:8px; }
 /* Error snackbar style kept but minimal */
 ::ng-deep .error-snackbar { background-color:#ef4444 !important; color:#fff !important; }
 
+/* Dark-mode specific adjustments for 'Servicios Adicionales' and summary */
+:host-context(.dark) {
+  /* Make the total summary more subtle with a cyan tint and readable text */
+  .total-summary {
+    background: rgba(24, 149, 207, 0.04);
+    color: rgba(118, 122, 126, 0.95);
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .summary-line strong { color: #60a5fa; }
+  .summary-line.total-line { border-top-color: rgba(255,255,255,0.06); }
+  .summary-line.total-line strong.total-amount { color: #3b82f6; }
+
+  /* Availability indicators need to keep the green/red meaning but with dark backgrounds */
+  .availability-indicator.available {
+    background: rgba(16,185,129,0.06);
+    color: #bbf7d0;
+    border-left-color: #059669;
+  }
+  .availability-indicator.unavailable {
+    background: rgba(239,68,68,0.04);
+    color: #fecaca;
+    border-left-color: #ef4444;
+  }
+
+  /* Services list items: slightly lighter than page background, with clear price color */
+  /* Target addon-selector component elements (actual classes used in template) */
+  .addon-selector {
+    .addon-add-section { display:flex; gap:12px; align-items:center; }
+
+    .addon-select ::ng-deep .mat-mdc-select-value { color: rgba(230,238,248,0.95); }
+
+    .add-button {
+      background: #0891b2 !important;
+      color: #a3a0a0 !important;
+      box-shadow: none;
+    }
+
+    .selected-addons {
+      display:flex; flex-direction:column; gap:12px;
+    }
+
+    .addon-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.04);
+      color: rgba(230,238,248,0.95);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .addon-info { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+
+    .addon-name { display:flex; flex-direction:column; gap:6px; }
+    .addon-price { color: #60a5fa; font-weight:700; }
+
+    .quantity-controls { display:flex; align-items:center; gap:8px; }
+    .quantity-input,
+    input.quantity-input {
+      background: #0b1220;
+      color: rgba(58, 59, 59, 0.95);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 6px;
+      padding: 6px 8px;
+      width:64px;
+    }
+
+    .addon-subtotal strong { color: #606264; font-weight:700; }
+
+    .addon-total {
+      display:flex; justify-content:space-between; align-items:center; padding:10px; border-radius:8px;
+      background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04);
+    }
+    .addon-total .total-amount { color: #3b82f6; font-weight:700; }
+  }
+
+  /* Preview card (Previsualización) */
+  .preview-card,
+  .preview {
+    background: rgba(255,255,255,0.02);
+    color: rgba(230,238,248,0.95);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  /* Note / footer text */
+  .note,
+  .booking-note {
+    background: rgba(255,255,255,0.02);
+    color: rgba(230,238,248,0.5);
+  }
+
+  /* Dialog action primary button: cyan/teal accent suitable for dark background */
+  mat-dialog-actions button.mat-primary {
+    background-color: #0891b2 !important;
+    color: #ffffff !important;
+  }
+
+  /* Small overrides for material outlines in dark mode (extra safety) */
+  ::ng-deep .mat-mdc-form-field-outline { border-color: rgba(255,255,255,0.06) !important; }
+}
+
 /* Responsive tweaks */
 @media (max-width: 768px) {
   :host { max-width: 100%; padding:16px; }

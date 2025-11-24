@@ -54,12 +54,17 @@ export type BookingStatus =
   | 'CONFIRMED' 
   | 'CHECKED_IN' 
   | 'CHECKED_OUT' 
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'NO_SHOW'
+  | 'COMPLETED';
 
 export const BOOKING_STATUS_OPTIONS = [
   { value: 'PENDING', label: 'Pendiente' },
   { value: 'CONFIRMED', label: 'Confirmada' },
   { value: 'CHECKED_IN', label: 'Check-in realizado' },
   { value: 'CHECKED_OUT', label: 'Check-out realizado' },
-  { value: 'CANCELLED', label: 'Cancelada' }
+  { value: 'CANCELLED', label: 'Cancelada' },
+  { value: 'NO_SHOW', label: 'No presentado' },
+  { value: 'COMPLETED', label: 'Completada' }
 ];
+

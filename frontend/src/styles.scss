@@ -51,12 +51,13 @@ body {
 }
 
 // 8. Ajustes para tablas y paginador
-table.mat-mdc-table {
+.table.mat-mdc-table {
   @apply w-full text-left border-collapse;
 }
 
 .mat-mdc-header-cell {
-  @apply bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold;
+  /* Structural header rules only: visual colors are controlled via Tailwind classes in templates. */
+  font-weight: 600;
 }
 
 .mat-mdc-cell {
@@ -72,8 +73,7 @@ table.mat-mdc-table {
 }
 
 .dark .mat-mdc-header-cell {
-  background-color: #374151; // bg-gray-700
-  color: #d1d5db;           // text-gray-300
+  /* Visual styles for header are defined via Tailwind classes in templates. */
 }
 
 .dark .mat-mdc-cell {
@@ -87,7 +87,7 @@ table.mat-mdc-table {
 
 /* Cabeceras más compactas */
 .mat-mdc-header-cell {
-  @apply px-4 py-2 bg-gray-100 dark:bg-gray-800 text-[11px] font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider;
+  @apply px-4 py-2 text-[11px] font-semibold uppercase tracking-wider;
 }
 
 /* Celdas más reducidas */

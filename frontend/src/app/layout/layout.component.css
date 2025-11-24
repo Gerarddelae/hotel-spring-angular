@@ -150,6 +150,11 @@ nav a[routerLinkActive] {
   position: relative;
 }
 
+/* Header is now outside scroll area (flex-shrink-0) so no sticky needed */
+main > header {
+  z-index: 40;
+}
+
 /* Responsive utilities */
 @media (max-width: 1023px) {
   .sidebar-desktop-expanded,
