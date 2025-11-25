@@ -111,6 +111,19 @@ export const routes: Routes = [
         },
       },
       {
+        path: 'bills',
+        loadChildren: () =>
+          import('./features/billing/billing.routes').then(
+            (m) => m.billingRoutes
+          ),
+        canActivate: [() => roleGuard(['ADMIN', 'EMPLOYEE', 'USER'])],
+        data: {
+          title: 'Facturación',
+          subtitle: 'Gestión de facturas del hotel',
+          icon: 'pi-receipt',
+        },
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full',

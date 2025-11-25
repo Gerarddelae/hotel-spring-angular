@@ -8,6 +8,7 @@ import com.hotelsa.backend.bill.exception.BillNotFoundException;
 import com.hotelsa.backend.bill.mapper.BillMapper;
 import com.hotelsa.backend.bill.model.Bill;
 import com.hotelsa.backend.bill.enums.BillStatus;
+import com.hotelsa.backend.bill.enums.PaymentMethod;
 import com.hotelsa.backend.billaddon.entity.BillAddon;
 import com.hotelsa.backend.billaddon.entity.BillAddonId;
 import com.hotelsa.backend.billaddon.mapper.BillAddonMapper;
@@ -91,7 +92,11 @@ public class BillService {
 
         saved.setTotalAmount(total);
         saved.setAddons(persistedAddons);
-        Bill finalSaved = billRepository.save(saved);
+        billRepository.save(saved);
+
+        // Recargar la factura con todas las relaciones
+        Bill finalSaved = billRepository.findByIdWithRelations(saved.getId())
+                .orElseThrow(() -> new BillNotFoundException("Error al recargar la factura creada"));
 
         log.debug("✅ Created bill {} for booking {} in hotel {}", finalSaved.getId(), bookingId, currentHotelId);
         return billMapper.fromEntity(finalSaved);
@@ -99,7 +104,7 @@ public class BillService {
 
     @Transactional(readOnly = true)
     public BillResponseDTO findById(Long id) {
-        Bill bill = billRepository.findById(id)
+        Bill bill = billRepository.findByIdWithRelations(id)
                 .orElseThrow(() -> new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel"));
 
         Long currentHotelId = getCurrentHotelId();
@@ -112,7 +117,7 @@ public class BillService {
 
     @Transactional(readOnly = true)
     public List<BillResponseDTO> findAll() {
-        List<Bill> bills = billRepository.findAll();
+        List<Bill> bills = billRepository.findAllWithRelations();
         return bills.stream().map(billMapper::fromEntity).collect(Collectors.toList());
     }
 
@@ -130,6 +135,23 @@ public class BillService {
         bill.setStatus(status);
         Bill updated = billRepository.save(bill);
         log.debug("✅ Updated bill {} status to {}", updated.getId(), status);
+        return billMapper.fromEntity(updated);
+    }
+
+    @AdminOnly
+    @Transactional
+    public BillResponseDTO updatePaymentMethod(Long billId, PaymentMethod paymentMethod) {
+        Bill bill = billRepository.findById(billId)
+                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel"));
+
+        Long currentHotelId = getCurrentHotelId();
+        if (currentHotelId != null && !currentHotelId.equals(bill.getHotelId())) {
+            throw new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel");
+        }
+
+        bill.setPaymentMethod(paymentMethod);
+        Bill updated = billRepository.save(bill);
+        log.debug("✅ Updated bill {} payment method to {}", updated.getId(), paymentMethod);
         return billMapper.fromEntity(updated);
     }
 

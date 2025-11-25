@@ -6,6 +6,7 @@ import com.hotelsa.backend.auth.JwtFilter;
 import com.hotelsa.backend.bill.dto.BillRequestDTO;
 import com.hotelsa.backend.bill.dto.BillResponseDTO;
 import com.hotelsa.backend.bill.enums.BillStatus;
+import com.hotelsa.backend.bill.enums.PaymentMethod;
 import com.hotelsa.backend.bill.exception.BillNotFoundException;
 import com.hotelsa.backend.bill.service.BillService;
 import com.hotelsa.backend.booking.exception.BookingNotFoundException;
@@ -132,6 +133,25 @@ class BillControllerTest {
     }
 
     @Test
+    void updatePaymentMethod_debeRetornarFacturaActualizada() throws Exception {
+        BillResponseDTO updated = BillResponseDTO.builder()
+                .id(100L)
+                .bookingId(5L)
+                .paymentMethod(PaymentMethod.CREDIT_CARD.name())
+                .totalAmount(responseDto.getTotalAmount())
+                .createdAt(responseDto.getCreatedAt())
+                .build();
+        when(billService.updatePaymentMethod(100L, PaymentMethod.CREDIT_CARD)).thenReturn(updated);
+
+        mockMvc.perform(patch("/api/bills/{id}/payment-method", 100)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("\"CREDIT_CARD\""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(100))
+                .andExpect(jsonPath("$.paymentMethod").value("CREDIT_CARD"));
+    }
+
+    @Test
     void delete_debeRetornarNoContentCuandoExitoso() throws Exception {
         doNothing().when(billService).delete(100L);
 
@@ -147,4 +167,3 @@ class BillControllerTest {
                 .andExpect(status().isNotFound());
     }
 }
-
