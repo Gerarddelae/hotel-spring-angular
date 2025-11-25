@@ -53,7 +53,7 @@
 
   <!-- Tabla de reservas -->
   <div class="table-container">
-    <table mat-table [dataSource]="filteredBookings" class="bookings-table">
+    <table mat-table [dataSource]="dataSource" class="bookings-table">
       
       <!-- Columna ID -->
       <ng-container matColumnDef="id">
@@ -169,6 +169,12 @@
         </td>
       </tr>
     </table>
+    
+    <mat-paginator
+      [pageSizeOptions]="[5, 10, 25]"
+      showFirstLastButtons
+      aria-label="Paginador de reservas">
+    </mat-paginator>
   </div>
 
   <!-- Resumen -->

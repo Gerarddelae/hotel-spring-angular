@@ -32,19 +32,7 @@ export const routes: Routes = [
           icon: 'pi-chart-line',
         },
       },
-      {
-        path: 'reservations',
-        loadComponent: () =>
-          import('./features/reservations/reservations.component').then(
-            (m) => m.ReservationsComponent
-          ),
-        canActivate: [() => roleGuard(['ADMIN', 'USER'])],
-        data: {
-          title: 'Reservas',
-          subtitle: 'Gestión de reservas y bookings',
-          icon: 'pi-calendar',
-        },
-      },
+      /* 'reservations' route removed - replaced by 'bookings' for employees/users */
       {
         path: 'users',
         loadComponent: () =>
@@ -108,6 +96,19 @@ export const routes: Routes = [
           title: 'Reservas',
           subtitle: 'Gestión completa de reservas del hotel',
           icon: 'pi-bookmark',
+        },
+      },
+      {
+        path: 'bills',
+        loadChildren: () =>
+          import('./features/billing/billing.routes').then(
+            (m) => m.billingRoutes
+          ),
+        canActivate: [() => roleGuard(['ADMIN', 'EMPLOYEE', 'USER'])],
+        data: {
+          title: 'Facturación',
+          subtitle: 'Gestión de facturas del hotel',
+          icon: 'pi-receipt',
         },
       },
       {

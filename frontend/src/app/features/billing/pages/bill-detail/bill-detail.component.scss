@@ -1,0 +1,482 @@
+.bill-detail-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: #ffffff;
+    padding: 12px 0;
+    box-shadow: 0 2px 6px rgba(16,24,40,0.04);
+    flex-wrap: wrap;
+    gap: 16px;
+
+    .title-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .back-button {
+        mat-icon {
+          font-size: 24px;
+        }
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 500;
+        color: #333;
+      }
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+
+      button {
+        mat-icon {
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+
+  /* Dark mode button styles for action buttons - matching booking-detail */
+  :host-context(.dark) .header .action-buttons {
+        .header {
+      .title-section {
+        .back-button { mat-icon { color: rgba(230,238,248,0.9); } }
+        h1 { color: rgba(230,238,248,0.95); }
+      }
+
+      .action-buttons button { color: rgba(230,238,248,0.95); }
+
+      /* Override sticky header background in dark mode */
+      background: #0b1220;
+      box-shadow: 0 2px 8px rgba(2,6,23,0.6);
+    }
+    button[mat-raised-button][color="primary"] {
+      background-color: #1E3160 !important;
+      color: #ffffff !important;
+      box-shadow: 0 6px 12px rgba(8,145,178,0.18) !important;
+
+      &:hover {
+        background-color: #2462EA !important;
+      }
+    }
+
+    button[mat-raised-button][color="warn"] {
+      background-color: #991b1b !important;
+      color: #ffffff !important;
+
+      &:hover {
+        background-color: #b91c1c !important;
+      }
+    }
+
+    button[mat-button][color="warn"] {
+      color: #fca5a5 !important;
+
+      &:hover {
+        background-color: rgba(185,28,28,0.1) !important;
+      }
+    }
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 24px;
+
+    .info-card {
+      mat-card-header {
+        margin-bottom: 16px;
+
+        mat-icon[mat-card-avatar] {
+          width: 40px;
+          height: 40px;
+          font-size: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: #3f51b5;
+          color: white;
+          border-radius: 50%;
+        }
+
+        mat-card-title {
+          font-size: 18px;
+          font-weight: 500;
+        }
+      }
+
+      mat-card-content {
+        .info-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 0;
+          border-bottom: 1px solid #f0f0f0;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .label {
+            font-weight: 500;
+            color: #666;
+          }
+
+          .value {
+            color: #333;
+            text-align: right;
+
+            &.clickable {
+              color: #3f51b5;
+              cursor: pointer;
+              text-decoration: underline;
+
+              &:hover {
+                color: #1a237e;
+              }
+            }
+          }
+
+          .status-select {
+            width: 150px;
+            margin: 0;
+          }
+
+          &.total-row {
+            margin-top: 8px;
+            padding-top: 16px;
+            font-size: 18px;
+
+            .total-amount {
+              font-size: 24px;
+              font-weight: bold;
+              color: #3f51b5;
+            }
+          }
+        }
+      }
+
+      &.dates-card {
+        grid-column: span 2;
+
+        .dates-grid {
+          display: flex;
+          justify-content: space-around;
+          align-items: center;
+          padding: 16px 0;
+
+          .date-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+
+            .date-label {
+              font-size: 12px;
+              color: #666;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            }
+
+            .date-value {
+              font-size: 18px;
+              font-weight: 500;
+              color: #333;
+            }
+          }
+
+          .nights-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #3f51b5;
+
+            mat-icon {
+              font-size: 32px;
+              width: 32px;
+              height: 32px;
+            }
+
+            span {
+              font-size: 14px;
+              font-weight: 500;
+            }
+          }
+        }
+      }
+
+      &.addons-card {
+        .addon-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+          padding: 8px 0;
+
+          .addon-info {
+            display: flex;
+            flex-direction: column;
+
+            .addon-name {
+              font-weight: 500;
+              color: #333;
+            }
+
+            .addon-details {
+              font-size: 12px;
+              color: #666;
+            }
+          }
+
+          .addon-subtotal {
+            font-weight: 500;
+            color: #3f51b5;
+          }
+        }
+
+        .addons-total {
+          display: flex;
+          justify-content: space-between;
+          padding: 16px 0;
+          font-weight: 500;
+
+          .label {
+            color: #666;
+          }
+
+          .value {
+            color: #3f51b5;
+          }
+        }
+      }
+
+      .notes-text {
+        color: #666;
+        line-height: 1.6;
+        margin: 0;
+      }
+    }
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  gap: 16px;
+
+  p {
+    color: #666;
+    margin: 0;
+  }
+}
+
+// Dark mode styles
+:host-context(.dark) {
+  .bill-detail-container {
+    .header {
+      background: #1e293b;
+
+      .title-section h1 {
+        color: #e2e8f0;
+      }
+
+      .action-buttons {
+        button[mat-raised-button][color="primary"] {
+          background-color: #1E3160 !important;
+          color: #ffffff !important;
+
+          &:hover {
+            background-color: #2462EA !important;
+          }
+        }
+
+        button[mat-button][color="warn"] {
+          color: #fca5a5 !important;
+
+          &:hover {
+            background-color: rgba(185,28,28,0.1) !important;
+          }
+        }
+      }
+    }
+
+    .content-grid {
+      .info-card {
+        background-color: #1e293b;
+        color: #e2e8f0;
+
+        mat-card-content {
+          .info-row {
+            border-bottom-color: #334155;
+
+            .label {
+              color: #94a3b8;
+            }
+
+            .value {
+              color: #e2e8f0;
+
+              &.clickable {
+                color: #60a5fa;
+
+                &:hover {
+                  color: #93c5fd;
+                }
+              }
+            }
+
+            &.total-row .total-amount {
+              color: #60a5fa;
+            }
+          }
+        }
+
+        &.dates-card {
+          .dates-grid {
+            .date-box {
+              .date-label {
+                color: #94a3b8;
+              }
+
+              .date-value {
+                color: #e2e8f0;
+              }
+            }
+
+            .nights-indicator {
+              color: #60a5fa;
+            }
+          }
+        }
+
+        &.addons-card {
+          .addon-item {
+            .addon-info {
+              .addon-name {
+                color: #e2e8f0;
+              }
+
+              .addon-details {
+                color: #94a3b8;
+              }
+            }
+
+            .addon-subtotal {
+              color: #60a5fa;
+            }
+          }
+
+          .addons-total {
+            .label {
+              color: #94a3b8;
+            }
+
+            .value {
+              color: #60a5fa;
+            }
+          }
+        }
+
+        .notes-text {
+          color: #94a3b8;
+        }
+      }
+    }
+  }
+
+  /* Dark mode adjustments to match booking detail sticky header */
+  :host-context(.dark) {
+    .bill-detail-container {
+      h1 { color: rgba(230,238,248,0.95); }
+
+      .header {
+        .title-section {
+          .back-button { mat-icon { color: rgba(230,238,248,0.9); } }
+          h1 { color: rgba(230,238,248,0.95); }
+        }
+
+        .action-buttons button { color: rgba(230,238,248,0.95); }
+
+        /* Make sticky header darker to match booking detail */
+        background: #0b1220;
+        box-shadow: 0 2px 8px rgba(2,6,23,0.6);
+      }
+
+      .content-grid {
+        .info-card {
+          background: rgba(255,255,255,0.02);
+          border: 1px solid rgba(255,255,255,0.04);
+          color: rgba(230,238,248,0.95);
+
+          mat-card-header {
+            mat-icon[mat-card-avatar] { background-color: #0ea5b5; color: #062023; }
+            mat-card-title { color: rgba(230,238,248,0.95); }
+            mat-card-subtitle { color: rgba(230,238,248,0.65); }
+          }
+
+          mat-card-content {
+            .info-row { border-bottom-color: rgba(255,255,255,0.04);
+              .label { color: rgba(230,238,248,0.6); }
+              .value { color: rgba(230,238,248,0.95); }
+              &.total-row .total-amount { color: #60a5fa; }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .loading-container p {
+    color: #94a3b8;
+  }
+}
+
+@media (max-width: 768px) {
+  .bill-detail-container {
+    padding: 16px;
+
+    .header {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .title-section {
+        flex-wrap: wrap;
+      }
+
+      .action-buttons {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+
+    .content-grid {
+      grid-template-columns: 1fr;
+
+      .dates-card {
+        grid-column: span 1;
+
+        .dates-grid {
+          flex-direction: column;
+          gap: 24px;
+        }
+      }
+    }
+  }
+}

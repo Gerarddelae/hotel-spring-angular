@@ -14,6 +14,8 @@ import { Booking, BOOKING_STATUS_OPTIONS } from '../../models/booking.interface'
 import { RoomService } from '../../../rooms/rooms.service';
 import { BookingService } from '../../services/booking.service';
 import { BookingModalFormComponent } from '../../../../shared/components/booking-modal-form/booking-modal-form.component';
+import { BillService } from '../../../billing/services/bill.service';
+import { Bill } from '../../../billing/models';
 
 @Component({
   selector: 'app-booking-detail',
@@ -37,8 +39,11 @@ export class BookingDetailComponent implements OnInit {
   booking: Booking | null = null;
   isLoading = false;
   bookingId: number = 0;
+  existingBill: Bill | null = null;
+  isGeneratingBill = false;
   @ViewChild('cancelDialog') cancelDialogTpl!: TemplateRef<any>;
   @ViewChild('deleteDialog') deleteDialogTpl!: TemplateRef<any>;
+  @ViewChild('generateBillDialog') generateBillDialogTpl!: TemplateRef<any>;
 
   constructor(
     private route: ActivatedRoute,
@@ -47,7 +52,7 @@ export class BookingDetailComponent implements OnInit {
     private roomService: RoomService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
-    
+    private billService: BillService
   ) {}
 
   ngOnInit(): void {
@@ -55,8 +60,70 @@ export class BookingDetailComponent implements OnInit {
       this.bookingId = +params['id'];
       if (this.bookingId) {
         this.loadBookingDetail();
+        this.checkExistingBill();
       }
     });
+  }
+
+  /**
+   * Verifica si existe una factura para este booking
+   */
+  checkExistingBill(): void {
+    this.billService.getBillByBookingId(this.bookingId).subscribe({
+      next: (bill) => {
+        this.existingBill = bill;
+      },
+      error: () => {
+        this.existingBill = null;
+      }
+    });
+  }
+
+  /**
+   * Abre el modal de confirmación para generar factura
+   */
+  generateBill(): void {
+    if (this.existingBill) {
+      this.router.navigate(['/bills', this.existingBill.id]);
+      return;
+    }
+    this.dialog.open(this.generateBillDialogTpl, { width: '480px' });
+  }
+
+  /**
+   * Confirma y genera la factura (llamado desde el modal)
+   */
+  confirmGenerateBill(): void {
+    this.dialog.closeAll();
+    this.isGeneratingBill = true;
+    this.billService.createBill(this.bookingId).subscribe({
+      next: (bill) => {
+        this.showSuccess('Factura generada exitosamente');
+        this.isGeneratingBill = false;
+        this.router.navigate(['/bills', bill.id]);
+      },
+      error: (error) => {
+        this.showError(error.message || 'Error al generar la factura');
+        this.isGeneratingBill = false;
+      }
+    });
+  }
+
+  /**
+   * Navega a la factura existente
+   */
+  viewBill(): void {
+    if (this.existingBill) {
+      this.router.navigate(['/bills', this.existingBill.id]);
+    }
+  }
+
+  /**
+   * Verifica si se puede generar factura
+   */
+  canGenerateBill(): boolean {
+    if (!this.booking) return false;
+    return this.booking.status !== 'CANCELLED' && !this.existingBill;
   }
 
   /**

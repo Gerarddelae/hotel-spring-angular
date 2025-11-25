@@ -143,11 +143,13 @@ class BillServiceTest {
         Bill finalBill = Bill.builder()
                 .id(savedInitial.getId())
                 .hotelId(hotel.getId())
+                .booking(booking)
                 .totalAmount(persisted.getTotalPrice())
                 .addons(List.of(persisted))
                 .build();
 
         when(billRepository.save(savedInitial)).thenReturn(finalBill);
+        when(billRepository.findByIdWithRelations(savedInitial.getId())).thenReturn(Optional.of(finalBill));
         when(billMapper.fromEntity(any(Bill.class))).thenReturn(responseDto);
 
         BillResponseDTO res = billService.createBill(booking.getId(), requestDto);
@@ -156,6 +158,7 @@ class BillServiceTest {
         assertEquals(responseDto.getId(), res.getId());
         verify(billRepository, atLeastOnce()).save(any(Bill.class));
         verify(billAddonRepository).save(any(BillAddon.class));
+        verify(billRepository).findByIdWithRelations(savedInitial.getId());
     }
 
     @Test
@@ -169,7 +172,7 @@ class BillServiceTest {
     @Test
     void findById_ShouldReturnDtoWhenBelongsToHotel() {
         Bill entity = Bill.builder().id(40L).hotelId(hotel.getId()).totalAmount(BigDecimal.valueOf(100)).build();
-        when(billRepository.findById(40L)).thenReturn(Optional.of(entity));
+        when(billRepository.findByIdWithRelations(40L)).thenReturn(Optional.of(entity));
         when(billMapper.fromEntity(entity)).thenReturn(responseDto);
 
         BillResponseDTO res = billService.findById(40L);
@@ -181,7 +184,7 @@ class BillServiceTest {
     @Test
     void findById_ShouldThrowWhenBillNotBelongToHotel() {
         Bill entity = Bill.builder().id(50L).hotelId(999L).totalAmount(BigDecimal.valueOf(20)).build();
-        when(billRepository.findById(50L)).thenReturn(Optional.of(entity));
+        when(billRepository.findByIdWithRelations(50L)).thenReturn(Optional.of(entity));
 
         assertThrows(com.hotelsa.backend.bill.exception.BillNotFoundException.class,
                 () -> billService.findById(50L));
@@ -192,7 +195,7 @@ class BillServiceTest {
         Bill b1 = Bill.builder().id(1L).hotelId(hotel.getId()).totalAmount(BigDecimal.ONE).build();
         Bill b2 = Bill.builder().id(2L).hotelId(hotel.getId()).totalAmount(BigDecimal.TEN).build();
 
-        when(billRepository.findAll()).thenReturn(List.of(b1, b2));
+        when(billRepository.findAllWithRelations()).thenReturn(List.of(b1, b2));
         when(billMapper.fromEntity(b1)).thenReturn(BillResponseDTO.builder().id(1L).totalAmount(BigDecimal.ONE).build());
         when(billMapper.fromEntity(b2)).thenReturn(BillResponseDTO.builder().id(2L).totalAmount(BigDecimal.TEN).build());
 

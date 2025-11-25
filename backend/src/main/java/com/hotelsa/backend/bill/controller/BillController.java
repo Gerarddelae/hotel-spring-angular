@@ -4,6 +4,7 @@ import com.hotelsa.backend.aop.annotation.AdminOnly;
 import com.hotelsa.backend.bill.dto.BillRequestDTO;
 import com.hotelsa.backend.bill.dto.BillResponseDTO;
 import com.hotelsa.backend.bill.enums.BillStatus;
+import com.hotelsa.backend.bill.enums.PaymentMethod;
 import com.hotelsa.backend.bill.service.BillService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,14 @@ public class BillController {
     @AdminOnly
     public ResponseEntity<BillResponseDTO> updateStatus(@PathVariable Long id, @RequestBody BillStatus status) {
         return ResponseEntity.ok(billService.updateStatus(id, status));
+    }
+
+    @PatchMapping("/{id}/payment-method")
+    @AdminOnly
+    public ResponseEntity<BillResponseDTO> updatePaymentMethod(@PathVariable Long id, @RequestBody String paymentMethodRaw) {
+        String cleaned = paymentMethodRaw.replace("\"", "").trim();
+        PaymentMethod paymentMethod = PaymentMethod.valueOf(cleaned);
+        return ResponseEntity.ok(billService.updatePaymentMethod(id, paymentMethod));
     }
 
     @DeleteMapping("/{id}")
