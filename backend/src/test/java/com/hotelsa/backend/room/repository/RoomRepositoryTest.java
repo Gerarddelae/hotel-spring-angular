@@ -222,4 +222,150 @@ class RoomRepositoryTest {
         assertThat(all).extracting(Room::getNumber)
                 .containsExactlyInAnyOrder("602", "603");
     }
+
+    // ==================== DASHBOARD TESTS ====================
+
+    @Test
+    void countOccupied_debeContarSoloHabitacionesConEstadoOCCUPIED() {
+        roomRepository.save(Room.builder()
+                .number("701")
+                .type(RoomType.SINGLE)
+                .status(RoomStatus.OCCUPIED)
+                .floor(7)
+                .capacity(1)
+                .pricePerNight(100.0)
+                .hotelId(hotel.getId())
+                .build());
+
+        roomRepository.save(Room.builder()
+                .number("702")
+                .type(RoomType.DOUBLE)
+                .status(RoomStatus.OCCUPIED)
+                .floor(7)
+                .capacity(2)
+                .pricePerNight(150.0)
+                .hotelId(hotel.getId())
+                .build());
+
+        roomRepository.save(Room.builder()
+                .number("703")
+                .type(RoomType.SUITE)
+                .status(RoomStatus.AVAILABLE)
+                .floor(7)
+                .capacity(4)
+                .pricePerNight(300.0)
+                .hotelId(hotel.getId())
+                .build());
+
+        roomRepository.save(Room.builder()
+                .number("704")
+                .type(RoomType.SINGLE)
+                .status(RoomStatus.MAINTENANCE)
+                .floor(7)
+                .capacity(1)
+                .pricePerNight(100.0)
+                .hotelId(hotel.getId())
+                .build());
+
+        roomRepository.save(Room.builder()
+                .number("705")
+                .type(RoomType.DOUBLE)
+                .status(RoomStatus.OCCUPIED)
+                .floor(7)
+                .capacity(2)
+                .pricePerNight(160.0)
+                .hotelId(hotel.getId())
+                .build());
+
+        int count = roomRepository.countOccupied();
+
+        assertEquals(3, count);
+    }
+
+    @Test
+    void countOccupied_debeRetornarCeroCuandoNoHayHabitacionesOcupadas() {
+        roomRepository.save(Room.builder()
+                .number("801")
+                .type(RoomType.SINGLE)
+                .status(RoomStatus.AVAILABLE)
+                .floor(8)
+                .capacity(1)
+                .pricePerNight(100.0)
+                .hotelId(hotel.getId())
+                .build());
+
+        roomRepository.save(Room.builder()
+                .number("802")
+                .type(RoomType.DOUBLE)
+                .status(RoomStatus.MAINTENANCE)
+                .floor(8)
+                .capacity(2)
+                .pricePerNight(150.0)
+                .hotelId(hotel.getId())
+                .build());
+
+        int count = roomRepository.countOccupied();
+
+        assertEquals(0, count);
+    }
+
+    @Test
+    void findDashboardSummary_debeRetornarTodasLasHabitacionesConSuBookingActivo() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+
+        // Crear guest y booking para prueba
+        var guestRepository = hotel.getId() != null ?
+            org.springframework.beans.factory.annotation.AnnotatedBeanDefinition.class : null;
+
+        // Room 1 - OCCUPIED con booking activo
+        Room room1 = roomRepository.save(Room.builder()
+                .number("901")
+                .type(RoomType.SINGLE)
+                .status(RoomStatus.OCCUPIED)
+                .floor(9)
+                .capacity(1)
+                .pricePerNight(100.0)
+                .hotelId(hotel.getId())
+                .build());
+
+        // Room 2 - AVAILABLE sin booking
+        Room room2 = roomRepository.save(Room.builder()
+                .number("902")
+                .type(RoomType.DOUBLE)
+                .status(RoomStatus.AVAILABLE)
+                .floor(9)
+                .capacity(2)
+                .pricePerNight(150.0)
+                .hotelId(hotel.getId())
+                .build());
+
+        // Room 3 - MAINTENANCE sin booking
+        Room room3 = roomRepository.save(Room.builder()
+                .number("903")
+                .type(RoomType.SUITE)
+                .status(RoomStatus.MAINTENANCE)
+                .floor(9)
+                .capacity(4)
+                .pricePerNight(300.0)
+                .hotelId(hotel.getId())
+                .build());
+
+        var summary = roomRepository.findDashboardSummary(today);
+
+        assertThat(summary).isNotNull();
+        assertThat(summary).hasSizeGreaterThanOrEqualTo(3);
+
+        // Verificar que contiene las habitaciones
+        assertThat(summary).extracting(dto -> dto.getNumber())
+                .contains("901", "902", "903");
+    }
+
+    @Test
+    void findDashboardSummary_debeRetornarListaVaciaCuandoNoHayHabitaciones() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+
+        var summary = roomRepository.findDashboardSummary(today);
+
+        assertThat(summary).isEmpty();
+    }
 }

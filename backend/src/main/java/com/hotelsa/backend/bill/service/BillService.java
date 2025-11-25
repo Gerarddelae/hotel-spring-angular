@@ -170,4 +170,27 @@ public class BillService {
         billRepository.save(bill);
         log.debug("🗑️ Soft deleted bill {} for hotel {}", bill.getId(), bill.getHotelId());
     }
+
+    // Dashboard methods
+    @Transactional(readOnly = true)
+    public com.hotelsa.backend.bill.dto.RevenueDTO getTotalRevenue() {
+        BigDecimal total = billRepository.sumTotalRevenue();
+        return new com.hotelsa.backend.bill.dto.RevenueDTO(total, "USD");
+    }
+
+    @Transactional(readOnly = true)
+    public com.hotelsa.backend.bill.dto.RevenueDTO getTotalRevenueToday() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        BigDecimal total = billRepository.sumRevenueByDate(today);
+        return new com.hotelsa.backend.bill.dto.RevenueDTO(total, "USD");
+    }
+
+    @Transactional(readOnly = true)
+    public com.hotelsa.backend.bill.dto.RevenueDTO getTotalRevenueMonth() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        int month = today.getMonthValue();
+        int year = today.getYear();
+        BigDecimal total = billRepository.sumRevenueByMonth(month, year);
+        return new com.hotelsa.backend.bill.dto.RevenueDTO(total, "USD");
+    }
 }

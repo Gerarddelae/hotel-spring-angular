@@ -58,4 +58,32 @@ public class BillController {
         billService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    // Dashboard endpoints
+    /**
+     * Obtiene el total de ingresos de todas las facturas pagadas.
+     */
+    @GetMapping("/total-revenue")
+    public ResponseEntity<com.hotelsa.backend.bill.dto.RevenueDTO> getTotalRevenue() {
+        com.hotelsa.backend.bill.dto.RevenueDTO revenue = billService.getTotalRevenue();
+        return ResponseEntity.ok(revenue);
+    }
+
+    /**
+     * Obtiene el total de ingresos del día actual.
+     */
+    @GetMapping("/total-revenue/today")
+    public ResponseEntity<com.hotelsa.backend.bill.dto.RevenueDTO> getTotalRevenueToday() {
+        com.hotelsa.backend.bill.dto.RevenueDTO revenue = billService.getTotalRevenueToday();
+        return ResponseEntity.ok(revenue);
+    }
+
+    /**
+     * Obtiene el total de ingresos del mes actual.
+     */
+    @GetMapping("/total-revenue/month")
+    public ResponseEntity<com.hotelsa.backend.bill.dto.RevenueDTO> getTotalRevenueMonth() {
+        com.hotelsa.backend.bill.dto.RevenueDTO revenue = billService.getTotalRevenueMonth();
+        return ResponseEntity.ok(revenue);
+    }
 }

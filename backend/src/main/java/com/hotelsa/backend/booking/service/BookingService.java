@@ -604,4 +604,22 @@ public class BookingService {
         booking.setTotalAmount(staySubtotal.add(addonsTotal));
         bookingRepository.save(booking);
     }
+
+    // Dashboard methods
+    @Transactional(readOnly = true)
+    public com.hotelsa.backend.booking.dto.BookingStatusCountDTO countByStatus() {
+        int pending = bookingRepository.countByStatus(BookingStatus.PENDING);
+        int confirmed = bookingRepository.countByStatus(BookingStatus.CONFIRMED);
+        int checkedIn = bookingRepository.countByStatus(BookingStatus.CHECKED_IN);
+        int total = pending + confirmed + checkedIn;
+
+        return new com.hotelsa.backend.booking.dto.BookingStatusCountDTO(total, pending, confirmed, checkedIn);
+    }
+
+    @Transactional(readOnly = true)
+    public com.hotelsa.backend.booking.dto.ActiveGuestsCountDTO getActiveGuestsCount() {
+        LocalDate today = LocalDate.now();
+        int count = bookingRepository.countActiveGuestsToday(today);
+        return new com.hotelsa.backend.booking.dto.ActiveGuestsCountDTO(count);
+    }
 }

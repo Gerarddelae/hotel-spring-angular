@@ -242,4 +242,25 @@ public class BookingController {
         BookingResponseDTO response = bookingService.cancelBooking(id);
         return ResponseEntity.ok(response);
     }
+
+    // Dashboard endpoints
+    /**
+     * Obtiene contadores de reservas por estado (PENDING, CONFIRMED, CHECKED_IN).
+     */
+    @GetMapping("/count-by-status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<com.hotelsa.backend.booking.dto.BookingStatusCountDTO> getCountByStatus() {
+        com.hotelsa.backend.booking.dto.BookingStatusCountDTO count = bookingService.countByStatus();
+        return ResponseEntity.ok(count);
+    }
+
+    /**
+     * Obtiene el número de huéspedes activos (CHECKED_IN) hoy.
+     */
+    @GetMapping("/active-guests-count")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<com.hotelsa.backend.booking.dto.ActiveGuestsCountDTO> getActiveGuestsCount() {
+        com.hotelsa.backend.booking.dto.ActiveGuestsCountDTO count = bookingService.getActiveGuestsCount();
+        return ResponseEntity.ok(count);
+    }
 }

@@ -322,4 +322,290 @@ class BookingRepositoryTest {
         assertNotNull(guardada.getId());
         assertEquals(hotel.getId(), guardada.getHotelId());
     }
+
+    // ==================== DASHBOARD TESTS ====================
+
+    @Test
+    void countByStatus_debeContarCorrectamentePorEstadoPENDING() {
+        // Crear bookings con diferentes estados
+        bookingRepository.save(Booking.builder()
+                .guest(guest)
+                .room(room)
+                .checkInDate(LocalDate.of(2025, 12, 1))
+                .checkOutDate(LocalDate.of(2025, 12, 3))
+                .status(BookingStatus.PENDING)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        bookingRepository.save(Booking.builder()
+                .guest(guest)
+                .room(room)
+                .checkInDate(LocalDate.of(2025, 12, 5))
+                .checkOutDate(LocalDate.of(2025, 12, 7))
+                .status(BookingStatus.PENDING)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        bookingRepository.save(Booking.builder()
+                .guest(guest)
+                .room(room)
+                .checkInDate(LocalDate.of(2025, 12, 10))
+                .checkOutDate(LocalDate.of(2025, 12, 12))
+                .status(BookingStatus.CONFIRMED)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        int count = bookingRepository.countByStatus(BookingStatus.PENDING);
+
+        assertEquals(2, count);
+    }
+
+    @Test
+    void countByStatus_debeContarCorrectamentePorEstadoCONFIRMED() {
+        bookingRepository.save(Booking.builder()
+                .guest(guest)
+                .room(room)
+                .checkInDate(LocalDate.of(2025, 12, 1))
+                .checkOutDate(LocalDate.of(2025, 12, 3))
+                .status(BookingStatus.CONFIRMED)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        int count = bookingRepository.countByStatus(BookingStatus.CONFIRMED);
+
+        assertEquals(1, count);
+    }
+
+    @Test
+    void countByStatus_debeContarCorrectamentePorEstadoCHECKED_IN() {
+        bookingRepository.save(Booking.builder()
+                .guest(guest)
+                .room(room)
+                .checkInDate(LocalDate.of(2025, 12, 1))
+                .checkOutDate(LocalDate.of(2025, 12, 3))
+                .status(BookingStatus.CHECKED_IN)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        bookingRepository.save(Booking.builder()
+                .guest(guest)
+                .room(room)
+                .checkInDate(LocalDate.of(2025, 12, 5))
+                .checkOutDate(LocalDate.of(2025, 12, 7))
+                .status(BookingStatus.CHECKED_IN)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        bookingRepository.save(Booking.builder()
+                .guest(guest)
+                .room(room)
+                .checkInDate(LocalDate.of(2025, 12, 10))
+                .checkOutDate(LocalDate.of(2025, 12, 12))
+                .status(BookingStatus.CHECKED_IN)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        int count = bookingRepository.countByStatus(BookingStatus.CHECKED_IN);
+
+        assertEquals(3, count);
+    }
+
+    @Test
+    void countByStatus_debeRetornarCeroCuandoNoHayReservasConEseEstado() {
+        bookingRepository.save(Booking.builder()
+                .guest(guest)
+                .room(room)
+                .checkInDate(LocalDate.of(2025, 12, 1))
+                .checkOutDate(LocalDate.of(2025, 12, 3))
+                .status(BookingStatus.CONFIRMED)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        int count = bookingRepository.countByStatus(BookingStatus.CANCELLED);
+
+        assertEquals(0, count);
+    }
+
+    @Test
+    void countActiveGuestsToday_debeContarHuespedesConCHECKED_INHoy() {
+        LocalDate today = LocalDate.now();
+
+        // Guest 1 - CHECKED_IN y dentro del rango (hoy)
+        Guest guest1 = guestRepository.save(
+                Guest.builder()
+                        .fullName("Guest 1")
+                        .documentType("DNI")
+                        .documentNumber("11111111")
+                        .email("guest1@example.com")
+                        .phone("555-0001")
+                        .address("Calle 1")
+                        .previousCancellations(0)
+                        .totalBookingsClient(0)
+                        .hotelId(hotel.getId())
+                        .build()
+        );
+
+        bookingRepository.save(Booking.builder()
+                .guest(guest1)
+                .room(room)
+                .checkInDate(today.minusDays(2))
+                .checkOutDate(today.plusDays(2))
+                .status(BookingStatus.CHECKED_IN)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        // Guest 2 - CHECKED_IN y dentro del rango (hoy)
+        Guest guest2 = guestRepository.save(
+                Guest.builder()
+                        .fullName("Guest 2")
+                        .documentType("DNI")
+                        .documentNumber("22222222")
+                        .email("guest2@example.com")
+                        .phone("555-0002")
+                        .address("Calle 2")
+                        .previousCancellations(0)
+                        .totalBookingsClient(0)
+                        .hotelId(hotel.getId())
+                        .build()
+        );
+
+        bookingRepository.save(Booking.builder()
+                .guest(guest2)
+                .room(room)
+                .checkInDate(today.minusDays(1))
+                .checkOutDate(today.plusDays(3))
+                .status(BookingStatus.CHECKED_IN)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        // Guest 3 - CHECKED_IN pero fuera del rango (pasado)
+        Guest guest3 = guestRepository.save(
+                Guest.builder()
+                        .fullName("Guest 3")
+                        .documentType("DNI")
+                        .documentNumber("33333333")
+                        .email("guest3@example.com")
+                        .phone("555-0003")
+                        .address("Calle 3")
+                        .previousCancellations(0)
+                        .totalBookingsClient(0)
+                        .hotelId(hotel.getId())
+                        .build()
+        );
+
+        bookingRepository.save(Booking.builder()
+                .guest(guest3)
+                .room(room)
+                .checkInDate(today.minusDays(10))
+                .checkOutDate(today.minusDays(5))
+                .status(BookingStatus.CHECKED_IN)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        // Guest 4 - Estado diferente a CHECKED_IN
+        Guest guest4 = guestRepository.save(
+                Guest.builder()
+                        .fullName("Guest 4")
+                        .documentType("DNI")
+                        .documentNumber("44444444")
+                        .email("guest4@example.com")
+                        .phone("555-0004")
+                        .address("Calle 4")
+                        .previousCancellations(0)
+                        .totalBookingsClient(0)
+                        .hotelId(hotel.getId())
+                        .build()
+        );
+
+        bookingRepository.save(Booking.builder()
+                .guest(guest4)
+                .room(room)
+                .checkInDate(today.minusDays(1))
+                .checkOutDate(today.plusDays(1))
+                .status(BookingStatus.CONFIRMED)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        int count = bookingRepository.countActiveGuestsToday(today);
+
+        assertEquals(2, count);
+    }
+
+    @Test
+    void countActiveGuestsToday_debeContarUnSoloGuestSiTieneDosBookingsCHECKED_IN() {
+        LocalDate today = LocalDate.now();
+
+        // Mismo guest con 2 bookings CHECKED_IN
+        bookingRepository.save(Booking.builder()
+                .guest(guest)
+                .room(room)
+                .checkInDate(today.minusDays(2))
+                .checkOutDate(today.plusDays(1))
+                .status(BookingStatus.CHECKED_IN)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        bookingRepository.save(Booking.builder()
+                .guest(guest)
+                .room(room)
+                .checkInDate(today.minusDays(1))
+                .checkOutDate(today.plusDays(2))
+                .status(BookingStatus.CHECKED_IN)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        int count = bookingRepository.countActiveGuestsToday(today);
+
+        // Debe contar solo 1 porque es DISTINCT guest.id
+        assertEquals(1, count);
+    }
+
+    @Test
+    void countActiveGuestsToday_debeRetornarCeroCuandoNoHayGuestesActivos() {
+        LocalDate today = LocalDate.now();
+
+        // Booking fuera del rango de hoy
+        bookingRepository.save(Booking.builder()
+                .guest(guest)
+                .room(room)
+                .checkInDate(today.minusDays(10))
+                .checkOutDate(today.minusDays(5))
+                .status(BookingStatus.CHECKED_IN)
+                .createdBy("system")
+                .bookingLeadTime(LocalDate.now())
+                .hotelId(hotel.getId())
+                .build());
+
+        int count = bookingRepository.countActiveGuestsToday(today);
+
+        assertEquals(0, count);
+    }
 }

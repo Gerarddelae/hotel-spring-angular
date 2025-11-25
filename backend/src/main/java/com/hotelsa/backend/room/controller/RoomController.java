@@ -95,4 +95,35 @@ public class RoomController {
         roomService.deleteRoom(id);
         return ResponseEntity.noContent().build();
     }
+
+    // Dashboard endpoints
+    /**
+     * Obtiene el conteo de habitaciones ocupadas.
+     */
+    @GetMapping("/occupied-count")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<com.hotelsa.backend.room.dto.OccupiedRoomsCountDTO> getOccupiedCount() {
+        com.hotelsa.backend.room.dto.OccupiedRoomsCountDTO count = roomService.getOccupiedCount();
+        return ResponseEntity.ok(count);
+    }
+
+    /**
+     * Obtiene el resumen del dashboard con todas las habitaciones, su estado y booking activo si existe.
+     */
+    @GetMapping("/dashboard-summary")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<List<com.hotelsa.backend.room.dto.RoomDashboardItemDTO>> getDashboardSummary() {
+        List<com.hotelsa.backend.room.dto.RoomDashboardItemDTO> summary = roomService.getDashboardSummary();
+        return ResponseEntity.ok(summary);
+    }
+
+    /**
+     * Obtiene las opciones de estado de habitación (AVAILABLE, OCCUPIED, MAINTENANCE).
+     */
+    @GetMapping("/status-options")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<List<String>> getStatusOptions() {
+        List<String> statuses = roomService.getStatusOptions();
+        return ResponseEntity.ok(statuses);
+    }
 }

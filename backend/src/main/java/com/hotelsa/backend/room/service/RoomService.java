@@ -119,4 +119,24 @@ public class RoomService {
         roomRepository.save(room);
         log.debug("🗑️ Soft deleted room {} for hotel {}", room.getNumber(), room.getHotelId());
     }
+
+    // Dashboard methods
+    @Transactional(readOnly = true)
+    public com.hotelsa.backend.room.dto.OccupiedRoomsCountDTO getOccupiedCount() {
+        int count = roomRepository.countOccupied();
+        return new com.hotelsa.backend.room.dto.OccupiedRoomsCountDTO(count);
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.hotelsa.backend.room.dto.RoomDashboardItemDTO> getDashboardSummary() {
+        LocalDate today = LocalDate.now();
+        return roomRepository.findDashboardSummary(today);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getStatusOptions() {
+        return java.util.Arrays.stream(com.hotelsa.backend.room.enums.RoomStatus.values())
+                .map(Enum::name)
+                .toList();
+    }
 }
