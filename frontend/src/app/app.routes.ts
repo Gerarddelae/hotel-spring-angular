@@ -32,19 +32,7 @@ export const routes: Routes = [
           icon: 'pi-chart-line',
         },
       },
-      {
-        path: 'reservations',
-        loadComponent: () =>
-          import('./features/reservations/reservations.component').then(
-            (m) => m.ReservationsComponent
-          ),
-        canActivate: [() => roleGuard(['ADMIN', 'USER'])],
-        data: {
-          title: 'Reservas',
-          subtitle: 'Gestión de reservas y bookings',
-          icon: 'pi-calendar',
-        },
-      },
+      /* 'reservations' route removed - replaced by 'bookings' for employees/users */
       {
         path: 'users',
         loadComponent: () =>

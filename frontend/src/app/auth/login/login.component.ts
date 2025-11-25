@@ -63,11 +63,11 @@ export class LoginComponent implements OnInit {
         // Redirección basada en el rol
         const authorities = response.authorities;
         if (authorities.includes('USER')) {
-          this.router.navigate(['/reservations']);
+          this.router.navigate(['/bookings']);
         } else if (authorities.includes('ADMIN')) {
           this.router.navigate(['/dashboard']);
         } else {
-          this.router.navigate(['/reservations']); // ruta por defecto
+          this.router.navigate(['/bookings']); // ruta por defecto
         }
       },
       error: (err) => {
