@@ -115,10 +115,15 @@
 
 // Dark mode styles
 :host-context(.dark) {
+    .mat-mdc-header-cell {
+    background-color: #DBEAFE; /* blue-50 */
+    border-bottom: 1px solid #0b71f7; /* blue-100 */
+    font-weight: 600;
+  }
   .bill-list-container {
     .filters-card {
       background-color: #1e293b;
-      color: #e2e8f0;
+      color: #9ca3af;
     }
 
     .table-container {
@@ -127,8 +132,8 @@
 
       .bills-table {
         .table-header {
-          background-color: #334155;
-          color: #e2e8f0;
+          background-color: #1E3160;
+          color: #9ca3af;
         }
 
         .table-row {

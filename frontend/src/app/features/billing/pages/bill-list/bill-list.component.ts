@@ -1,7 +1,8 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
@@ -24,6 +25,7 @@ import { Bill, BillStatus, BILL_STATUS_OPTIONS } from '../../models';
     CommonModule,
     FormsModule,
     MatTableModule,
+    MatPaginatorModule,
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
@@ -39,7 +41,7 @@ import { Bill, BillStatus, BILL_STATUS_OPTIONS } from '../../models';
   templateUrl: './bill-list.component.html',
   styleUrls: ['./bill-list.component.scss']
 })
-export class BillListComponent implements OnInit {
+export class BillListComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = [
     'id',
     'bookingId',
@@ -58,6 +60,9 @@ export class BillListComponent implements OnInit {
   dateTo = signal<Date | null>(null);
 
   statusOptions = BILL_STATUS_OPTIONS;
+
+  dataSource = new MatTableDataSource<Bill>([]);
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   filteredBills = computed(() => {
     let result = this.bills();
@@ -102,10 +107,19 @@ export class BillListComponent implements OnInit {
     private billService: BillService,
     private router: Router,
     private snackBar: MatSnackBar
-  ) {}
+  ) {
+    // Sync dataSource with filteredBills signal
+    effect(() => {
+      this.dataSource.data = this.filteredBills();
+    });
+  }
 
   ngOnInit(): void {
     this.loadBills();
+  }
+
+  ngAfterViewInit(): void {
+    this.dataSource.paginator = this.paginator;
   }
 
   loadBills(): void {

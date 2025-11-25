@@ -141,10 +141,21 @@
         background: rgba(255,255,255,0.02);
         border: 1px solid rgba(255,255,255,0.04);
         color: rgba(230,238,248,0.95);
+
+        .addon-name {
+          strong { color: rgba(230,238,248,0.95); }
+          .addon-price { color: #93c5fd; }
+        }
       }
 
-      .addon-name strong { color: rgba(230,238,248,0.95); }
-      .addon-price { color: #60a5fa; }
+      /* Reglas con mayor especificidad para asegurar contraste en dark mode */
+      :host-context(.dark) .selected-addons .addon-card .addon-info .addon-name strong {
+        color: rgba(245,247,250,0.98) !important;
+      }
+
+      :host-context(.dark) .selected-addons .addon-card .addon-info .addon-name .addon-price {
+        color: #93c5fd !important;
+      }
 
       .addon-controls {
         .quantity-input {

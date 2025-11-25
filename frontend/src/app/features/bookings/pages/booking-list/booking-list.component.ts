@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,6 +10,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -28,6 +30,7 @@ import { BookingModalFormComponent } from '../../../../shared/components/booking
     CommonModule,
     ReactiveFormsModule,
     MatTableModule,
+    MatPaginatorModule,
     MatButtonModule,
     MatIconModule,
     MatFormFieldModule,
@@ -59,6 +62,7 @@ export class BookingListComponent implements OnInit {
 
   bookings: Booking[] = [];
   filteredBookings: Booking[] = [];
+  dataSource: MatTableDataSource<Booking>;
   isLoading = false;
   showDeleteModal = false;
   bookingToDelete: Booking | null = null;
@@ -83,7 +87,17 @@ export class BookingListComponent implements OnInit {
       checkOutFrom: [''],
       checkOutTo: ['']
     });
+
+    this.dataSource = new MatTableDataSource<Booking>([]);
   }
+
+  ngAfterViewInit(): void {
+    if (this.paginator) {
+      this.dataSource.paginator = this.paginator;
+    }
+  }
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   ngOnInit(): void {
     // Use cached load to avoid flashing the list when returning from detail view
@@ -172,6 +186,9 @@ export class BookingListComponent implements OnInit {
 
       return true;
     });
+
+    // Update table data source (paginator will handle pages)
+    this.dataSource.data = this.filteredBookings;
   }
 
   /**

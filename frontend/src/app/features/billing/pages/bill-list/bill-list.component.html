@@ -50,7 +50,7 @@
 
   <!-- Tabla de facturas -->
   <div class="table-container" *ngIf="!isLoading()">
-    <table mat-table [dataSource]="filteredBills()" class="bills-table">
+    <table mat-table [dataSource]="dataSource" class="bills-table">
       
       <!-- Columna ID -->
       <ng-container matColumnDef="id">
@@ -117,6 +117,12 @@
         (click)="viewDetails(row)">
       </tr>
     </table>
+
+    <mat-paginator
+      [pageSizeOptions]="[5, 10, 25]"
+      showFirstLastButtons
+      aria-label="Paginador de facturas">
+    </mat-paginator>
 
     <!-- Mensaje si no hay datos -->
     <div class="empty-state" *ngIf="filteredBills().length === 0">
