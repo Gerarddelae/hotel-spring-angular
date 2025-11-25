@@ -17,4 +17,5 @@ public class AddonResponse {
     private String description;
     private Integer price;
     private LocalDateTime createdAt;
+    private boolean active;
 }

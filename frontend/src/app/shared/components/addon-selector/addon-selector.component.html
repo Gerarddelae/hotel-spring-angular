@@ -1,0 +1,92 @@
+<div class="addon-selector">
+  <h3 class="addon-title">Servicios Adicionales</h3>
+
+  <!-- Selector para añadir addons -->
+  <div class="addon-add-section">
+    <mat-form-field appearance="outline" class="addon-select">
+      <mat-label>Seleccionar servicio adicional</mat-label>
+      <mat-select [(ngModel)]="selectedAddonId">
+        <mat-option *ngFor="let addon of getAvailableAddonsForSelection()" [value]="addon.id">
+          {{ addon.name }} - ${{ addon.price | number:'1.2-2' }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button 
+      mat-raised-button 
+      color="primary" 
+      (click)="addAddon()" 
+      [disabled]="!selectedAddonId"
+      class="add-button">
+      <mat-icon>add</mat-icon>
+      Añadir
+    </button>
+  </div>
+
+  <!-- Lista de addons seleccionados -->
+  <div class="selected-addons" *ngIf="selectedAddons.length > 0">
+    <mat-card *ngFor="let addon of selectedAddons" class="addon-card">
+      <div class="addon-info">
+        <div class="addon-name">
+          <strong>{{ addon.addonName }}</strong>
+          <span class="addon-price">${{ addon.price | number:'1.2-2' }} c/u</span>
+        </div>
+        
+        <div class="addon-controls">
+          <!-- Control de cantidad -->
+          <div class="quantity-controls">
+            <button 
+              mat-icon-button 
+              color="primary" 
+              (click)="decreaseQuantity(addon)"
+              [disabled]="addon.quantity <= 1"
+              aria-label="Disminuir cantidad">
+              <mat-icon>remove</mat-icon>
+            </button>
+            
+            <input 
+              type="number" 
+              class="quantity-input"
+              [value]="addon.quantity"
+              (change)="updateQuantity(addon, $event)"
+              min="1"
+              aria-label="Cantidad">
+            
+            <button 
+              mat-icon-button 
+              color="primary" 
+              (click)="increaseQuantity(addon)"
+              aria-label="Aumentar cantidad">
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+
+          <!-- Subtotal -->
+          <div class="addon-subtotal">
+            <strong>${{ addon.subtotal | number:'1.2-2' }}</strong>
+          </div>
+
+          <!-- Botón eliminar -->
+          <button 
+            mat-icon-button 
+            color="warn" 
+            (click)="removeAddon(addon)"
+            aria-label="Eliminar servicio">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- Total -->
+    <div class="addon-total">
+      <strong>Total Servicios Adicionales:</strong>
+      <span class="total-amount">${{ calculateTotal() | number:'1.2-2' }}</span>
+    </div>
+  </div>
+
+  <!-- Mensaje cuando no hay addons -->
+  <div class="no-addons" *ngIf="selectedAddons.length === 0">
+    <mat-icon>info</mat-icon>
+    <p>No hay servicios adicionales seleccionados</p>
+  </div>
+</div>

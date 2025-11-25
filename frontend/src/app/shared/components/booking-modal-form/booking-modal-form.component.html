@@ -1,0 +1,225 @@
+<h2 mat-dialog-title>{{ data.booking ? 'Editar Reserva' : 'Nueva Reserva' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="bookingForm" class="booking-form">
+    
+    <!-- Sección de Huésped -->
+    <div class="form-section">
+      <h3>Información del Huésped</h3>
+      
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Buscar huésped</mat-label>
+        <input 
+          type="text"
+          matInput
+          formControlName="guestSearch"
+          [matAutocomplete]="autoGuest"
+          placeholder="Escriba para buscar..."
+          required>
+        <mat-icon matSuffix>search</mat-icon>
+        <mat-spinner *ngIf="isLoadingGuests" diameter="20" matSuffix></mat-spinner>
+        <mat-autocomplete 
+          #autoGuest="matAutocomplete" 
+          [displayWith]="displayGuest"
+          (optionSelected)="onGuestSelected($event.option.value)">
+          <mat-option *ngFor="let guest of filteredGuests$ | async" [value]="guest">
+            {{ guest.fullName }} - {{ guest.email }}
+          </mat-option>
+        </mat-autocomplete>
+        <mat-error *ngIf="bookingForm.get('guestId')?.hasError('required')">
+          Debe seleccionar un huésped
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <!-- Sección de Fechas -->
+    <div class="form-section">
+      <h3>Fechas de la Reserva</h3>
+      
+      <div class="date-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Check-in</mat-label>
+          <input 
+            matInput 
+            [matDatepicker]="pickerCheckIn"
+            formControlName="checkInDate"
+            [min]="minDate"
+            required>
+          <mat-datepicker-toggle matSuffix [for]="pickerCheckIn"></mat-datepicker-toggle>
+          <mat-datepicker #pickerCheckIn></mat-datepicker>
+          <mat-error>{{ getErrorMessage('checkInDate') }}</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Check-out</mat-label>
+          <input 
+            matInput 
+            [matDatepicker]="pickerCheckOut"
+            formControlName="checkOutDate"
+            [min]="minDate"
+            required>
+          <mat-datepicker-toggle matSuffix [for]="pickerCheckOut"></mat-datepicker-toggle>
+          <mat-datepicker #pickerCheckOut></mat-datepicker>
+          <mat-error>{{ getErrorMessage('checkOutDate') }}</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="error-message" *ngIf="bookingForm.hasError('dateRange') && bookingForm.touched">
+        <mat-icon>error</mat-icon>
+        <span>La fecha de check-out debe ser posterior a la fecha de check-in</span>
+      </div>
+    </div>
+
+    <!-- Sección de Habitación -->
+    <div class="form-section">
+      <h3>Habitación</h3>
+      
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Seleccionar habitación</mat-label>
+        <mat-select formControlName="roomId" required>
+          <mat-option *ngIf="isLoadingRooms" disabled>
+            <mat-spinner diameter="20"></mat-spinner> Cargando habitaciones...
+          </mat-option>
+          <mat-option *ngFor="let room of availableRooms" [value]="room.id">
+            Habitación {{ room.number }} - {{ room.type }} - ${{ room.pricePerNight }}/noche
+          </mat-option>
+        </mat-select>
+        <mat-error>{{ getErrorMessage('roomId') }}</mat-error>
+      </mat-form-field>
+
+      <!-- Indicador de disponibilidad -->
+      <div class="availability-status">
+        <mat-spinner *ngIf="isCheckingAvailability" diameter="20"></mat-spinner>
+        <div *ngIf="!isCheckingAvailability && bookingForm.get('roomId')?.value">
+          <div class="availability-indicator available" *ngIf="isRoomAvailable">
+            <mat-icon>check_circle</mat-icon>
+            <span>Habitación disponible</span>
+          </div>
+          <div class="availability-indicator unavailable" *ngIf="!isRoomAvailable">
+            <mat-icon>cancel</mat-icon>
+            <span>Habitación no disponible en las fechas seleccionadas</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Estado y Lead Time -->
+    <div class="form-section">
+      <h3>Detalles de la Reserva</h3>
+      
+      <div class="detail-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Estado</mat-label>
+          <mat-select formControlName="status" required>
+            <mat-option *ngFor="let status of statusOptions" [value]="status.value">
+              {{ status.label }}
+            </mat-option>
+          </mat-select>
+          <mat-error>{{ getErrorMessage('status') }}</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Fecha de Lead Time</mat-label>
+          <input 
+            matInput 
+            [matDatepicker]="pickerLeadTime"
+            formControlName="bookingLeadTime"
+            [max]="minDate"
+            required>
+          <mat-datepicker-toggle matSuffix [for]="pickerLeadTime"></mat-datepicker-toggle>
+          <mat-datepicker #pickerLeadTime></mat-datepicker>
+          <mat-error>{{ getErrorMessage('bookingLeadTime') }}</mat-error>
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Notas (opcional)</mat-label>
+        <textarea 
+          matInput 
+          formControlName="notes"
+          rows="3"
+          placeholder="Información adicional sobre la reserva..."></textarea>
+      </mat-form-field>
+    </div>
+
+    <!-- Sección de Servicios Adicionales -->
+    <div class="form-section">
+      <app-addon-selector
+        [availableAddons]="availableAddons"
+        [selectedAddons]="selectedAddons"
+        (addonsChange)="onAddonsChange($event)">
+      </app-addon-selector>
+    </div>
+
+    <!-- Resumen Total (calculado por backend) -->
+    <!-- Live Preview: muestra totales estimados según selección actual -->
+    <mat-card class="preview-card">
+      <mat-card-header>
+        <mat-card-title>Previsualización</mat-card-title>
+        <mat-card-subtitle>Estimación en tiempo real (no vinculante)</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="preview-row">
+          <span class="label">Noches:</span>
+          <span class="value">{{ calculateNights() }}</span>
+        </div>
+        <div class="preview-row">
+          <span class="label">Hospedaje (estimado):</span>
+          <span class="value">${{ calculateAccommodationTotal() | number:'1.2-2' }}</span>
+        </div>
+        <div class="preview-row">
+          <span class="label">Servicios Adicionales (estimado):</span>
+          <span class="value">${{ calculateAddonsTotal() | number:'1.2-2' }}</span>
+        </div>
+        <mat-divider></mat-divider>
+        <div class="preview-row total">
+          <span class="label">Total (estimado):</span>
+          <strong class="value">${{ calculateTotal() | number:'1.2-2' }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="total-summary">
+      <div class="summary-line">
+        <span>Nota:</span>
+        <span>El total final será calculado por el servidor al guardar la reserva.</span>
+      </div>
+      <div class="summary-line" *ngIf="data.booking && data.booking.totalAmount">
+        <span>Total (servidor):</span>
+        <strong class="total-amount">${{ data.booking.totalAmount | number:'1.2-2' }}</strong>
+      </div>
+    </div>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Cancelar</button>
+  <button 
+    mat-raised-button 
+    color="primary" 
+    (click)="onSubmit()"
+    [disabled]="bookingForm.invalid || !isRoomAvailable || isCheckingAvailability">
+    <mat-icon>save</mat-icon>
+    {{ data.booking ? 'Actualizar' : 'Crear' }} Reserva
+  </button>
+</mat-dialog-actions>
+
+<!-- Modal interno de resumen/confirmación -->
+<div *ngIf="showSummaryModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-80 sm:w-96">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Resumen de la reserva</h3>
+
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2"><strong>Huésped:</strong> {{ summaryGuestName }}</p>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2"><strong>Check-in:</strong> {{ formatDate(bookingForm.get('checkInDate')?.value) }}</p>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2"><strong>Check-out:</strong> {{ formatDate(bookingForm.get('checkOutDate')?.value) }}</p>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4"><strong>Noches:</strong> {{ calculateNights() }}</p>
+
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">El total final será calculado por el servidor al guardar la reserva.</p>
+
+    <div class="flex justify-end gap-3">
+      <button (click)="cancelSummary()" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300">Volver</button>
+      <button (click)="confirmSummary()" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Confirmar</button>
+    </div>
+  </div>
+</div>

@@ -13,6 +13,7 @@ import { Room } from './models/room.interface';
   standalone: true,
   imports: [CommonModule, TableComponent, MatDialogModule],
   templateUrl: './rooms.component.html',
+  styleUrls: ['./rooms.component.css'],
 })
 export class RoomsComponent implements OnDestroy {
   rooms$: Observable<Room[]>;

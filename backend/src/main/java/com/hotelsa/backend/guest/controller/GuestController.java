@@ -54,9 +54,10 @@ public class GuestController {
      */
     @GetMapping("/search")
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
-    public ResponseEntity<List<GuestResponseDTO>> searchGuestsByName(@RequestParam String name) {
-        List<GuestResponseDTO> guests = guestService.searchGuestsByName(name);
-        return ResponseEntity.ok(guests);
+    public ResponseEntity<List<GuestResponseDTO>> searchGuests(
+            @RequestParam(required = false) String query
+    ) {
+        return ResponseEntity.ok(guestService.searchGuests(query));
     }
 
     /**
@@ -92,4 +93,3 @@ public class GuestController {
         return ResponseEntity.noContent().build();
     }
 }
-

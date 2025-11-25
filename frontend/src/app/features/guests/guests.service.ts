@@ -66,4 +66,11 @@ export class GuestsService {
       tap(() => this.loadGuests())
     );
   }
+
+  /**
+   * Busca huéspedes por nombre, apellido o email
+   */
+  search(query: string): Observable<GuestResponse[]> {
+    return this.http.get<GuestResponse[]>(`${this.apiUrl}/search?query=${encodeURIComponent(query)}`);
+  }
 }

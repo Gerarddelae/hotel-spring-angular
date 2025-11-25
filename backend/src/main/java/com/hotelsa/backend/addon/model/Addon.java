@@ -34,6 +34,10 @@ public class Addon extends BaseEntity {
     @Column(name = "price", nullable = false)
     private Integer price;
 
+    // Nuevo campo para activar/desactivar visualmente el addon
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
+
     // Relación inversa hacia BookingAddon (lectura semántica)
     @OneToMany(mappedBy = "addon", fetch = FetchType.LAZY)
     @ToString.Exclude

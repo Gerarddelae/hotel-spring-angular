@@ -16,7 +16,7 @@
   >
     <!-- Logo Section -->
     <div
-      class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700"
+      class="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700"
     >
       <div
         class="flex items-center gap-3"
@@ -27,7 +27,7 @@
         >
           <i class="pi pi-building text-white text-lg"></i>
         </div>
-        <div *ngIf="!isCollapsed" class="transition-opacity duration-300">
+        <div class="transition-opacity duration-300 logo-info" [class.collapsed]="isCollapsed">
           <h2 class="text-xl font-bold text-gray-900 dark:text-white">
             Hotel SPA
           </h2>
@@ -69,21 +69,21 @@
             (click)="onNavigate()"
           >
             <i class="pi pi-chart-line text-lg flex-shrink-0"></i>
-            <span *ngIf="!isCollapsed" class="font-medium">Dashboard</span>
+            <span class="font-medium sidebar-label" [class.collapsed]="isCollapsed">Dashboard</span>
           </a>
         </li>
 
-        <!-- Reservations -->
+        <!-- Bookings -->
         <li>
           <a
-            routerLink="/reservations"
+            routerLink="/bookings"
             routerLinkActive="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 border-r-2 border-blue-600"
             class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
             [ngClass]="{ 'justify-center': isCollapsed }"
             (click)="onNavigate()"
           >
-            <i class="pi pi-calendar text-lg flex-shrink-0"></i>
-            <span *ngIf="!isCollapsed" class="font-medium">Reservas</span>
+            <i class="pi pi-book text-lg flex-shrink-0"></i>
+            <span class="font-medium sidebar-label" [class.collapsed]="isCollapsed">Reservaciones</span>
           </a>
         </li>
 
@@ -97,7 +97,7 @@
             (click)="onNavigate()"
           >
             <i class="pi pi-users text-lg flex-shrink-0"></i>
-            <span *ngIf="!isCollapsed" class="font-medium">Huéspedes</span>
+            <span class="font-medium sidebar-label" [class.collapsed]="isCollapsed">Huéspedes</span>
           </a>
         </li>
 
@@ -111,7 +111,7 @@
     (click)="onNavigate()"
   >
     <i class="pi pi-home text-lg flex-shrink-0"></i>
-    <span *ngIf="!isCollapsed" class="font-medium">Habitaciones</span>
+    <span class="font-medium sidebar-label" [class.collapsed]="isCollapsed">Habitaciones</span>
   </a>
 </li>
 
@@ -125,7 +125,7 @@
             (click)="onNavigate()"
           >
             <i class="pi pi-shopping-cart text-lg flex-shrink-0"></i>
-            <span *ngIf="!isCollapsed" class="font-medium">Servicios Adicionales</span>
+            <span class="font-medium sidebar-label" [class.collapsed]="isCollapsed">Servicios Adicionales</span>
           </a>
         </li>
 
@@ -139,7 +139,7 @@
             (click)="onNavigate()"
           >
             <i class="pi pi-id-card text-lg flex-shrink-0"></i>
-            <span *ngIf="!isCollapsed" class="font-medium">Usuarios</span>
+            <span class="font-medium sidebar-label" [class.collapsed]="isCollapsed">Usuarios</span>
           </a>
         </li>
 
@@ -151,7 +151,7 @@
             [ngClass]="{ 'justify-center': isCollapsed }"
           >
             <i class="pi pi-cog text-lg flex-shrink-0"></i>
-            <span *ngIf="!isCollapsed" class="font-medium">Configuración</span>
+            <span class="font-medium sidebar-label" [class.collapsed]="isCollapsed">Configuración</span>
           </a>
         </li>
       </ul>
@@ -172,7 +172,7 @@
             class="pi text-lg flex-shrink-0"
             [ngClass]="isDarkMode ? 'pi-sun' : 'pi-moon'"
           ></i>
-          <span *ngIf="!isCollapsed" class="text-sm font-medium">
+          <span class="text-sm font-medium sidebar-label" [class.collapsed]="isCollapsed">
             {{ isDarkMode ? "Modo Claro" : "Modo Oscuro" }}
           </span>
         </button>
@@ -185,9 +185,7 @@
         [ngClass]="{ 'justify-center': isCollapsed }"
       >
         <i class="pi pi-sign-out text-lg flex-shrink-0"></i>
-        <span *ngIf="!isCollapsed" class="text-sm font-medium"
-          >Cerrar Sesión</span
-        >
+        <span class="text-sm font-medium sidebar-label" [class.collapsed]="isCollapsed">Cerrar Sesión</span>
       </button>
     </div>
 
@@ -195,20 +193,20 @@
     <button
       *ngIf="!isMobile && isCollapsed"
       (click)="toggleDesktopSidebar()"
-      class="absolute top-4 -right-3 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hidden lg:flex"
+      class="expand-btn absolute top-20 -right-3 w-7 h-10 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-r-lg items-center justify-center shadow-lg transition-all duration-200 hidden lg:flex z-50"
     >
-      <i class="pi pi-angle-right text-xs text-gray-600 dark:text-gray-400"></i>
+      <i class="pi pi-angle-double-right text-sm text-white font-bold"></i>
     </button>
   </aside>
 
   <!-- Main Content -->
   <main
-    class="transition-all duration-300 min-h-screen"
+    class="transition-all duration-300 flex flex-col h-screen"
     [class]="getMainClasses()"
   >
     <!-- Top Header -->
     <header
-      class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 shadow-sm"
+      class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 shadow-sm flex-shrink-0"
     >
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
@@ -264,7 +262,7 @@
     </header>
 
     <!-- Page Content -->
-    <div class="p-4 sm:p-6">
+    <div class="p-4 sm:p-6 flex-1 overflow-y-auto">
       <router-outlet></router-outlet>
     </div>
 

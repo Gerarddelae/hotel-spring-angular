@@ -1,5 +1,6 @@
 package com.hotelsa.backend.booking.controller;
 
+import com.hotelsa.backend.booking.dto.BookingReplaceRequestDTO;
 import com.hotelsa.backend.booking.dto.BookingRequestDTO;
 import com.hotelsa.backend.booking.dto.BookingResponseDTO;
 import com.hotelsa.backend.booking.dto.BookingAddonResponse;
@@ -54,15 +55,15 @@ public class BookingController {
     }
 
     /**
-     * Actualiza una reserva (solo si pertenece al hotel del usuario).
+     * Reemplaza una reserva completa (datos principales + addons) de forma atómica e idempotente.
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<BookingResponseDTO> updateBooking(
+    public ResponseEntity<BookingResponseDTO> replaceBooking(
             @PathVariable Long id,
-            @Valid @RequestBody BookingRequestDTO dto
+            @Valid @RequestBody BookingReplaceRequestDTO dto
     ) {
-        BookingResponseDTO updatedBooking = bookingService.update(id, dto);
+        BookingResponseDTO updatedBooking = bookingService.replaceBooking(id, dto);
         return ResponseEntity.ok(updatedBooking);
     }
 
@@ -130,6 +131,33 @@ public class BookingController {
     }
 
     /**
+     * Comprueba si una habitación está disponible en un rango de fechas.
+     * URL: GET /bookings/room/{roomId}/availability?checkIn=yyyy-MM-dd&checkOut=yyyy-MM-dd
+     */
+    @GetMapping("/room/{roomId}/availability")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<?> checkRoomAvailability(
+            @PathVariable Long roomId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut,
+            @RequestParam(name = "excludeBookingId", required = false) Long excludeBookingId
+    ) {
+        if (checkIn == null || checkOut == null) {
+            return ResponseEntity.badRequest().body("Faltan parámetros de fecha");
+        }
+        if (!checkIn.isBefore(checkOut)) {
+            return ResponseEntity.badRequest().body("checkIn debe ser anterior a checkOut");
+        }
+
+        boolean available = bookingService.isRoomAvailable(roomId, checkIn, checkOut, excludeBookingId);
+        java.util.Map<String, Object> body = java.util.Map.of(
+                "roomId", roomId,
+                "available", available
+        );
+        return ResponseEntity.ok(body);
+    }
+
+    /**
      * Obtiene las reservas dentro de un rango de fechas.
      */
     @GetMapping("/range")
@@ -152,6 +180,19 @@ public class BookingController {
             @RequestBody List<com.hotelsa.backend.booking.dto.BookingAddonRequest> addonRequests
     ) {
         BookingResponseDTO response = bookingService.addAddonsToBooking(bookingId, addonRequests);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Reemplaza la lista de addons de una reserva (PUT idempotente): envía el body completo y se actualiza en bloque.
+     */
+    @PutMapping("/{id}/addons")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookingResponseDTO> replaceAddonsForBooking(
+            @PathVariable("id") Long bookingId,
+            @RequestBody List<com.hotelsa.backend.booking.dto.BookingAddonRequest> addonRequests
+    ) {
+        BookingResponseDTO response = bookingService.replaceAddonsForBooking(bookingId, addonRequests);
         return ResponseEntity.ok(response);
     }
 

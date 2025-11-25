@@ -99,4 +99,22 @@ public class AddonService {
         List<Addon> list = addonRepository.findByNameContainingIgnoreCase(name);
         return addonMapper.fromEntityList(list);
     }
+
+    // Nuevo: retornar solo los addons activos
+    @Transactional(readOnly = true)
+    public List<AddonResponse> getAllActive() {
+        List<Addon> list = addonRepository.findAllByActiveTrue();
+        return addonMapper.fromEntityList(list);
+    }
+
+    // Nuevo: alternar el campo active del addon
+    @Transactional
+    public AddonResponse toggleActive(Long id) {
+        Addon addon = addonRepository.findById(id)
+                .orElseThrow(() -> new AddonNotFoundException("Addon no encontrado"));
+        addon.setActive(!addon.isActive());
+        Addon saved = addonRepository.save(addon);
+        log.debug("🔁 Toggled active for addon {} -> {}", saved.getName(), saved.isActive());
+        return addonMapper.fromEntity(saved);
+    }
 }

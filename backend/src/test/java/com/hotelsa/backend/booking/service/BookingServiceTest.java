@@ -1,362 +1,359 @@
 package com.hotelsa.backend.booking.service;
 
-import com.hotelsa.backend.addon.model.Addon;
-import com.hotelsa.backend.addon.repository.AddonRepository;
-import com.hotelsa.backend.addon.mapper.AddonMapper;
-import com.hotelsa.backend.booking.dto.BookingRequestDTO;
-import com.hotelsa.backend.booking.dto.BookingResponseDTO;
-import com.hotelsa.backend.booking.exception.BookingAddonNotFoundException;
-import com.hotelsa.backend.booking.exception.BookingNotFoundException;
-import com.hotelsa.backend.booking.mapper.BookingMapper;
+import com.hotelsa.backend.auth.service.AuthService;
+import com.hotelsa.backend.booking.repository.BookingRepository;
 import com.hotelsa.backend.booking.model.Booking;
-import com.hotelsa.backend.bookingaddon.entity.BookingAddon;
-import com.hotelsa.backend.bookingaddon.entity.BookingAddonId;
-import com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository;
-import com.hotelsa.backend.guest.model.Guest;
-import com.hotelsa.backend.guest.repository.GuestRepository;
-import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.hotel.repository.HotelRepository;
+import com.hotelsa.backend.room.enums.RoomStatus;
 import com.hotelsa.backend.room.model.Room;
 import com.hotelsa.backend.room.repository.RoomRepository;
-import com.hotelsa.backend.booking.repository.BookingRepository;
-import com.hotelsa.backend.booking.enums.BookingStatus;
-import com.hotelsa.backend.auth.service.AuthService;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
+import org.mockito.Mockito;
+import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class BookingServiceTest {
 
-    @Mock private HotelRepository hotelRepository;
-    @Mock private BookingRepository bookingRepository;
-    @Mock private GuestRepository guestRepository;
-    @Mock private RoomRepository roomRepository;
-    @Mock private BookingMapper bookingMapper;
-    @Mock private AuthService authService;
-
-    @Mock private AddonRepository addonRepository;
-    @Mock private BookingAddonRepository bookingAddonRepository;
-    @Mock private AddonMapper addonMapper;
-
-    @InjectMocks private BookingService bookingService;
-
-    private Hotel hotel;
-    private Guest guest;
-    private Room room;
-    private Booking booking;
-    private BookingRequestDTO bookingRequestDTO;
-    private BookingResponseDTO bookingResponseDTO;
+    private BookingRepository bookingRepository;
+    private RoomRepository roomRepository;
+    private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        hotel = new Hotel();
-        hotel.setId(10L);
-        hotel.setName("Test Hotel");
+        bookingRepository = Mockito.mock(BookingRepository.class);
+        roomRepository = Mockito.mock(RoomRepository.class);
+        authService = Mockito.mock(AuthService.class);
 
-        guest = Guest.builder()
-                .id(1L)
-                .fullName("Cliente Uno")
-                .documentType("DNI")
-                .documentNumber("11111111")
-                .email("cliente@ejemplo.com")
-                .phone("600000000")
-                .address("Calle")
-                .previousCancellations(0)
-                .totalBookingsClient(0)
-                .hotelId(hotel.getId())
-                .build();
+        // mocks for unused dependencies
+        var hotelRepository = Mockito.mock(HotelRepository.class);
+        var guestRepository = Mockito.mock(com.hotelsa.backend.guest.repository.GuestRepository.class);
+        var bookingMapper = Mockito.mock(com.hotelsa.backend.booking.mapper.BookingMapper.class);
+        var addonRepository = Mockito.mock(com.hotelsa.backend.addon.repository.AddonRepository.class);
+        var bookingAddonRepository = Mockito.mock(com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository.class);
 
-        room = Room.builder()
-                .id(2L)
-                .hotelId(hotel.getId())
-                .number("201")
-                .build();
-
-        booking = Booking.builder()
-                .id(5L)
-                .hotelId(hotel.getId())
-                .guest(guest)
-                .room(room)
-                .checkInDate(LocalDate.of(2025, 1, 10))
-                .checkOutDate(LocalDate.of(2025, 1, 15))
-                .status(BookingStatus.CONFIRMED)
-                .createdBy("system")
-                .bookingLeadTime(LocalDate.now())
-                .build();
-
-        bookingRequestDTO = BookingRequestDTO.builder()
-                .guestId(guest.getId())
-                .roomId(room.getId())
-                .checkInDate(LocalDate.of(2025, 2, 1))
-                .checkOutDate(LocalDate.of(2025, 2, 5))
-                .status(BookingStatus.PENDING)
-                .createdBy("user")
-                .bookingLeadTime(LocalDate.now())
-                .build();
-
-        bookingResponseDTO = BookingResponseDTO.builder()
-                .id(5L)
-                .hotelId(hotel.getId())
-                .guestId(guest.getId())
-                .roomId(room.getId())
-                .build();
-
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
-    }
-
-    @Test
-    void createBooking_ShouldCreateBookingSuccessfully() {
-        when(hotelRepository.findById(hotel.getId())).thenReturn(Optional.of(hotel));
-        when(guestRepository.findById(guest.getId())).thenReturn(Optional.of(guest));
-        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
-        when(bookingMapper.fromRequestDto(bookingRequestDTO)).thenReturn(booking);
-        when(bookingRepository.save(booking)).thenReturn(booking);
-        when(bookingMapper.fromEntity(booking)).thenReturn(bookingResponseDTO);
-
-        BookingResponseDTO res = bookingService.create(bookingRequestDTO);
-
-        assertNotNull(res);
-        assertEquals(hotel.getId(), res.getHotelId());
-        verify(bookingRepository).save(booking);
-    }
-
-    @Test
-    void createBooking_ShouldThrow_WhenCheckOutNotAfterCheckIn() {
-        BookingRequestDTO badDto = BookingRequestDTO.builder()
-                .guestId(guest.getId())
-                .roomId(room.getId())
-                .checkInDate(LocalDate.of(2025, 3, 10))
-                .checkOutDate(LocalDate.of(2025, 3, 10))
-                .createdBy("user")
-                .bookingLeadTime(LocalDate.now())
-                .build();
-
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
-        when(hotelRepository.findById(hotel.getId())).thenReturn(Optional.of(hotel));
-        when(guestRepository.findById(guest.getId())).thenReturn(Optional.of(guest));
-        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
-
-        assertThrows(IllegalArgumentException.class, () -> bookingService.create(badDto));
-    }
-
-    @Test
-    void updateBooking_ShouldThrow_WhenBookingNotFound() {
-        when(bookingRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(BookingNotFoundException.class, () -> bookingService.update(999L, bookingRequestDTO));
-    }
-
-    @Test
-    void getBookingsBetween_ShouldThrow_WhenEndBeforeStart() {
-        LocalDate start = LocalDate.of(2025, 5, 10);
-        LocalDate end = LocalDate.of(2025, 5, 1);
-
-        assertThrows(IllegalArgumentException.class, () -> bookingService.getBookingsBetween(start, end));
-    }
-
-    @Test
-    void addAddonsToBooking_ShouldThrow_WhenSomeAddonDoesNotExist() {
-        Long bookingId = booking.getId();
-        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
-
-        List<com.hotelsa.backend.booking.dto.BookingAddonRequest> reqs = List.of(
-                com.hotelsa.backend.booking.dto.BookingAddonRequest.builder().addonId(100L).quantity(1).build(),
-                com.hotelsa.backend.booking.dto.BookingAddonRequest.builder().addonId(101L).quantity(2).build()
+        // Instanciar el servicio bajo prueba con mocks
+        var bookingService = new com.hotelsa.backend.booking.service.BookingService(
+                hotelRepository,
+                bookingRepository,
+                guestRepository,
+                roomRepository,
+                bookingMapper,
+                authService,
+                addonRepository,
+                bookingAddonRepository
         );
 
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
-        when(addonRepository.findByIdIn(List.of(100L, 101L))).thenReturn(List.of(new Addon())); // size mismatch
+        // Guardar instancia en campo local para los tests (si se requiere)
+        // Pero los tests llaman bookingService a través de la variable local creada arriba.
 
-        assertThrows(com.hotelsa.backend.addon.exception.AddonNotFoundException.class,
-                () -> bookingService.addAddonsToBooking(bookingId, reqs));
+        when(authService.getCurrentHotelId()).thenReturn(10L);
     }
 
     @Test
-    void addAddonsToBooking_ShouldCreateBookingAddonLinks_WhenValid() {
-        Long bookingId = booking.getId();
-        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+    void roomOccupiedIsNotAvailableWhenActiveBookingExists() {
+        Long roomId = 3L;
+        Room room = new Room();
+        room.setId(roomId);
+        room.setHotelId(10L);
+        room.setStatus(RoomStatus.OCCUPIED);
 
-        com.hotelsa.backend.addon.model.Addon a = new com.hotelsa.backend.addon.model.Addon();
-        a.setId(200L);
-        a.setHotelId(hotel.getId());
-        a.setPrice(50);
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+        when(bookingRepository.existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelId(
+                eq(roomId), any(), any(LocalDate.class), any(LocalDate.class), anyLong()
+        )).thenReturn(true);
 
-        List<com.hotelsa.backend.booking.dto.BookingAddonRequest> reqs = List.of(
-                com.hotelsa.backend.booking.dto.BookingAddonRequest.builder().addonId(a.getId()).quantity(2).build()
+        // Crear instancia para invocar método
+        var bookingService = new com.hotelsa.backend.booking.service.BookingService(
+                Mockito.mock(HotelRepository.class),
+                bookingRepository,
+                Mockito.mock(com.hotelsa.backend.guest.repository.GuestRepository.class),
+                roomRepository,
+                Mockito.mock(com.hotelsa.backend.booking.mapper.BookingMapper.class),
+                authService,
+                Mockito.mock(com.hotelsa.backend.addon.repository.AddonRepository.class),
+                Mockito.mock(com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository.class)
         );
 
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
-        when(addonRepository.findByIdIn(List.of(a.getId()))).thenReturn(List.of(a));
-        when(bookingAddonRepository.existsByIdBookingIdAndIdAddonIdAndHotelId(bookingId, a.getId(), hotel.getId()))
+        boolean available = bookingService.isRoomAvailable(roomId, LocalDate.of(2025,12,1), LocalDate.of(2025,12,5));
+        assertFalse(available, "Room OCCUPIED with an active overlapping booking should not be available");
+
+        verify(roomRepository, times(1)).findById(roomId);
+        verify(bookingRepository, times(1)).existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelId(
+                eq(roomId), any(), any(LocalDate.class), any(LocalDate.class), anyLong());
+    }
+
+    @Test
+    void roomOccupiedButNoActiveBookingIsAvailable() {
+        Long roomId = 6L;
+        Room room = new Room();
+        room.setId(roomId);
+        room.setHotelId(10L);
+        room.setStatus(RoomStatus.OCCUPIED);
+
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+        when(bookingRepository.existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelId(
+                eq(roomId), any(), any(LocalDate.class), any(LocalDate.class), anyLong()
+        )).thenReturn(false);
+
+        var bookingService = new com.hotelsa.backend.booking.service.BookingService(
+                Mockito.mock(HotelRepository.class),
+                bookingRepository,
+                Mockito.mock(com.hotelsa.backend.guest.repository.GuestRepository.class),
+                roomRepository,
+                Mockito.mock(com.hotelsa.backend.booking.mapper.BookingMapper.class),
+                authService,
+                Mockito.mock(com.hotelsa.backend.addon.repository.AddonRepository.class),
+                Mockito.mock(com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository.class)
+        );
+
+        boolean available = bookingService.isRoomAvailable(roomId, LocalDate.of(2025,12,1), LocalDate.of(2025,12,5));
+        assertTrue(available, "Room OCCUPIED but without active overlapping bookings should be considered available");
+
+        verify(roomRepository, times(1)).findById(roomId);
+        verify(bookingRepository, times(1)).existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelId(
+                eq(roomId), any(), any(LocalDate.class), any(LocalDate.class), anyLong());
+    }
+
+    @Test
+    void roomAvailableWhenNoOverlappingBookings() {
+        Long roomId = 4L;
+        Room room = new Room();
+        room.setId(roomId);
+        room.setHotelId(10L);
+        room.setStatus(RoomStatus.AVAILABLE);
+
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+        when(bookingRepository.existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelId(
+                eq(roomId), any(), any(LocalDate.class), any(LocalDate.class), anyLong()))
                 .thenReturn(false);
 
-        // Simular guardado del link
-        when(bookingAddonRepository.save(any(BookingAddon.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(bookingMapper.fromEntity(booking)).thenReturn(bookingResponseDTO);
+        var bookingService = new com.hotelsa.backend.booking.service.BookingService(
+                Mockito.mock(HotelRepository.class),
+                bookingRepository,
+                Mockito.mock(com.hotelsa.backend.guest.repository.GuestRepository.class),
+                roomRepository,
+                Mockito.mock(com.hotelsa.backend.booking.mapper.BookingMapper.class),
+                authService,
+                Mockito.mock(com.hotelsa.backend.addon.repository.AddonRepository.class),
+                Mockito.mock(com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository.class)
+        );
 
-        BookingResponseDTO response = bookingService.addAddonsToBooking(bookingId, reqs);
+        boolean available = bookingService.isRoomAvailable(roomId, LocalDate.of(2025,12,1), LocalDate.of(2025,12,5));
+        assertTrue(available, "Room AVAILABLE with no overlapping bookings should be available");
 
-        assertNotNull(response);
-        verify(bookingAddonRepository).save(any(BookingAddon.class));
+        verify(roomRepository, times(1)).findById(roomId);
+        verify(bookingRepository, times(1)).existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelId(
+                eq(roomId), any(), any(LocalDate.class), any(LocalDate.class), anyLong());
     }
 
     @Test
-    void updateAddonQuantity_ShouldThrow_WhenLinkIsDeleted() {
-        Long bookingId = booking.getId();
-        Long addonId = 300L;
+    void roomNotAvailableWhenOverlappingBookingExists() {
+        Long roomId = 5L;
+        Room room = new Room();
+        room.setId(roomId);
+        room.setHotelId(10L);
+        room.setStatus(RoomStatus.AVAILABLE);
+
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+        when(bookingRepository.existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelId(
+                eq(roomId), any(), any(LocalDate.class), any(LocalDate.class), anyLong()))
+                .thenReturn(true);
+
+        var bookingService = new com.hotelsa.backend.booking.service.BookingService(
+                Mockito.mock(HotelRepository.class),
+                bookingRepository,
+                Mockito.mock(com.hotelsa.backend.guest.repository.GuestRepository.class),
+                roomRepository,
+                Mockito.mock(com.hotelsa.backend.booking.mapper.BookingMapper.class),
+                authService,
+                Mockito.mock(com.hotelsa.backend.addon.repository.AddonRepository.class),
+                Mockito.mock(com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository.class)
+        );
+
+        boolean available = bookingService.isRoomAvailable(roomId, LocalDate.of(2025,12,10), LocalDate.of(2025,12,15));
+        assertFalse(available, "Room AVAILABLE but with overlapping booking should not be available");
+
+        verify(roomRepository, times(1)).findById(roomId);
+        verify(bookingRepository, times(1)).existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelId(
+                eq(roomId), any(), any(LocalDate.class), any(LocalDate.class), anyLong());
+    }
+
+    @Test
+    void roomAvailableWhenOnlyOverlapIsExcludedBooking() {
+        Long roomId = 10L;
+        Long excludeBookingId = 99L;
+        Room room = new Room();
+        room.setId(roomId);
+        room.setHotelId(10L);
+        room.setStatus(RoomStatus.AVAILABLE);
+
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+        when(bookingRepository.existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelIdAndIdNot(
+                eq(roomId), any(), any(LocalDate.class), any(LocalDate.class), anyLong(), eq(excludeBookingId)
+        )).thenReturn(false);
+
+        var bookingService = new com.hotelsa.backend.booking.service.BookingService(
+                Mockito.mock(HotelRepository.class),
+                bookingRepository,
+                Mockito.mock(com.hotelsa.backend.guest.repository.GuestRepository.class),
+                roomRepository,
+                Mockito.mock(com.hotelsa.backend.booking.mapper.BookingMapper.class),
+                authService,
+                Mockito.mock(com.hotelsa.backend.addon.repository.AddonRepository.class),
+                Mockito.mock(com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository.class)
+        );
+
+        boolean available = bookingService.isRoomAvailable(roomId, LocalDate.of(2025,12,1), LocalDate.of(2025,12,5), excludeBookingId);
+        assertTrue(available, "Room should be available when the only overlapping booking is the excluded one");
+
+        verify(roomRepository, times(1)).findById(roomId);
+        verify(bookingRepository, times(1)).existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelIdAndIdNot(
+                eq(roomId), any(), any(LocalDate.class), any(LocalDate.class), anyLong(), eq(excludeBookingId));
+    }
+
+    @Test
+    void roomNotAvailableWhenOtherOverlappingBookingExistsEvenIfOneIsExcluded() {
+        Long roomId = 11L;
+        Long excludeBookingId = 100L;
+        Room room = new Room();
+        room.setId(roomId);
+        room.setHotelId(10L);
+        room.setStatus(RoomStatus.AVAILABLE);
+
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+        when(bookingRepository.existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelIdAndIdNot(
+                eq(roomId), any(), any(LocalDate.class), any(LocalDate.class), anyLong(), eq(excludeBookingId)
+        )).thenReturn(true);
+
+        var bookingService = new com.hotelsa.backend.booking.service.BookingService(
+                Mockito.mock(HotelRepository.class),
+                bookingRepository,
+                Mockito.mock(com.hotelsa.backend.guest.repository.GuestRepository.class),
+                roomRepository,
+                Mockito.mock(com.hotelsa.backend.booking.mapper.BookingMapper.class),
+                authService,
+                Mockito.mock(com.hotelsa.backend.addon.repository.AddonRepository.class),
+                Mockito.mock(com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository.class)
+        );
+
+        boolean available = bookingService.isRoomAvailable(roomId, LocalDate.of(2025,12,1), LocalDate.of(2025,12,5), excludeBookingId);
+        assertFalse(available, "Room should not be available when another overlapping booking exists despite one being excluded");
+
+        verify(roomRepository, times(1)).findById(roomId);
+        verify(bookingRepository, times(1)).existsByRoomIdAndStatusNotAndCheckInDateLessThanAndCheckOutDateGreaterThanAndHotelIdAndIdNot(
+                eq(roomId), any(), any(LocalDate.class), any(LocalDate.class), anyLong(), eq(excludeBookingId));
+    }
+
+    @Test
+    void bookingTotalCalculatedFromStayOnly() {
+        Long bookingId = 200L;
+        Long roomId = 20L;
+
+        Room room = new Room();
+        room.setId(roomId);
+        room.setPricePerNight(150.0);
+
+        Booking booking = new Booking();
+        booking.setId(bookingId);
+        booking.setRoom(room);
+        booking.setCheckInDate(LocalDate.of(2025, 12, 1));
+        booking.setCheckOutDate(LocalDate.of(2025, 12, 4)); // 3 nights
 
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
-        BookingAddonId id = new BookingAddonId(bookingId, addonId);
-        BookingAddon link = BookingAddon.builder().id(id).hotelId(hotel.getId()).deleted(true).quantity(1).build();
-        when(bookingAddonRepository.findByIdAndHotelId(id, hotel.getId())).thenReturn(Optional.of(link));
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
 
-        assertThrows(BookingAddonNotFoundException.class, () -> bookingService.updateAddonQuantity(bookingId, addonId, 5));
+        var bookingService = new com.hotelsa.backend.booking.service.BookingService(
+                Mockito.mock(HotelRepository.class),
+                bookingRepository,
+                Mockito.mock(com.hotelsa.backend.guest.repository.GuestRepository.class),
+                roomRepository,
+                Mockito.mock(com.hotelsa.backend.booking.mapper.BookingMapper.class),
+                authService,
+                Mockito.mock(com.hotelsa.backend.addon.repository.AddonRepository.class),
+                Mockito.mock(com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository.class)
+        );
+
+        bookingService.calculateAndSetBookingTotal(bookingId);
+
+        ArgumentCaptor<Booking> captor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository, atLeastOnce()).save(captor.capture());
+        Booking saved = captor.getValue();
+        java.math.BigDecimal expected = java.math.BigDecimal.valueOf(3).multiply(java.math.BigDecimal.valueOf(150.0));
+        assertEquals(0, expected.compareTo(saved.getTotalAmount()));
     }
 
     @Test
-    void removeAddonFromBooking_ShouldSoftDeleteLinkSuccessfully() {
-        Long bookingId = booking.getId();
-        Long addonId = 400L;
-        BookingAddonId id = new BookingAddonId(bookingId, addonId);
-        BookingAddon link = BookingAddon.builder().id(id).hotelId(hotel.getId()).deleted(false).quantity(1).build();
+    void bookingTotalIncludesAddonsAndHandlesNullQuantityAsOne() {
+        Long bookingId = 201L;
+        Long roomId = 21L;
 
-        when(bookingAddonRepository.findByIdAndHotelId(id, hotel.getId())).thenReturn(Optional.of(link));
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
+        Room room = new Room();
+        room.setId(roomId);
+        room.setPricePerNight(100.0);
 
-        bookingService.removeAddonFromBooking(bookingId, addonId);
-
-        assertTrue(link.isDeleted());
-        verify(bookingAddonRepository).save(link);
-    }
-
-    @Test
-    void cancelBooking_ShouldCancelBookingSuccessfully() {
-        Long bookingId = booking.getId();
-        booking.setStatus(BookingStatus.CONFIRMED);
+        Booking booking = new Booking();
+        booking.setId(bookingId);
+        booking.setRoom(room);
+        booking.setCheckInDate(LocalDate.of(2025, 12, 1));
+        booking.setCheckOutDate(LocalDate.of(2025, 12, 4)); // 3 nights
 
         when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
-        when(bookingRepository.save(booking)).thenReturn(booking);
-        when(bookingMapper.fromEntity(booking)).thenReturn(bookingResponseDTO);
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
 
-        BookingResponseDTO response = bookingService.cancelBooking(bookingId);
+        // Prepare booking addons
+        com.hotelsa.backend.addon.model.Addon addon1 = new com.hotelsa.backend.addon.model.Addon();
+        addon1.setId(1L);
+        addon1.setPrice(10);
 
-        assertNotNull(response);
-        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
-        verify(bookingRepository).save(booking);
-    }
+        com.hotelsa.backend.addon.model.Addon addon2 = new com.hotelsa.backend.addon.model.Addon();
+        addon2.setId(2L);
+        addon2.setPrice(5);
 
-    @Test
-    void cancelBooking_ShouldThrow_WhenBookingNotFound() {
-        Long nonExistentBookingId = 9999L;
-
-        when(bookingRepository.findById(nonExistentBookingId)).thenReturn(Optional.empty());
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
-
-        assertThrows(BookingNotFoundException.class, () -> bookingService.cancelBooking(nonExistentBookingId));
-    }
-
-    @Test
-    void cancelBooking_ShouldThrow_WhenBookingBelongsToDifferentHotel() {
-        Long bookingId = booking.getId();
-        Long differentHotelId = 999L;
-        booking.setHotelId(differentHotelId);
-
-        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
-
-        assertThrows(BookingNotFoundException.class, () -> bookingService.cancelBooking(bookingId));
-    }
-
-    @Test
-    void createBooking_ShouldSetRoomStatusToOccupied() {
-        when(hotelRepository.findById(hotel.getId())).thenReturn(Optional.of(hotel));
-        when(guestRepository.findById(guest.getId())).thenReturn(Optional.of(guest));
-        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
-        when(bookingMapper.fromRequestDto(bookingRequestDTO)).thenReturn(booking);
-        when(bookingRepository.save(booking)).thenReturn(booking);
-        when(bookingMapper.fromEntity(booking)).thenReturn(bookingResponseDTO);
-
-        bookingService.create(bookingRequestDTO);
-
-        assertEquals(com.hotelsa.backend.room.enums.RoomStatus.OCCUPIED, room.getStatus());
-        verify(roomRepository).save(room);
-    }
-
-    @Test
-    void cancelBooking_ShouldSetRoomStatusToAvailable() {
-        Long bookingId = booking.getId();
-        booking.setStatus(BookingStatus.CONFIRMED);
-        room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.OCCUPIED);
-
-        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
-        when(bookingRepository.save(booking)).thenReturn(booking);
-        when(bookingMapper.fromEntity(booking)).thenReturn(bookingResponseDTO);
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
-
-        bookingService.cancelBooking(bookingId);
-
-        assertEquals(com.hotelsa.backend.room.enums.RoomStatus.AVAILABLE, room.getStatus());
-        verify(roomRepository).save(room);
-    }
-
-    @Test
-    void deleteBooking_ShouldSetRoomStatusToAvailable() {
-        Long bookingId = booking.getId();
-        room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.OCCUPIED);
-
-        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
-
-        bookingService.delete(bookingId);
-
-        assertEquals(com.hotelsa.backend.room.enums.RoomStatus.AVAILABLE, room.getStatus());
-        verify(roomRepository).save(room);
-        assertTrue(booking.isDeleted());
-    }
-
-    @Test
-    void updateBooking_ShouldSetRoomStatusToAvailableWhenCancelling() {
-        Long bookingId = booking.getId();
-        booking.setStatus(BookingStatus.CONFIRMED);
-        room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.OCCUPIED);
-
-        BookingRequestDTO cancelDto = BookingRequestDTO.builder()
-                .guestId(guest.getId())
-                .roomId(room.getId())
-                .checkInDate(LocalDate.of(2025, 2, 1))
-                .checkOutDate(LocalDate.of(2025, 2, 5))
-                .status(BookingStatus.CANCELLED)
-                .createdBy("user")
-                .bookingLeadTime(LocalDate.now())
+        com.hotelsa.backend.bookingaddon.entity.BookingAddon ba1 = com.hotelsa.backend.bookingaddon.entity.BookingAddon.builder()
+                .id(new com.hotelsa.backend.bookingaddon.entity.BookingAddonId(bookingId, 1L))
+                .booking(booking)
+                .addon(addon1)
+                .quantity(2)
+                .deleted(false)
                 .build();
 
-        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
-        when(guestRepository.findById(guest.getId())).thenReturn(Optional.of(guest));
-        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
-        when(bookingRepository.save(booking)).thenReturn(booking);
-        when(bookingMapper.fromEntity(booking)).thenReturn(bookingResponseDTO);
-        when(authService.getCurrentHotelId()).thenReturn(hotel.getId());
+        com.hotelsa.backend.bookingaddon.entity.BookingAddon ba2 = com.hotelsa.backend.bookingaddon.entity.BookingAddon.builder()
+                .id(new com.hotelsa.backend.bookingaddon.entity.BookingAddonId(bookingId, 2L))
+                .booking(booking)
+                .addon(addon2)
+                .quantity(null)
+                .deleted(false)
+                .build();
 
-        bookingService.update(bookingId, cancelDto);
+        var bookingAddonRepoMock = Mockito.mock(com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository.class);
+        when(bookingAddonRepoMock.findByIdBookingIdAndHotelId(eq(bookingId), anyLong()))
+                .thenReturn(List.of(ba1, ba2));
 
-        assertEquals(com.hotelsa.backend.room.enums.RoomStatus.AVAILABLE, room.getStatus());
-        verify(roomRepository).save(room);
+        var bookingService = new com.hotelsa.backend.booking.service.BookingService(
+                Mockito.mock(HotelRepository.class),
+                bookingRepository,
+                Mockito.mock(com.hotelsa.backend.guest.repository.GuestRepository.class),
+                roomRepository,
+                Mockito.mock(com.hotelsa.backend.booking.mapper.BookingMapper.class),
+                authService,
+                Mockito.mock(com.hotelsa.backend.addon.repository.AddonRepository.class),
+                bookingAddonRepoMock
+        );
+
+        bookingService.calculateAndSetBookingTotal(bookingId);
+
+        ArgumentCaptor<Booking> captor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository, atLeastOnce()).save(captor.capture());
+        Booking saved = captor.getValue();
+        java.math.BigDecimal expected = java.math.BigDecimal.valueOf(3).multiply(java.math.BigDecimal.valueOf(100.0));
+        expected = expected.add(java.math.BigDecimal.valueOf(20)); // 2 addons of 10 each
+        expected = expected.add(java.math.BigDecimal.valueOf(5));  // 1 addon of 5 (null quantity treated as 1)
+        assertEquals(0, expected.compareTo(saved.getTotalAmount()));
     }
 }

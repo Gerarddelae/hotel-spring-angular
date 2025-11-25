@@ -98,8 +98,21 @@ export const routes: Routes = [
         },
       },
       {
+        path: 'bookings',
+        loadChildren: () =>
+          import('./features/bookings/bookings.routes').then(
+            (m) => m.bookingsRoutes
+          ),
+        canActivate: [() => roleGuard(['ADMIN', 'EMPLOYEE', 'USER'])],
+        data: {
+          title: 'Reservas',
+          subtitle: 'Gestión completa de reservas del hotel',
+          icon: 'pi-bookmark',
+        },
+      },
+      {
         path: '',
-        redirectTo: 'reservations',
+        redirectTo: 'dashboard',
         pathMatch: 'full',
       },
     ],

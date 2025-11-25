@@ -52,6 +52,7 @@ public class BookingMapper {
                         .filter(ba -> !ba.isDeleted())
                         .map(bookingAddonMapper::fromEntity)
                         .toList() : null)
+                .totalAmount(booking.getTotalAmount())
                 .build();
     }
 }

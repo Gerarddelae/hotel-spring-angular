@@ -5,11 +5,13 @@ import com.hotelsa.backend.room.dto.RoomResponseDTO;
 import com.hotelsa.backend.room.service.RoomService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -47,6 +49,28 @@ public class RoomController {
     public ResponseEntity<List<RoomResponseDTO>> getRoomsForCurrentHotel() {
         List<RoomResponseDTO> rooms = roomService.getRoomsForCurrentHotel();
         return ResponseEntity.ok(rooms);
+    }
+
+    /**
+     * Obtiene las habitaciones disponibles en un rango de fechas para el hotel del usuario autenticado.
+     * Query params: checkIn (yyyy-MM-dd), checkOut (yyyy-MM-dd)
+     */
+    @GetMapping("/available")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<List<RoomResponseDTO>> getAvailableRooms(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut
+    ) {
+        // Validaciones básicas
+        if (checkIn == null || checkOut == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (!checkIn.isBefore(checkOut)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        List<RoomResponseDTO> available = roomService.getAvailableRooms(checkIn, checkOut);
+        return ResponseEntity.ok(available);
     }
 
     /**

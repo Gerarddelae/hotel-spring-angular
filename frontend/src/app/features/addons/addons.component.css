@@ -4,10 +4,17 @@
   width: 100%;
 }
 
+:host { animation: fadeIn 0.2s ease-in; }
+
 mat-form-field {
   width: 100%;
 }
 
 .h-14 {
   height: 56px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }

@@ -1,0 +1,380 @@
+.booking-list-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    button {
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+
+  /* Dark-mode override for the 'Nueva Reserva' primary raised button
+     Ensures the button uses the project cyan palette in dark mode and
+     remains visible over dark surfaces. Adjust hex values if you want
+     a different shade from the palette. */
+  :host-context(.dark) .header button[mat-raised-button][color="primary"],
+  .dark .booking-list-container .header button[mat-raised-button][color="primary"] {
+    background-color: #1E3160 !important; /* cyan-600 */
+    color: #ffffff !important;
+    box-shadow: 0 6px 12px rgba(8,145,178,0.18) !important;
+  }
+
+  :host-context(.dark) .header button[mat-raised-button][color="primary"]:hover,
+  .dark .booking-list-container .header button[mat-raised-button][color="primary"]:hover {
+    background-color: #2462EA !important; /* cyan-500 (lighter on hover) */
+  }
+
+  .filters-card {
+    margin-bottom: 24px;
+    padding: 16px;
+
+    .filters-form {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+
+      mat-form-field {
+        flex: 1;
+        min-width: 200px;
+
+        &.search-field {
+          flex: 2;
+          min-width: 300px;
+        }
+      }
+
+      .clear-button {
+        mat-icon {
+          margin-right: 8px;
+        }
+      }
+    }
+
+    /* ------------------------------------------------------------------
+       Styles for the filters card button(s).
+       - Targets the `.clear-button` inside `.filters-card` and any
+         `button[mat-stroked-button]` inside the card.
+       - Provides helper modifier classes you can apply in HTML, or
+         edit the colors here in SCSS.
+    ------------------------------------------------------------------ */
+    .clear-button,
+    button[mat-stroked-button] {
+      /* base (light mode) */
+      background: transparent;
+      border-color: #cbd5e1; /* gray-300 */
+      color: #374151; /* gray-700 */
+      transition: background-color 150ms ease, border-color 150ms ease;
+    }
+
+    .clear-button:hover,
+    button[mat-stroked-button]:hover {
+      background: rgba(59,130,246,0.06); /* faint blue on hover */
+      border-color: #93c5fd; /* blue-300 */
+    }
+
+    /* Helper modifiers you can add to the button element */
+    .filters-btn--blue {
+      background-color: #eff6ff; /* blue-50 */
+      border-color: #bfdbfe; /* blue-200 */
+      color: #1e3a8a; /* blue-800 */
+    }
+
+    .filters-btn--cyan {
+      background-color: #ecfeff; /* cyan-50 */
+      border-color: #99f6e4; /* cyan-200 */
+      color: #0f766e; /* teal-700 */
+    }
+
+    .filters-btn--gray {
+      background-color: #f8fafc; /* gray-50 */
+      border-color: #e6eef6; /* subtle */
+      color: #374151; /* gray-700 */
+    }
+
+    /* Dark-mode fallbacks for buttons inside filters-card */
+    :host-context(.dark) & .clear-button,
+    .dark .booking-list-container & .clear-button,
+    :host-context(.dark) & button[mat-stroked-button],
+    .dark .booking-list-container & button[mat-stroked-button] {
+      background: transparent;
+      border-color: rgba(255,255,255,0.06);
+      color: #e5e7eb; /* gray-200 */
+    }
+
+    :host-context(.dark) & .filters-btn--blue,
+    .dark .booking-list-container & .filters-btn--blue {
+      background-color: #1e40af; /* blue-800 */
+      border-color: #1e3a8a;
+      color: #ffffff;
+    }
+
+    :host-context(.dark) & .filters-btn--cyan,
+    .dark .booking-list-container & .filters-btn--cyan {
+      background-color: #0f766e; /* teal-700 */
+      border-color: #064e3b;
+      color: #ffffff;
+    }
+
+    :host-context(.dark) & .filters-btn--gray,
+    .dark .booking-list-container & .filters-btn--gray {
+      background-color: #374151; /* gray-700 */
+      border-color: #1f2937;
+      color: #e5e7eb;
+    }
+  }
+  
+
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .table-container {
+    overflow-x: auto;
+    background: rgb(185, 173, 173);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    .bookings-table {
+      width: 100%;
+
+      /* Don't force header background here — use global Material styles
+         (see `src/styles.scss` .mat-mdc-header-cell) so dark mode follows
+         the project's theme variables and global .dark handling. */
+      th {
+        font-weight: 600;
+      }
+
+      /* Dark mode: use project palette and reduce contrast */
+      /* Prefer :host-context for component-scoped styling, and also include a global .dark selector */
+      :host-context(.dark) .bookings-table th,
+      .dark .booking-list-container .bookings-table th {
+        /* Use a much darker surface to blend with the dark background */
+        background-color: #1E3160; /* bg-gray-900 - much darker, less bright */
+        color: #9ca3af; /* text-gray-400 - softer text */
+        font-weight: 600;
+      }
+
+      td, th {
+        padding: 16px;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 4px;
+
+        button {
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+        }
+      }
+
+      .no-data {
+        text-align: center;
+        padding: 48px 16px !important;
+
+        .no-data-message {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          color: #999;
+
+          mat-icon {
+            font-size: 64px;
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+          }
+
+          p {
+            font-size: 16px;
+            margin: 0;
+          }
+        }
+      }
+    }
+  }
+
+  .summary {
+    margin-top: 16px;
+    text-align: right;
+    color: #666;
+    font-size: 14px;
+
+    p {
+      margin: 0;
+    }
+  }
+
+
+  /* Dark mode adjustments for filters card, table container and summary */
+  :host-context(.dark) .filters-card,
+  .dark .booking-list-container .filters-card {
+    background: #1F2937; /* bg-gray-700 - lighter than modals for better visibility */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+
+
+  :host-context(.dark) .table-container,
+  .dark .booking-list-container .table-container {
+    background: #1f2937; /* bg-gray-800 - matches table header */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  :host-context(.dark) .summary,
+  .dark .booking-list-container .summary {
+    color: #9ca3af; /* text-gray-400 - softer gray for dark mode */
+  }
+}
+
+/* close .booking-list-container */
+
+
+/* Estilos para snackbar */
+::ng-deep .success-snackbar {
+  background-color: #4caf50 !important;
+  color: white !important;
+
+  .mat-simple-snack-bar-content {
+    font-weight: 500;
+  }
+}
+
+::ng-deep .error-snackbar {
+  background-color: #f44336 !important;
+  color: white !important;
+
+  .mat-simple-snack-bar-content {
+    font-weight: 500;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .booking-list-container {
+    .table-container {
+      .bookings-table {
+        font-size: 14px;
+
+        td, th {
+          padding: 12px 8px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .booking-list-container {
+    padding: 16px;
+
+    .header {
+      flex-direction: column;
+      gap: 16px;
+      align-items: stretch;
+
+      h1 {
+        font-size: 24px;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+
+    .filters-card {
+      .filters-form {
+        flex-direction: column;
+
+        mat-form-field {
+          width: 100%;
+          min-width: auto;
+
+          &.search-field {
+            min-width: auto;
+          }
+        }
+
+        .clear-button {
+          width: 100%;
+        }
+      }
+    }
+
+    .table-container {
+      .bookings-table {
+        font-size: 12px;
+
+        td, th {
+          padding: 8px 4px;
+        }
+
+        .action-buttons {
+          flex-direction: column;
+        }
+      }
+    }
+
+    .summary {
+      text-align: center;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .booking-list-container {
+    .table-container {
+      .bookings-table {
+        // En móviles, ocultar algunas columnas menos importantes
+        .mat-column-id,
+        .mat-column-totalAmount {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+.bookings-table {
+  th,
+  .mat-mdc-header-cell {
+    background-color: #DBEAFE; /* blue-50 */
+    border-bottom: 1px solid #0b71f7; /* blue-100 */
+    font-weight: 600;
+  }
+
+  /* Dark mode ya lo tienes */
+  :host-context(.dark) .bookings-table th,
+  .dark .booking-list-container .bookings-table th {
+    background-color: #1E3160;
+    color: #9ca3af;
+    font-weight: 600;
+  }
+}

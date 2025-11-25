@@ -1,0 +1,239 @@
+<div class="booking-detail-container" *ngIf="!isLoading && booking">
+  
+  <!-- Header con acciones -->
+  <div class="header">
+    <div class="title-section">
+      <button mat-icon-button (click)="goBack()" class="back-button">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1>Reserva #{{ booking.id }}</h1>
+      <mat-chip [color]="getStatusColor(booking.status)" selected>
+        {{ getStatusLabel(booking.status) }}
+      </mat-chip>
+    </div>
+    
+    <div class="action-buttons">
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="editBooking()"
+        [disabled]="!canEdit() || isLoading">
+        <mat-icon>edit</mat-icon>
+        Editar
+      </button>
+      
+      <button 
+        mat-raised-button 
+        color="warn" 
+        (click)="cancelBooking()"
+        [disabled]="!canCancel()">
+        <mat-icon>cancel</mat-icon>
+        Cancelar Reserva
+      </button>
+      
+      <button 
+        mat-button 
+        color="warn" 
+        (click)="deleteBooking()">
+        <mat-icon>delete</mat-icon>
+        Eliminar
+      </button>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    
+    <!-- Información del Huésped -->
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>person</mat-icon>
+        <mat-card-title>Información del Huésped</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-row">
+          <span class="label">Nombre:</span>
+          <span class="value">{{ booking.guestName || 'N/A' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">ID Huésped:</span>
+          <span class="value">#{{ booking.guestId }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Información de la Habitación -->
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>hotel</mat-icon>
+        <mat-card-title>Información de la Habitación</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-row">
+          <span class="label">Número de Habitación:</span>
+          <span class="value">{{ booking.roomNumber || 'N/A' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">ID Habitación:</span>
+          <span class="value">#{{ booking.roomId }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Información de Fechas -->
+    <mat-card class="info-card dates-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>calendar_today</mat-icon>
+        <mat-card-title>Fechas de Estadía</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="dates-grid">
+          <div class="date-box">
+            <span class="date-label">Check-in</span>
+            <span class="date-value">{{ booking.checkInDate | date:'dd/MM/yyyy' }}</span>
+            <span class="date-time">{{ booking.checkInDate | date:'EEEE' }}</span>
+          </div>
+          
+          <div class="nights-indicator">
+            <mat-icon>nights_stay</mat-icon>
+            <span>{{ calculateNights() }} noche(s)</span>
+          </div>
+          
+          <div class="date-box">
+            <span class="date-label">Check-out</span>
+            <span class="date-value">{{ booking.checkOutDate | date:'dd/MM/yyyy' }}</span>
+            <span class="date-time">{{ booking.checkOutDate | date:'EEEE' }}</span>
+          </div>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div class="info-row">
+          <span class="label">Fecha de Reserva (Lead Time):</span>
+          <span class="value">{{ booking.bookingLeadTime | date:'dd/MM/yyyy' }}</span>
+        </div>
+        
+        <div class="info-row">
+          <span class="label">Creado por:</span>
+          <span class="value">{{ booking.createdBy }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Notas -->
+    <mat-card class="info-card" *ngIf="booking.notes">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>note</mat-icon>
+        <mat-card-title>Notas</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p class="notes-text">{{ booking.notes }}</p>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Servicios Adicionales -->
+    <mat-card class="info-card addons-card" *ngIf="booking.addons && booking.addons.length > 0">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>room_service</mat-icon>
+        <mat-card-title>Servicios Adicionales</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-list>
+          <mat-list-item *ngFor="let addon of booking.addons">
+            <div class="addon-item">
+              <div class="addon-info">
+                <span class="addon-name">{{ addon.addonName }}</span>
+                <span class="addon-details">
+                  ${{ addon.price | number:'1.2-2' }} × {{ addon.quantity }}
+                </span>
+              </div>
+              <div class="addon-subtotal">
+                ${{ addon.subtotal | number:'1.2-2' }}
+              </div>
+            </div>
+          </mat-list-item>
+        </mat-list>
+        
+        <mat-divider></mat-divider>
+        
+        <div class="addons-total">
+          <span class="label">Total Servicios Adicionales:</span>
+          <span class="value">${{ calculateAddonsTotal() | number:'1.2-2' }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Resumen Financiero -->
+    <mat-card class="info-card financial-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>attach_money</mat-icon>
+        <mat-card-title>Resumen Financiero</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-row">
+          <span class="label">Hospedaje ({{ calculateNights() }} noche(s)):</span>
+          <ng-container *ngIf="booking.accommodationSubtotal !== undefined && booking.accommodationSubtotal !== null; else noAcc">
+            <span class="value">
+              <ng-container *ngIf="getAccommodationPricePerNight() !== null; else simpleAcc">
+                ${{ getAccommodationPricePerNight() | number:'1.2-2' }} × {{ calculateNights() }} noches
+              </ng-container>
+              <ng-template #simpleAcc>
+                ${{ booking.accommodationSubtotal | number:'1.2-2' }}
+              </ng-template>
+            </span>
+          </ng-container>
+          <ng-template #noAcc>
+            <span class="value">-</span>
+          </ng-template>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Servicios Adicionales:</span>
+          <span class="value">${{ calculateAddonsTotal() | number:'1.2-2' }}</span>
+        </div>
+        
+        <mat-divider></mat-divider>
+        
+        <div class="info-row total-row">
+          <span class="label">Total:</span>
+          <span class="value total-amount">${{ booking.totalAmount | number:'1.2-2' }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+</div>
+
+<!-- Loading spinner -->
+<div class="loading-container" *ngIf="isLoading">
+  <mat-spinner></mat-spinner>
+  <p>Cargando detalles de la reserva...</p>
+</div>
+
+<!-- Confirm templates for dialog-based cancel/delete -->
+<ng-template #cancelDialog>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-80 sm:w-96">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">¿Seguro que quieres cancelar esta reserva?</h3>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2"><strong>ID:</strong> #{{ booking?.id }}</p>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4"><strong>Huésped:</strong> {{ booking?.guestName || 'N/A' }}<br><strong>Habitación:</strong> {{ booking?.roomNumber || 'N/A' }}</p>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">La reserva se marcará como cancelada y no podrá volver a confirmarse.</p>
+
+    <div class="flex justify-end gap-3">
+      <button (click)="closeDialog()" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition">Cancelar</button>
+      <button (click)="confirmCancel()" class="px-4 py-2 rounded-lg bg-yellow-600 text-white hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 transition">Confirmar cancelación</button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #deleteDialog>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-80 sm:w-96">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">¿Seguro que quieres eliminar esta reserva?</h3>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2"><strong>ID:</strong> #{{ booking?.id }}</p>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4"><strong>Huésped:</strong> {{ booking?.guestName || 'N/A' }}<br><strong>Habitación:</strong> {{ booking?.roomNumber || 'N/A' }}</p>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Esta acción no se puede deshacer.</p>
+
+    <div class="flex justify-end gap-3">
+      <button (click)="closeDialog()" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition">Cancelar</button>
+      <button (click)="confirmDelete()" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 transition">Eliminar</button>
+    </div>
+  </div>
+</ng-template>
