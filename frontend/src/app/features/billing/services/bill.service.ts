@@ -19,7 +19,7 @@ export class BillService {
    * Dashboard: Obtiene los ingresos del mes actual
    */
   getMonthlyRevenue(): Observable<RevenueResponse> {
-    return this.http.get<RevenueResponse>(`${this.API_URL}/revenue/month`).pipe(
+    return this.http.get<RevenueResponse>(`${this.API_URL}/total-revenue/month`).pipe(
       catchError(this.handleError)
     );
   }

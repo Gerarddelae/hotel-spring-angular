@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { Room } from './models/room.interface';
 import { OccupiedRoomsCountResponse, RoomDashboardSummary } from '../dashboard/models';
@@ -67,5 +67,13 @@ export class RoomService {
   /** 🔹 Dashboard: Obtener resumen de habitaciones para el dashboard */
   getDashboardSummary(): Observable<RoomDashboardSummary[]> {
     return this.http.get<RoomDashboardSummary[]>(`${this.apiUrl}/dashboard-summary`);
+  }
+
+  /** 🔹 Obtener habitaciones disponibles en un rango de fechas */
+  getAvailableRooms(checkIn: string, checkOut: string): Observable<Room[]> {
+    const params = new HttpParams()
+      .set('checkIn', checkIn)
+      .set('checkOut', checkOut);
+    return this.http.get<Room[]>(`${this.apiUrl}/available`, { params });
   }
 }

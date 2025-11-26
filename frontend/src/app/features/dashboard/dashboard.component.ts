@@ -4,7 +4,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { forkJoin, of, catchError } from 'rxjs';
 import { KpiCardsComponent } from './components/kpi-cards/kpi-cards.component';
-import { RoomGridComponent } from './components/room-grid/room-grid.component';
+import { RoomGridComponent, DateFilterEvent } from './components/room-grid/room-grid.component';
 import { BookingService } from '../bookings/services/booking.service';
 import { RoomService } from '../rooms/rooms.service';
 import { BillService } from '../billing/services/bill.service';
@@ -36,6 +36,11 @@ export class DashboardComponent implements OnInit {
   rooms: RoomDashboardSummary[] = [];
   isLoadingKpis = true;
   isLoadingRooms = true;
+  isRoomsFiltered = false;
+  
+  // Store filter dates for passing to booking modal
+  filterCheckIn: Date | null = null;
+  filterCheckOut: Date | null = null;
 
   constructor(
     private bookingService: BookingService,
@@ -110,6 +115,7 @@ export class DashboardComponent implements OnInit {
    */
   loadRooms(): void {
     this.isLoadingRooms = true;
+    this.isRoomsFiltered = false;
 
     this.roomService.getDashboardSummary().subscribe({
       next: (rooms) => {
@@ -122,6 +128,55 @@ export class DashboardComponent implements OnInit {
         this.isLoadingRooms = false;
       }
     });
+  }
+
+  /**
+   * Filter rooms by date range - shows only available rooms for the selected dates
+   */
+  onFilterByDates(event: DateFilterEvent): void {
+    this.isLoadingRooms = true;
+    
+    // Store filter dates for use in booking modal
+    this.filterCheckIn = this.parseLocalDate(event.checkIn);
+    this.filterCheckOut = this.parseLocalDate(event.checkOut);
+
+    this.roomService.getAvailableRooms(event.checkIn, event.checkOut).subscribe({
+      next: (availableRooms) => {
+        // Map Room[] to RoomDashboardSummary[] - all returned rooms are available
+        this.rooms = availableRooms.map(room => ({
+          roomId: room.id!,
+          number: room.number,
+          status: 'AVAILABLE' as const,
+          roomTypeName: room.type,
+          currentBookingId: null,
+          capacity: room.capacity
+        }));
+        this.isRoomsFiltered = true;
+        this.isLoadingRooms = false;
+      },
+      error: (err) => {
+        console.error('Error filtering rooms:', err);
+        this.snackBar.open('Error al filtrar habitaciones', 'Cerrar', { duration: 3000 });
+        this.isLoadingRooms = false;
+      }
+    });
+  }
+
+  /**
+   * Clear date filter and reload all rooms
+   */
+  onClearFilter(): void {
+    this.filterCheckIn = null;
+    this.filterCheckOut = null;
+    this.loadRooms();
+  }
+
+  /**
+   * Parse date string to local Date object
+   */
+  private parseLocalDate(dateString: string): Date {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
   }
 
   /**
@@ -176,10 +231,41 @@ export class DashboardComponent implements OnInit {
    * Format currency value
    */
   private formatCurrency(value: number, currency: string): string {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: currency || 'USD'
-    }).format(value);
+    // Use Latin America locale and avoid the 'US' prefix for USD.
+    // For large values use compact notation (e.g. 1,2 M) to avoid overflow.
+    const locale = 'es-419'; // Latin America
+    const abs = Math.abs(value || 0);
+
+    // If the value is in the millions, use compact notation with 1 decimal
+    if (abs >= 1_000_000) {
+      const compact = new Intl.NumberFormat(locale, {
+        notation: 'compact',
+        maximumFractionDigits: 1
+      }).format(value);
+      // Prefix with a plain dollar sign for USD (no 'US') or with currency symbol fallback
+      if ((currency || 'USD').toUpperCase() === 'USD') {
+        return `$ ${compact}`;
+      }
+      // For other currencies, attempt to get a narrow symbol and fall back to code
+      try {
+        const symbol = new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).formatToParts(0).find(p => p.type === 'currency')?.value || currency;
+        return `${symbol} ${compact}`;
+      } catch {
+        return `${currency} ${compact}`;
+      }
+    }
+
+    // For smaller values show full grouped number without the 'US' prefix for USD
+    if ((currency || 'USD').toUpperCase() === 'USD') {
+      return `$ ${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)}`;
+    }
+
+    try {
+      // Use currency formatting for non-USD currencies
+      return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value);
+    } catch {
+      return `${currency} ${new Intl.NumberFormat(locale).format(value)}`;
+    }
   }
 
   /**
@@ -194,7 +280,9 @@ export class DashboardComponent implements OnInit {
       autoFocus: 'first-tabbable',
       panelClass: 'booking-modal-panel',
       data: {
-        preselectedRoomId: room.roomId
+        preselectedRoomId: room.roomId,
+        preselectedCheckIn: this.filterCheckIn,
+        preselectedCheckOut: this.filterCheckOut
       }
     });
 

@@ -1,18 +1,83 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { RoomDashboardSummary } from '../../models';
+
+export interface DateFilterEvent {
+  checkIn: string;
+  checkOut: string;
+}
 
 @Component({
   selector: 'app-room-grid',
   standalone: true,
-  imports: [CommonModule],
-  templateUrl: './room-grid.component.html'
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatButtonModule,
+    MatIconModule
+  ],
+  templateUrl: './room-grid.component.html',
+  styleUrls: ['./room-grid.component.scss']
 })
 export class RoomGridComponent {
   @Input() rooms: RoomDashboardSummary[] = [];
   @Input() isLoading = false;
+  @Input() isFiltered = false;
   @Output() createBooking = new EventEmitter<RoomDashboardSummary>();
+  @Output() filterByDates = new EventEmitter<DateFilterEvent>();
+  @Output() clearFilter = new EventEmitter<void>();
+
+  // Date filter fields (Date objects for mat-datepicker)
+  checkInDate: Date | null = null;
+  checkOutDate: Date | null = null;
+
+  // Get today's date for min attribute
+  get minDate(): Date {
+    return new Date();
+  }
+
+  /**
+   * Apply date filter
+   */
+  applyFilter(): void {
+    if (this.checkInDate && this.checkOutDate) {
+      this.filterByDates.emit({
+        checkIn: this.formatDate(this.checkInDate),
+        checkOut: this.formatDate(this.checkOutDate)
+      });
+    }
+  }
+
+  /**
+   * Format Date to YYYY-MM-DD string
+   */
+  private formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Clear date filter and show all rooms
+   */
+  onClearFilter(): void {
+    this.checkInDate = null;
+    this.checkOutDate = null;
+    this.clearFilter.emit();
+  }
 
   constructor(private router: Router) {}
 

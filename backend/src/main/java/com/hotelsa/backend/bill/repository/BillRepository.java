@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,7 +37,7 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
             SELECT COALESCE(SUM(b.totalAmount), 0)
             FROM Bill b
             WHERE b.status = 'PAID'
-            AND CAST(b.createdAt AS LocalDate) = :date
+            AND CAST(b.createdAt AS date) = :date
             """)
     BigDecimal sumRevenueByDate(@Param("date") LocalDate date);
 
@@ -46,8 +45,8 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
             SELECT COALESCE(SUM(b.totalAmount), 0)
             FROM Bill b
             WHERE b.status = 'PAID'
-            AND FUNCTION('MONTH', b.createdAt) = :month
-            AND FUNCTION('YEAR', b.createdAt) = :year
+            AND EXTRACT(MONTH FROM b.createdAt) = :month
+            AND EXTRACT(YEAR FROM b.createdAt) = :year
             """)
     BigDecimal sumRevenueByMonth(@Param("month") int month, @Param("year") int year);
 }

@@ -1,3 +1,56 @@
+<!-- Date Filter -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+  <div class="flex flex-wrap items-end gap-4">
+    <mat-form-field appearance="outline" class="flex-1 min-w-[180px]">
+      <mat-label>Check-In</mat-label>
+      <input 
+        matInput 
+        [matDatepicker]="pickerCheckIn"
+        [(ngModel)]="checkInDate"
+        [min]="minDate">
+      <mat-datepicker-toggle matSuffix [for]="pickerCheckIn"></mat-datepicker-toggle>
+      <mat-datepicker #pickerCheckIn></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="flex-1 min-w-[180px]">
+      <mat-label>Check-Out</mat-label>
+      <input 
+        matInput 
+        [matDatepicker]="pickerCheckOut"
+        [(ngModel)]="checkOutDate"
+        [min]="checkInDate || minDate">
+      <mat-datepicker-toggle matSuffix [for]="pickerCheckOut"></mat-datepicker-toggle>
+      <mat-datepicker #pickerCheckOut></mat-datepicker>
+    </mat-form-field>
+
+    <div class="flex gap-2 pb-5">
+      <button
+        mat-stroked-button
+        (click)="applyFilter()"
+        [disabled]="!checkInDate || !checkOutDate"
+        class="filter-button">
+        <mat-icon>filter_list</mat-icon>
+        Filtrar
+      </button>
+      @if (isFiltered) {
+        <button
+          mat-stroked-button
+          (click)="onClearFilter()"
+          class="clear-button">
+          <mat-icon>clear</mat-icon>
+          Limpiar
+        </button>
+      }
+    </div>
+  </div>
+  @if (isFiltered && checkInDate && checkOutDate) {
+    <p class="mt-2 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+      <mat-icon class="text-sm !w-4 !h-4">info</mat-icon>
+      Mostrando habitaciones disponibles del {{ checkInDate | date:'dd/MM/yyyy' }} al {{ checkOutDate | date:'dd/MM/yyyy' }}
+    </p>
+  }
+</div>
+
 <!-- Loading State -->
 @if (isLoading) {
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">

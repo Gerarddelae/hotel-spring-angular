@@ -11,7 +11,10 @@
     <app-room-grid 
       [rooms]="rooms" 
       [isLoading]="isLoadingRooms"
-      (createBooking)="openBookingModal($event)">
+      [isFiltered]="isRoomsFiltered"
+      (createBooking)="openBookingModal($event)"
+      (filterByDates)="onFilterByDates($event)"
+      (clearFilter)="onClearFilter()">
     </app-room-grid>
   </section>
 </div>
