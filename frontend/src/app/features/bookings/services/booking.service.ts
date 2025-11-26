@@ -13,6 +13,7 @@ import {
   AvailabilityCheckRequest, 
   AvailabilityCheckResponse 
 } from '../models/booking-filters.interface';
+import { BookingStatusCountResponse, ActiveGuestsCountResponse } from '../../dashboard/models';
 
 @Injectable({
   providedIn: 'root'
@@ -26,6 +27,24 @@ export class BookingService {
 
   // Simple in-memory cache to avoid reloading the list on every navigation
   private bookingsSubject = new BehaviorSubject<Booking[] | null>(null);
+
+  /**
+   * Dashboard: Obtiene el conteo de reservas por estado
+   */
+  getBookingStatusCount(): Observable<BookingStatusCountResponse> {
+    return this.http.get<BookingStatusCountResponse>(`${this.API_URL}/count-by-status`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Dashboard: Obtiene el conteo de huéspedes activos
+   */
+  getActiveGuestsCount(): Observable<ActiveGuestsCountResponse> {
+    return this.http.get<ActiveGuestsCountResponse>(`${this.API_URL}/active-guests-count`).pipe(
+      catchError(this.handleError)
+    );
+  }
 
   /**
    * Devuelve las reservas desde cache o carga desde el backend si no existe.

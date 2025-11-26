@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { Room } from './models/room.interface';
+import { OccupiedRoomsCountResponse, RoomDashboardSummary } from '../dashboard/models';
 
 @Injectable({ providedIn: 'root' })
 export class RoomService {
@@ -56,5 +57,15 @@ export class RoomService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
       tap(() => this.loadRooms())
     );
+  }
+
+  /** 🔹 Dashboard: Obtener conteo de habitaciones ocupadas */
+  getOccupiedCount(): Observable<OccupiedRoomsCountResponse> {
+    return this.http.get<OccupiedRoomsCountResponse>(`${this.apiUrl}/occupied-count`);
+  }
+
+  /** 🔹 Dashboard: Obtener resumen de habitaciones para el dashboard */
+  getDashboardSummary(): Observable<RoomDashboardSummary[]> {
+    return this.http.get<RoomDashboardSummary[]>(`${this.apiUrl}/dashboard-summary`);
   }
 }

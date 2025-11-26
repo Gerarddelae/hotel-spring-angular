@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap, catchError, throwError, of, map } from 'rxjs';
 import { Bill, BillCreateRequest, BillUpdateRequest, BillStatus, PaymentMethod } from '../models';
+import { RevenueResponse } from '../../dashboard/models';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +14,15 @@ export class BillService {
   bills$ = this.billsSubject.asObservable();
 
   constructor(private http: HttpClient) {}
+
+  /**
+   * Dashboard: Obtiene los ingresos del mes actual
+   */
+  getMonthlyRevenue(): Observable<RevenueResponse> {
+    return this.http.get<RevenueResponse>(`${this.API_URL}/revenue/month`).pipe(
+      catchError(this.handleError)
+    );
+  }
 
   /**
    * Obtiene todas las facturas
