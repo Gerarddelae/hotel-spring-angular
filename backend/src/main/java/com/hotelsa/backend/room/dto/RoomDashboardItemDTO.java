@@ -13,5 +13,5 @@ public class RoomDashboardItemDTO {
     private String status;
     private String roomTypeName;
     private Long currentBookingId; // puede ser null
+    private Integer capacity; // nueva propiedad para visualización frontend
 }
-

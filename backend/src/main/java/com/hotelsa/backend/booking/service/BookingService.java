@@ -618,8 +618,13 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public com.hotelsa.backend.booking.dto.ActiveGuestsCountDTO getActiveGuestsCount() {
-        LocalDate today = LocalDate.now();
-        int count = bookingRepository.countActiveGuestsToday(today);
+        java.time.LocalDate today = java.time.LocalDate.now();
+
+        // Intentar con la query explícita primero
+        int count = bookingRepository.countActiveGuestsTodayExplicit(today, BookingStatus.CHECKED_IN);
+
+        log.debug("🔍 Active guests count for today {}: {}", today, count);
+
         return new com.hotelsa.backend.booking.dto.ActiveGuestsCountDTO(count);
     }
 }

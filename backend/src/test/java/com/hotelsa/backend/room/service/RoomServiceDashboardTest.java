@@ -77,26 +77,28 @@ class RoomServiceDashboardTest {
     @Test
     void getDashboardSummary_debeRetornarListaDeHabitaciones() {
         // Given
-        List<RoomDashboardItemDTO> expectedRooms = Arrays.asList(
-                new RoomDashboardItemDTO(1L, "101", "OCCUPIED", "SINGLE", 45L),
-                new RoomDashboardItemDTO(2L, "102", "AVAILABLE", "DOUBLE", null),
-                new RoomDashboardItemDTO(3L, "103", "MAINTENANCE", "SUITE", null)
+        List<com.hotelsa.backend.room.dto.RoomDashboardItemDTO> expectedRooms = java.util.Arrays.asList(
+                new com.hotelsa.backend.room.dto.RoomDashboardItemDTO(1L, "101", "OCCUPIED", "SINGLE", 45L, 2),
+                new com.hotelsa.backend.room.dto.RoomDashboardItemDTO(2L, "102", "AVAILABLE", "DOUBLE", null, 4),
+                new com.hotelsa.backend.room.dto.RoomDashboardItemDTO(3L, "103", "MAINTENANCE", "SUITE", null, 3)
         );
-        when(roomRepository.findDashboardSummary(any(LocalDate.class))).thenReturn(expectedRooms);
+        org.mockito.Mockito.when(roomRepository.findDashboardSummary(org.mockito.ArgumentMatchers.any(java.time.LocalDate.class))).thenReturn(expectedRooms);
 
         // When
-        List<RoomDashboardItemDTO> result = roomService.getDashboardSummary();
+        List<com.hotelsa.backend.room.dto.RoomDashboardItemDTO> result = roomService.getDashboardSummary();
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(3);
-        assertThat(result.get(0).getNumber()).isEqualTo("101");
-        assertThat(result.get(0).getStatus()).isEqualTo("OCCUPIED");
-        assertThat(result.get(0).getCurrentBookingId()).isEqualTo(45L);
-        assertThat(result.get(1).getCurrentBookingId()).isNull();
+        org.assertj.core.api.Assertions.assertThat(result).isNotNull();
+        org.assertj.core.api.Assertions.assertThat(result).hasSize(3);
+        org.assertj.core.api.Assertions.assertThat(result.get(0).getNumber()).isEqualTo("101");
+        org.assertj.core.api.Assertions.assertThat(result.get(0).getStatus()).isEqualTo("OCCUPIED");
+        org.assertj.core.api.Assertions.assertThat(result.get(0).getCurrentBookingId()).isEqualTo(45L);
+        org.assertj.core.api.Assertions.assertThat(result.get(0).getCapacity()).isEqualTo(2);
+        org.assertj.core.api.Assertions.assertThat(result.get(1).getCurrentBookingId()).isNull();
+        org.assertj.core.api.Assertions.assertThat(result.get(1).getCapacity()).isEqualTo(4);
 
         // Verificar que se llamó con la fecha de hoy
-        verify(roomRepository).findDashboardSummary(any(LocalDate.class));
+        org.mockito.Mockito.verify(roomRepository).findDashboardSummary(org.mockito.ArgumentMatchers.any(java.time.LocalDate.class));
     }
 
     @Test
@@ -131,31 +133,35 @@ class RoomServiceDashboardTest {
     @Test
     void getDashboardSummary_debeIncluirHabitacionesConYSinBookings() {
         // Given
-        List<RoomDashboardItemDTO> expectedRooms = Arrays.asList(
-                new RoomDashboardItemDTO(1L, "201", "OCCUPIED", "SINGLE", 100L),
-                new RoomDashboardItemDTO(2L, "202", "AVAILABLE", "DOUBLE", null),
-                new RoomDashboardItemDTO(3L, "203", "OCCUPIED", "SUITE", 101L),
-                new RoomDashboardItemDTO(4L, "204", "MAINTENANCE", "SINGLE", null)
+        List<com.hotelsa.backend.room.dto.RoomDashboardItemDTO> expectedRooms = java.util.Arrays.asList(
+                new com.hotelsa.backend.room.dto.RoomDashboardItemDTO(1L, "201", "OCCUPIED", "SINGLE", 100L, 2),
+                new com.hotelsa.backend.room.dto.RoomDashboardItemDTO(2L, "202", "AVAILABLE", "DOUBLE", null, 4),
+                new com.hotelsa.backend.room.dto.RoomDashboardItemDTO(3L, "203", "OCCUPIED", "SUITE", 101L, 3),
+                new com.hotelsa.backend.room.dto.RoomDashboardItemDTO(4L, "204", "MAINTENANCE", "SINGLE", null, 1)
         );
-        when(roomRepository.findDashboardSummary(any(LocalDate.class))).thenReturn(expectedRooms);
+        org.mockito.Mockito.when(roomRepository.findDashboardSummary(org.mockito.ArgumentMatchers.any(java.time.LocalDate.class))).thenReturn(expectedRooms);
 
         // When
-        List<RoomDashboardItemDTO> result = roomService.getDashboardSummary();
+        List<com.hotelsa.backend.room.dto.RoomDashboardItemDTO> result = roomService.getDashboardSummary();
 
         // Then
-        assertThat(result).hasSize(4);
+        org.assertj.core.api.Assertions.assertThat(result).hasSize(4);
 
         // Verificar habitaciones con bookings
         long roomsWithBookings = result.stream()
                 .filter(r -> r.getCurrentBookingId() != null)
                 .count();
-        assertEquals(2, roomsWithBookings);
+        org.junit.jupiter.api.Assertions.assertEquals(2, roomsWithBookings);
 
         // Verificar habitaciones sin bookings
         long roomsWithoutBookings = result.stream()
                 .filter(r -> r.getCurrentBookingId() == null)
                 .count();
-        assertEquals(2, roomsWithoutBookings);
+        org.junit.jupiter.api.Assertions.assertEquals(2, roomsWithoutBookings);
+
+        // Verificar capacities
+        org.assertj.core.api.Assertions.assertThat(result).extracting(com.hotelsa.backend.room.dto.RoomDashboardItemDTO::getCapacity)
+                .containsExactly(2, 4, 3, 1);
     }
 
     @Test
@@ -220,21 +226,24 @@ class RoomServiceDashboardTest {
     @Test
     void getDashboardSummary_debePreservarOrdenDelRepository() {
         // Given
-        List<RoomDashboardItemDTO> orderedRooms = Arrays.asList(
-                new RoomDashboardItemDTO(3L, "103", "OCCUPIED", "SUITE", 50L),
-                new RoomDashboardItemDTO(1L, "101", "AVAILABLE", "SINGLE", null),
-                new RoomDashboardItemDTO(2L, "102", "MAINTENANCE", "DOUBLE", null)
+        List<com.hotelsa.backend.room.dto.RoomDashboardItemDTO> orderedRooms = java.util.Arrays.asList(
+                new com.hotelsa.backend.room.dto.RoomDashboardItemDTO(3L, "103", "OCCUPIED", "SUITE", 50L, 3),
+                new com.hotelsa.backend.room.dto.RoomDashboardItemDTO(1L, "101", "AVAILABLE", "SINGLE", null, 2),
+                new com.hotelsa.backend.room.dto.RoomDashboardItemDTO(2L, "102", "MAINTENANCE", "DOUBLE", null, 4)
         );
-        when(roomRepository.findDashboardSummary(any())).thenReturn(orderedRooms);
+        org.mockito.Mockito.when(roomRepository.findDashboardSummary(org.mockito.ArgumentMatchers.any())).thenReturn(orderedRooms);
 
         // When
-        List<RoomDashboardItemDTO> result = roomService.getDashboardSummary();
+        List<com.hotelsa.backend.room.dto.RoomDashboardItemDTO> result = roomService.getDashboardSummary();
 
         // Then
-        assertThat(result).isNotNull();
-        assertEquals("103", result.get(0).getNumber());
-        assertEquals("101", result.get(1).getNumber());
-        assertEquals("102", result.get(2).getNumber());
+        org.assertj.core.api.Assertions.assertThat(result).isNotNull();
+        org.junit.jupiter.api.Assertions.assertEquals("103", result.get(0).getNumber());
+        org.junit.jupiter.api.Assertions.assertEquals("101", result.get(1).getNumber());
+        org.junit.jupiter.api.Assertions.assertEquals("102", result.get(2).getNumber());
+        org.junit.jupiter.api.Assertions.assertEquals(3, result.get(0).getCapacity());
+        org.junit.jupiter.api.Assertions.assertEquals(2, result.get(1).getCapacity());
+        org.junit.jupiter.api.Assertions.assertEquals(4, result.get(2).getCapacity());
     }
 
     @Test
@@ -254,4 +263,3 @@ class RoomServiceDashboardTest {
         });
     }
 }
-

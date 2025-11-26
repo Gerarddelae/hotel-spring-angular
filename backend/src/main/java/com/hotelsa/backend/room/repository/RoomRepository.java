@@ -39,7 +39,7 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
     @Query("""
             SELECT new com.hotelsa.backend.room.dto.RoomDashboardItemDTO(
-              r.id, r.number, CAST(r.status AS string), CAST(r.type AS string), b.id
+              r.id, r.number, CAST(r.status AS string), CAST(r.type AS string), b.id, r.capacity
             )
             FROM Room r
             LEFT JOIN Booking b

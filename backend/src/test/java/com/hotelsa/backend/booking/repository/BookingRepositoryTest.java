@@ -550,7 +550,7 @@ class BookingRepositoryTest {
                 .hotelId(hotel.getId())
                 .build());
 
-        int count = bookingRepository.countActiveGuestsToday(today);
+        int count = bookingRepository.countActiveGuestsTodayExplicit(today, com.hotelsa.backend.booking.enums.BookingStatus.CHECKED_IN);
 
         assertEquals(2, count);
     }
@@ -582,7 +582,7 @@ class BookingRepositoryTest {
                 .hotelId(hotel.getId())
                 .build());
 
-        int count = bookingRepository.countActiveGuestsToday(today);
+        int count = bookingRepository.countActiveGuestsTodayExplicit(today, com.hotelsa.backend.booking.enums.BookingStatus.CHECKED_IN);
 
         // Debe contar solo 1 porque es DISTINCT guest.id
         assertEquals(1, count);
@@ -604,7 +604,7 @@ class BookingRepositoryTest {
                 .hotelId(hotel.getId())
                 .build());
 
-        int count = bookingRepository.countActiveGuestsToday(today);
+        int count = bookingRepository.countActiveGuestsTodayExplicit(today, com.hotelsa.backend.booking.enums.BookingStatus.CHECKED_IN);
 
         assertEquals(0, count);
     }

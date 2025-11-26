@@ -51,8 +51,21 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("""
             SELECT COUNT(DISTINCT b.guest.id)
             FROM Booking b
-            WHERE b.status = 'CHECKED_IN'
+            WHERE b.status = :status
             AND :today BETWEEN b.checkInDate AND b.checkOutDate
             """)
-    int countActiveGuestsToday(@Param("today") LocalDate today);
+    int countActiveGuestsToday(@Param("today") java.time.LocalDate today,
+                               @Param("status") com.hotelsa.backend.booking.enums.BookingStatus status);
+
+    // Query alternativa más explícita para debug
+    @Query("""
+            SELECT COUNT(DISTINCT b.guest.id)
+            FROM Booking b
+            WHERE b.status = :status
+            AND b.checkInDate <= :today
+            AND b.checkOutDate >= :today
+            AND b.deleted = false
+            """)
+    int countActiveGuestsTodayExplicit(@Param("today") java.time.LocalDate today,
+                                       @Param("status") com.hotelsa.backend.booking.enums.BookingStatus status);
 }
