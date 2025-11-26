@@ -1,6 +1,7 @@
 package com.hotelsa.backend.room.repository;
 
 import com.hotelsa.backend.booking.enums.BookingStatus;
+import com.hotelsa.backend.room.dto.RoomDashboardItemDTO;
 import com.hotelsa.backend.room.enums.RoomType;
 import com.hotelsa.backend.room.model.Room;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -31,4 +32,20 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
                                   @Param("checkIn") LocalDate checkIn,
                                   @Param("checkOut") LocalDate checkOut,
                                   @Param("cancelled") BookingStatus cancelled);
+
+    // Dashboard queries
+    @Query("SELECT COUNT(r) FROM Room r WHERE r.status = 'OCCUPIED'")
+    int countOccupied();
+
+    @Query("""
+            SELECT new com.hotelsa.backend.room.dto.RoomDashboardItemDTO(
+              r.id, r.number, CAST(r.status AS string), CAST(r.type AS string), b.id, r.capacity
+            )
+            FROM Room r
+            LEFT JOIN Booking b
+              ON b.room.id = r.id
+              AND b.status = 'CHECKED_IN'
+              AND :today BETWEEN b.checkInDate AND b.checkOutDate
+            """)
+    List<RoomDashboardItemDTO> findDashboardSummary(@Param("today") LocalDate today);
 }

@@ -194,5 +194,29 @@ tr.mat-mdc-row {
   border-right: none !important;
 }
 
+/* Booking modal panel - prevent overflow and double scrollbars */
+.booking-modal-panel {
+  .mat-mdc-dialog-container {
+    max-height: 90vh;
+    overflow: hidden;
+    
+    .mdc-dialog__surface {
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+  }
+}
+
+/* Ensure modal doesn't create double scrollbars */
+.cdk-overlay-pane {
+  max-height: 90vh !important;
+}
+
+.mat-mdc-dialog-surface {
+  overflow: hidden !important;
+}
+
 
 

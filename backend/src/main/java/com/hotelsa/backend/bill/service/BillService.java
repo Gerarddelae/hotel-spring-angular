@@ -85,14 +85,19 @@ public class BillService {
             return billAddonRepository.save(b);
         }).collect(Collectors.toList());
 
-        // Calcular total y actualizar factura
-        BigDecimal total = persistedAddons.stream()
+        // Calcular total = estadía (del booking) + addons
+        BigDecimal bookingTotal = booking.getTotalAmount() != null ? booking.getTotalAmount() : BigDecimal.ZERO;
+        BigDecimal addonsTotal = persistedAddons.stream()
                 .map(ba -> ba.getTotalPrice() == null ? BigDecimal.ZERO : ba.getTotalPrice())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal total = bookingTotal.add(addonsTotal);
 
         saved.setTotalAmount(total);
         saved.setAddons(persistedAddons);
         billRepository.save(saved);
+
+        log.debug("💰 Bill total calculated: Booking={}, Addons={}, Total={}", bookingTotal, addonsTotal, total);
 
         // Recargar la factura con todas las relaciones
         Bill finalSaved = billRepository.findByIdWithRelations(saved.getId())
@@ -169,5 +174,28 @@ public class BillService {
         bill.setDeleted(true);
         billRepository.save(bill);
         log.debug("🗑️ Soft deleted bill {} for hotel {}", bill.getId(), bill.getHotelId());
+    }
+
+    // Dashboard methods
+    @Transactional(readOnly = true)
+    public com.hotelsa.backend.bill.dto.RevenueDTO getTotalRevenue() {
+        BigDecimal total = billRepository.sumTotalRevenue();
+        return new com.hotelsa.backend.bill.dto.RevenueDTO(total, "USD");
+    }
+
+    @Transactional(readOnly = true)
+    public com.hotelsa.backend.bill.dto.RevenueDTO getTotalRevenueToday() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        BigDecimal total = billRepository.sumRevenueByDate(today);
+        return new com.hotelsa.backend.bill.dto.RevenueDTO(total, "USD");
+    }
+
+    @Transactional(readOnly = true)
+    public com.hotelsa.backend.bill.dto.RevenueDTO getTotalRevenueMonth() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        int month = today.getMonthValue();
+        int year = today.getYear();
+        BigDecimal total = billRepository.sumRevenueByMonth(month, year);
+        return new com.hotelsa.backend.bill.dto.RevenueDTO(total, "USD");
     }
 }

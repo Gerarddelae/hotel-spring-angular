@@ -1,0 +1,47 @@
+/* Room Grid Filter Buttons - Same style as booking-list filters */
+
+.filter-button,
+.clear-button {
+  /* base (light mode) */
+  background: transparent !important;
+  border-color: #cbd5e1 !important; /* gray-300 */
+  color: #374151 !important; /* gray-700 */
+  transition: background-color 150ms ease, border-color 150ms ease;
+
+  mat-icon {
+    margin-right: 8px;
+  }
+}
+
+.filter-button:hover,
+.clear-button:hover {
+  background: rgba(59, 130, 246, 0.06) !important; /* faint blue on hover */
+  border-color: #93c5fd !important; /* blue-300 */
+}
+
+.filter-button:disabled {
+  background: transparent !important;
+  border-color: #e5e7eb !important; /* gray-200 */
+  color: #9ca3af !important; /* gray-400 */
+  cursor: not-allowed;
+}
+
+/* Dark mode */
+:host-context(.dark) .filter-button,
+:host-context(.dark) .clear-button {
+  background: transparent !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+:host-context(.dark) .filter-button:hover,
+:host-context(.dark) .clear-button:hover {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(147, 197, 253, 0.5) !important; /* blue-300 with opacity */
+}
+
+:host-context(.dark) .filter-button:disabled {
+  background: transparent !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  color: #6b7280 !important; /* gray-500 */
+}

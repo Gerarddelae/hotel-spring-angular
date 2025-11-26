@@ -25,6 +25,9 @@ import { AddonSelectorComponent } from '../addon-selector/addon-selector.compone
 
 interface BookingModalData {
   booking?: Booking;
+  preselectedRoomId?: number;
+  preselectedCheckIn?: Date;
+  preselectedCheckOut?: Date;
 }
 
 @Component({
@@ -90,14 +93,21 @@ export class BookingModalFormComponent implements OnInit {
     
     // Convert date strings to Date objects for Angular Material Datepicker
     // Use local date to avoid timezone conversion issues
-    const checkInDate = data.booking?.checkInDate ? this.parseLocalDate(data.booking.checkInDate) : '';
-    const checkOutDate = data.booking?.checkOutDate ? this.parseLocalDate(data.booking.checkOutDate) : '';
+    const checkInDate = data.booking?.checkInDate 
+      ? this.parseLocalDate(data.booking.checkInDate) 
+      : (data.preselectedCheckIn || '');
+    const checkOutDate = data.booking?.checkOutDate 
+      ? this.parseLocalDate(data.booking.checkOutDate) 
+      : (data.preselectedCheckOut || '');
     const leadTime = data.booking?.bookingLeadTime ? this.parseLocalDate(data.booking.bookingLeadTime) : '';
+    
+    // Use preselected roomId if provided (from dashboard filter)
+    const roomId = data.booking?.roomId || data.preselectedRoomId || null;
     
     this.bookingForm = this.fb.group({
       guestId: [data.booking?.guestId || null, Validators.required],
       guestSearch: [''],
-      roomId: [data.booking?.roomId || null, Validators.required],
+      roomId: [roomId, Validators.required],
       checkInDate: [checkInDate, Validators.required],
       checkOutDate: [checkOutDate, Validators.required],
       status: [data.booking?.status || 'PENDING', Validators.required],
@@ -191,8 +201,9 @@ export class BookingModalFormComponent implements OnInit {
       this.checkRoomAvailability();
     });
 
-    // Cargar habitaciones disponibles si hay fechas iniciales
-    if (this.data.booking) {
+    // Cargar habitaciones disponibles si hay fechas iniciales (edición o pre-selección desde dashboard)
+    const hasInitialDates = this.bookingForm.get('checkInDate')?.value && this.bookingForm.get('checkOutDate')?.value;
+    if (hasInitialDates) {
       this.loadAvailableRooms();
     }
   }
@@ -248,6 +259,13 @@ export class BookingModalFormComponent implements OnInit {
             if (selectedId) {
               this.selectedRoom = this.availableRooms.find(r => r.id === selectedId) ?? null;
             }
+          }
+        } 
+        // Si hay roomId pre-seleccionado (desde dashboard), actualizar selectedRoom
+        else if (this.data.preselectedRoomId) {
+          const preselectedRoom = this.availableRooms.find(r => r.id === this.data.preselectedRoomId);
+          if (preselectedRoom) {
+            this.selectedRoom = preselectedRoom;
           }
         }
       },

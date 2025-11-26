@@ -1,0 +1,37 @@
+<!-- Loading State -->
+@if (isLoading) {
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+    @for (item of [1, 2, 3, 4, 5, 6, 7]; track item) {
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
+        <div class="flex items-center justify-between">
+          <div class="space-y-2">
+            <div class="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div class="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          </div>
+          <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- KPI Cards -->
+@if (!isLoading) {
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+    @for (kpi of kpis; track kpi.label; let i = $index) {
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow duration-200">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-normal break-words">{{ kpi.label }}</p>
+            <p class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ kpi.value }}</p>
+          </div>
+          @if (kpi.icon) {
+            <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center" [ngClass]="getColorClasses(i).bg">
+              <i [ngClass]="[kpi.icon, 'text-base', getColorClasses(i).icon]"></i>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}
