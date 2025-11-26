@@ -24,3 +24,4 @@ public interface AddonRepository extends JpaRepository<Addon, Long> {
     // Retorna solo los addons activos
     List<Addon> findAllByActiveTrue();
 }
+

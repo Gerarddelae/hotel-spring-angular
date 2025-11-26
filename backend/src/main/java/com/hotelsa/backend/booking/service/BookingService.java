@@ -628,3 +628,4 @@ public class BookingService {
         return new com.hotelsa.backend.booking.dto.ActiveGuestsCountDTO(count);
     }
 }
+

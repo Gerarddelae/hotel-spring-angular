@@ -17,8 +17,8 @@ import com.hotelsa.backend.bill.repository.BillRepository;
 import com.hotelsa.backend.booking.model.Booking;
 import com.hotelsa.backend.booking.repository.BookingRepository;
 import com.hotelsa.backend.bookingaddon.entity.BookingAddon;
-import com.hotelsa.backend.bookingaddon.entity.BookingAddonId;
 import com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository;
+import com.hotelsa.backend.room.model.Room;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -85,19 +85,32 @@ public class BillService {
             return billAddonRepository.save(b);
         }).collect(Collectors.toList());
 
-        // Calcular total = estadía (del booking) + addons
-        BigDecimal bookingTotal = booking.getTotalAmount() != null ? booking.getTotalAmount() : BigDecimal.ZERO;
+        // Calcular total = estadía (noches × precio_noche) + addons de la factura
+        // NO usar booking.getTotalAmount() porque ya incluye addons del booking
+        Room room = booking.getRoom();
+        BigDecimal roomPricePerNight = room != null && room.getPricePerNight() != null
+            ? BigDecimal.valueOf(room.getPricePerNight())
+            : BigDecimal.ZERO;
+
+        long nights = java.time.temporal.ChronoUnit.DAYS.between(
+            booking.getCheckInDate(),
+            booking.getCheckOutDate()
+        );
+
+        BigDecimal accommodationSubtotal = roomPricePerNight.multiply(BigDecimal.valueOf(nights));
+
         BigDecimal addonsTotal = persistedAddons.stream()
                 .map(ba -> ba.getTotalPrice() == null ? BigDecimal.ZERO : ba.getTotalPrice())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal total = bookingTotal.add(addonsTotal);
+        BigDecimal total = accommodationSubtotal.add(addonsTotal);
 
         saved.setTotalAmount(total);
         saved.setAddons(persistedAddons);
         billRepository.save(saved);
 
-        log.debug("💰 Bill total calculated: Booking={}, Addons={}, Total={}", bookingTotal, addonsTotal, total);
+        log.debug("💰 Bill total calculated: Accommodation={}×{}={}, Addons={}, Total={}",
+            nights, roomPricePerNight, accommodationSubtotal, addonsTotal, total);
 
         // Recargar la factura con todas las relaciones
         Bill finalSaved = billRepository.findByIdWithRelations(saved.getId())
@@ -199,3 +212,8 @@ public class BillService {
         return new com.hotelsa.backend.bill.dto.RevenueDTO(total, "USD");
     }
 }
+
+
+
+
+

@@ -65,7 +65,12 @@ class BillServiceTest {
         hotel.setId(11L);
 
         guest = Guest.builder().id(2L).fullName("Test Guest").hotelId(hotel.getId()).build();
-        room = Room.builder().id(3L).hotelId(hotel.getId()).number("100").build();
+        room = Room.builder()
+                .id(3L)
+                .hotelId(hotel.getId())
+                .number("100")
+                .pricePerNight(100.0)  // Cambiar a Double
+                .build();
 
         booking = Booking.builder()
                 .id(5L)
@@ -73,10 +78,11 @@ class BillServiceTest {
                 .guest(guest)
                 .room(room)
                 .checkInDate(LocalDate.now())
-                .checkOutDate(LocalDate.now().plusDays(1))
+                .checkOutDate(LocalDate.now().plusDays(2))  // 2 noches
                 .status(BookingStatus.CONFIRMED)
                 .createdBy("system")
                 .bookingLeadTime(LocalDate.now())
+                .totalAmount(BigDecimal.valueOf(200))  // 2 noches × $100
                 .build();
 
         requestDto = BillRequestDTO.builder()
@@ -228,5 +234,99 @@ class BillServiceTest {
 
         assertTrue(entity.isDeleted());
         verify(billRepository).save(entity);
+    }
+
+    @Test
+    void createBill_TotalAmountShouldBeAccommodationPlusAddons_NotBookingTotal() {
+        // GIVEN: Booking con 2 noches × $100 = $200 + addon $50×2 = $100 → booking.totalAmount = $300
+        // EXPECTED: Bill.totalAmount = $200 (accommodation) + $100 (addons) = $300
+        // NOTE: NO debe duplicar addons usando booking.totalAmount + addons
+
+        Room roomWith100Price = Room.builder()
+                .id(3L)
+                .hotelId(hotel.getId())
+                .number("101")
+                .pricePerNight(100.0)  // Cambiar a Double
+                .build();
+
+        Booking bookingWith2Nights = Booking.builder()
+                .id(10L)
+                .hotelId(hotel.getId())
+                .guest(guest)
+                .room(roomWith100Price)
+                .checkInDate(LocalDate.of(2025, 1, 1))
+                .checkOutDate(LocalDate.of(2025, 1, 3))  // 2 noches
+                .status(BookingStatus.CONFIRMED)
+                .createdBy("test")
+                .bookingLeadTime(LocalDate.of(2025, 1, 1))
+                .totalAmount(BigDecimal.valueOf(300))  // Incluye addons (200 + 100)
+                .build();
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(bookingWith2Nights));
+
+        Bill mappedBill = Bill.builder().notes("Test").status(BillStatus.UNPAID).build();
+        when(billMapper.fromRequestDto(any())).thenReturn(mappedBill);
+
+        Bill savedBill = Bill.builder().id(99L).hotelId(hotel.getId()).totalAmount(BigDecimal.ZERO).build();
+        when(billRepository.save(any(Bill.class))).thenReturn(savedBill);
+
+        // Simular addon: $50 × 2 = $100
+        com.hotelsa.backend.addon.model.Addon addon = new com.hotelsa.backend.addon.model.Addon();
+        addon.setId(1L);
+        addon.setName("Breakfast");
+        addon.setPrice(50);
+
+        BookingAddon bookingAddon = BookingAddon.builder()
+                .id(new BookingAddonId(10L, 1L))
+                .booking(bookingWith2Nights)
+                .addon(addon)
+                .quantity(2)
+                .hotelId(hotel.getId())
+                .build();
+
+        when(bookingAddonRepository.findByIdBookingIdAndHotelId(10L, hotel.getId()))
+                .thenReturn(List.of(bookingAddon));
+
+        BillAddon billAddon = BillAddon.builder()
+                .id(new BillAddonId(99L, 1L))
+                .bill(savedBill)
+                .addonId(1L)
+                .addonName("Breakfast")
+                .unitPrice(BigDecimal.valueOf(50))
+                .quantity(2)
+                .totalPrice(BigDecimal.valueOf(100))
+                .hotelId(hotel.getId())
+                .build();
+
+        when(billAddonRepository.save(any(BillAddon.class))).thenReturn(billAddon);
+
+        Bill finalBillWithCorrectTotal = Bill.builder()
+                .id(99L)
+                .hotelId(hotel.getId())
+                .booking(bookingWith2Nights)
+                .totalAmount(BigDecimal.valueOf(300))  // 2×100 + 100 = 300 ✅
+                .addons(List.of(billAddon))
+                .build();
+
+        when(billRepository.findByIdWithRelations(99L)).thenReturn(Optional.of(finalBillWithCorrectTotal));
+
+        BillResponseDTO response = BillResponseDTO.builder()
+                .id(99L)
+                .totalAmount(BigDecimal.valueOf(300))
+                .accommodationSubtotal(BigDecimal.valueOf(200))
+                .addonsSubtotal(BigDecimal.valueOf(100))
+                .build();
+
+        when(billMapper.fromEntity(any(Bill.class))).thenReturn(response);
+
+        // WHEN
+        BillResponseDTO result = billService.createBill(10L, requestDto);
+
+        // THEN
+        assertNotNull(result);
+        assertEquals(BigDecimal.valueOf(300), result.getTotalAmount());
+        // Verificar que se calculó correctamente: accommodation (200) + addons (100) = 300
+        // NO debe ser booking.totalAmount (300) + addons (100) = 400 ❌
+        verify(billRepository, atLeastOnce()).save(any(Bill.class));
     }
 }

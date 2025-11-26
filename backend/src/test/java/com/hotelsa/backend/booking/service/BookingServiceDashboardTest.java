@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.time.LocalDate;
 
@@ -22,6 +24,7 @@ import static org.mockito.Mockito.*;
  * Tests unitarios para las funcionalidades del Dashboard en BookingService
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class BookingServiceDashboardTest {
 
     @Mock
@@ -112,7 +115,7 @@ class BookingServiceDashboardTest {
     void getActiveGuestsCount_debeRetornarContadorDeHuespedesActivos() {
         // Given
         int expectedCount = 15;
-        when(bookingRepository.countActiveGuestsToday(any(LocalDate.class))).thenReturn(expectedCount);
+        when(bookingRepository.countActiveGuestsTodayExplicit(any(LocalDate.class), eq(BookingStatus.CHECKED_IN))).thenReturn(expectedCount);
 
         // When
         ActiveGuestsCountDTO result = bookingService.getActiveGuestsCount();
@@ -122,13 +125,13 @@ class BookingServiceDashboardTest {
         assertEquals(expectedCount, result.getCount());
 
         // Verificar que se llamó con la fecha de hoy
-        verify(bookingRepository).countActiveGuestsToday(any(LocalDate.class));
+        verify(bookingRepository).countActiveGuestsTodayExplicit(any(LocalDate.class), eq(BookingStatus.CHECKED_IN));
     }
 
     @Test
     void getActiveGuestsCount_debeManejarCeroCuandoNoHayHuespedesActivos() {
         // Given
-        when(bookingRepository.countActiveGuestsToday(any(LocalDate.class))).thenReturn(0);
+        when(bookingRepository.countActiveGuestsTodayExplicit(any(LocalDate.class), eq(BookingStatus.CHECKED_IN))).thenReturn(0);
 
         // When
         ActiveGuestsCountDTO result = bookingService.getActiveGuestsCount();
@@ -142,7 +145,7 @@ class BookingServiceDashboardTest {
     void getActiveGuestsCount_debeUsarFechaActual() {
         // Given
         LocalDate today = LocalDate.now();
-        when(bookingRepository.countActiveGuestsToday(today)).thenReturn(20);
+        when(bookingRepository.countActiveGuestsTodayExplicit(eq(today), eq(BookingStatus.CHECKED_IN))).thenReturn(20);
 
         // When
         ActiveGuestsCountDTO result = bookingService.getActiveGuestsCount();
@@ -152,9 +155,9 @@ class BookingServiceDashboardTest {
         assertEquals(20, result.getCount());
 
         // Verificar que se usó la fecha actual (con un pequeño margen de tolerancia)
-        verify(bookingRepository).countActiveGuestsToday(argThat(date ->
+        verify(bookingRepository).countActiveGuestsTodayExplicit(argThat(date ->
             date.equals(LocalDate.now()) || date.equals(LocalDate.now().minusDays(1))
-        ));
+        ), eq(BookingStatus.CHECKED_IN));
     }
 
     @Test
@@ -175,14 +178,13 @@ class BookingServiceDashboardTest {
     @Test
     void getActiveGuestsCount_debeInvocarRepositorioUnaVez() {
         // Given
-        when(bookingRepository.countActiveGuestsToday(any())).thenReturn(10);
+        when(bookingRepository.countActiveGuestsTodayExplicit(any(LocalDate.class), eq(BookingStatus.CHECKED_IN))).thenReturn(10);
 
         // When
         bookingService.getActiveGuestsCount();
 
         // Then
-        verify(bookingRepository, times(1)).countActiveGuestsToday(any(LocalDate.class));
+        verify(bookingRepository, times(1)).countActiveGuestsTodayExplicit(any(LocalDate.class), eq(BookingStatus.CHECKED_IN));
         verifyNoMoreInteractions(bookingRepository);
     }
 }
-

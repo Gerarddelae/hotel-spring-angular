@@ -10,6 +10,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Booking, BOOKING_STATUS_OPTIONS } from '../../models/booking.interface';
 import { RoomService } from '../../../rooms/rooms.service';
 import { BookingService } from '../../services/booking.service';
@@ -30,7 +31,8 @@ import { Bill } from '../../../billing/models';
     MatDividerModule,
     MatListModule,
     MatSnackBarModule,
-    MatDialogModule
+    MatDialogModule,
+    MatTooltipModule
   ],
   templateUrl: './booking-detail.component.html',
   styleUrls: ['./booking-detail.component.scss']
@@ -120,10 +122,25 @@ export class BookingDetailComponent implements OnInit {
 
   /**
    * Verifica si se puede generar factura
+   * Solo se permite cuando el estado es CHECKED_OUT o COMPLETED
    */
   canGenerateBill(): boolean {
     if (!this.booking) return false;
-    return this.booking.status !== 'CANCELLED' && !this.existingBill;
+    const allowedStatuses = ['CHECKED_OUT', 'COMPLETED'];
+    return allowedStatuses.includes(this.booking.status) && !this.existingBill;
+  }
+
+  /**
+   * Obtiene el mensaje del tooltip para el botón de generar factura
+   */
+  getBillButtonTooltip(): string {
+    if (!this.booking) return '';
+    if (this.existingBill) return 'Ya existe una factura para esta reserva';
+    const allowedStatuses = ['CHECKED_OUT', 'COMPLETED'];
+    if (!allowedStatuses.includes(this.booking.status)) {
+      return 'Solo se puede generar factura cuando el estado es Check-out o Completada';
+    }
+    return 'Generar factura para esta reserva';
   }
 
   /**

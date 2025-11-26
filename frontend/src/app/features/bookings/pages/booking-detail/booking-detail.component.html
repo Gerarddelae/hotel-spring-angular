@@ -19,6 +19,7 @@
         color="accent" 
         (click)="generateBill()"
         [disabled]="!canGenerateBill() || isGeneratingBill"
+        [matTooltip]="getBillButtonTooltip()"
         *ngIf="!existingBill">
         <mat-icon>receipt</mat-icon>
         {{ isGeneratingBill ? 'Generando...' : 'Generar Factura' }}
