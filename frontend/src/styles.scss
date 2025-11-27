@@ -218,5 +218,28 @@ tr.mat-mdc-row {
   overflow: hidden !important;
 }
 
+// Angular Calendar Dark Mode Overrides
+.dark {
+  .cal-open-day-events {
+    background-color: #1e293b !important; // slate-800
+    border-color: #334155 !important; // slate-700
+    color: #e2e8f0 !important; // slate-200
+
+    > div {
+      background-color: #1e293b !important; // slate-800
+      border-color: #334155 !important; // slate-700
+      color: #e2e8f0 !important; // slate-200
+
+      &:hover {
+        background-color: #334155 !important; // slate-700
+      }
+
+      .cal-event-title {
+        color: #e2e8f0 !important; // slate-200
+      }
+    }
+  }
+}
+
 
 

@@ -272,6 +272,14 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   hasRole(role: string): boolean {
-    return this.user?.authorities?.includes(role) || false;
+    if (!this.user?.authorities) {
+      console.log('hasRole: No user or authorities', this.user);
+      return false;
+    }
+    // Check for both formats: 'ADMIN' and 'ROLE_ADMIN'
+    const hasIt = this.user.authorities.includes(role) || 
+           this.user.authorities.includes(`ROLE_${role}`);
+    console.log(`hasRole(${role}):`, hasIt, 'authorities:', this.user.authorities);
+    return hasIt;
   }
 }

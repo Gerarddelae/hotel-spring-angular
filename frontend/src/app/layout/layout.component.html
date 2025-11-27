@@ -73,6 +73,20 @@
           </a>
         </li>
 
+        <!-- Calendario - visible para todos los usuarios autenticados -->
+        <li>
+          <a
+            routerLink="/calendar"
+            routerLinkActive="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 border-r-2 border-blue-600"
+            class="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer"
+            [ngClass]="{ 'justify-center': isCollapsed }"
+            (click)="onNavigate()"
+          >
+            <i class="pi pi-calendar text-lg flex-shrink-0"></i>
+            <span class="font-medium sidebar-label" [class.collapsed]="isCollapsed">Calendario</span>
+          </a>
+        </li>
+
         <!-- Bookings -->
         <li>
           <a
@@ -142,6 +156,8 @@
             <span class="font-medium sidebar-label" [class.collapsed]="isCollapsed">Facturación</span>
           </a>
         </li>
+
+
 
         <!-- Usuarios - solo visible para ADMIN -->
         <li *ngIf="hasRole('ADMIN')">
