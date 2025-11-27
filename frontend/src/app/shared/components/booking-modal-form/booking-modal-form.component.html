@@ -56,7 +56,7 @@
             matInput 
             [matDatepicker]="pickerCheckOut"
             formControlName="checkOutDate"
-            [min]="minDate"
+            [min]="checkOutMin || minDate"
             required>
           <mat-datepicker-toggle matSuffix [for]="pickerCheckOut"></mat-datepicker-toggle>
           <mat-datepicker #pickerCheckOut></mat-datepicker>
