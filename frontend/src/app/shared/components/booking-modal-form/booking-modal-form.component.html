@@ -81,7 +81,7 @@
             <mat-spinner diameter="20"></mat-spinner> Cargando habitaciones...
           </mat-option>
           <mat-option *ngFor="let room of availableRooms" [value]="room.id">
-            Habitación {{ room.number }} - {{ room.type }} - ${{ room.pricePerNight }}/noche
+            Habitación {{ room.number }} - {{ room.type }} - {{ room.capacity }} {{ room.capacity === 1 ? 'persona' : 'personas' }} - ${{ room.pricePerNight }}/noche
           </mat-option>
         </mat-select>
         <mat-error>{{ getErrorMessage('roomId') }}</mat-error>
