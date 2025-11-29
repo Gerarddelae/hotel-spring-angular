@@ -253,11 +253,11 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (data && data['title']) {
       this.currentPageTitle = data['title'];
       this.currentPageSubtitle = data['subtitle'] || '';
-      this.titleService.setTitle(`${data['title']} - Hotel SPA`);
+      this.titleService.setTitle(`${data['title']} - Maguestic`);
     } else {
-      this.currentPageTitle = 'Hotel SPA';
+      this.currentPageTitle = 'Maguestic';
       this.currentPageSubtitle = 'Sistema de gestión hotelera';
-      this.titleService.setTitle('Hotel SPA - Management System');
+      this.titleService.setTitle('Maguestic - Management System');
     }
   }
 
