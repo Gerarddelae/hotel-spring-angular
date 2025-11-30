@@ -4,6 +4,7 @@ import com.hotelsa.backend.aop.annotation.AdminOnly;
 import com.hotelsa.backend.auth.service.AuthService;
 import com.hotelsa.backend.bill.dto.BillRequestDTO;
 import com.hotelsa.backend.bill.dto.BillResponseDTO;
+import com.hotelsa.backend.bill.exception.BillAccessDeniedException;
 import com.hotelsa.backend.bill.exception.BillNotFoundException;
 import com.hotelsa.backend.bill.mapper.BillMapper;
 import com.hotelsa.backend.bill.model.Bill;
@@ -123,11 +124,11 @@ public class BillService {
     @Transactional(readOnly = true)
     public BillResponseDTO findById(Long id) {
         Bill bill = billRepository.findByIdWithRelations(id)
-                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel"));
+                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada con ID: " + id));
 
         Long currentHotelId = getCurrentHotelId();
         if (currentHotelId != null && !currentHotelId.equals(bill.getHotelId())) {
-            throw new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel");
+            throw new BillAccessDeniedException(id);
         }
 
         return billMapper.fromEntity(bill);
@@ -143,11 +144,11 @@ public class BillService {
     @Transactional
     public BillResponseDTO updateStatus(Long billId, BillStatus status) {
         Bill bill = billRepository.findById(billId)
-                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel"));
+                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada con ID: " + billId));
 
         Long currentHotelId = getCurrentHotelId();
         if (currentHotelId != null && !currentHotelId.equals(bill.getHotelId())) {
-            throw new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel");
+            throw new BillAccessDeniedException(billId);
         }
 
         bill.setStatus(status);
@@ -160,11 +161,11 @@ public class BillService {
     @Transactional
     public BillResponseDTO updatePaymentMethod(Long billId, PaymentMethod paymentMethod) {
         Bill bill = billRepository.findById(billId)
-                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel"));
+                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada con ID: " + billId));
 
         Long currentHotelId = getCurrentHotelId();
         if (currentHotelId != null && !currentHotelId.equals(bill.getHotelId())) {
-            throw new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel");
+            throw new BillAccessDeniedException(billId);
         }
 
         bill.setPaymentMethod(paymentMethod);
@@ -177,11 +178,11 @@ public class BillService {
     @Transactional
     public void delete(Long id) {
         Bill bill = billRepository.findById(id)
-                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel"));
+                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada con ID: " + id));
 
         Long currentHotelId = getCurrentHotelId();
         if (currentHotelId != null && !currentHotelId.equals(bill.getHotelId())) {
-            throw new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel");
+            throw new BillAccessDeniedException(id);
         }
 
         bill.setDeleted(true);

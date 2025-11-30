@@ -2,6 +2,7 @@ package com.hotelsa.backend.addon.service;
 
 import com.hotelsa.backend.addon.dto.AddonRequest;
 import com.hotelsa.backend.addon.dto.AddonResponse;
+import com.hotelsa.backend.addon.exception.AddonAccessDeniedException;
 import com.hotelsa.backend.addon.exception.AddonNotFoundException;
 import com.hotelsa.backend.addon.mapper.AddonMapper;
 import com.hotelsa.backend.addon.model.Addon;
@@ -53,8 +54,16 @@ public class AddonService {
 
     @Transactional(readOnly = true)
     public AddonResponse findById(Long id) {
+        Long currentHotelId = getCurrentHotelId();
+        
         Addon addon = addonRepository.findById(id)
-                .orElseThrow(() -> new AddonNotFoundException("Addon no encontrado"));
+                .orElseThrow(() -> new AddonNotFoundException("Addon no encontrado con ID: " + id));
+
+        // Validación explícita de multi-tenancy
+        if (currentHotelId != null && !currentHotelId.equals(addon.getHotelId())) {
+            throw new AddonAccessDeniedException(id);
+        }
+
         return addonMapper.fromEntity(addon);
     }
 

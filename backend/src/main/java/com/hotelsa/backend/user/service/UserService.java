@@ -5,6 +5,7 @@ import com.hotelsa.backend.tenant.TenantContext;
 import com.hotelsa.backend.user.dto.RegisterUserDto;
 import com.hotelsa.backend.user.dto.UserDto;
 import com.hotelsa.backend.user.enums.Role;
+import com.hotelsa.backend.user.exception.UserAccessDeniedException;
 import com.hotelsa.backend.user.exception.UserAlreadyExistsException;
 import com.hotelsa.backend.user.exception.UserNotFoundException;
 import com.hotelsa.backend.user.mapper.UserMapper;
@@ -73,11 +74,19 @@ public class UserService {
         return users.stream().map(userMapper::fromEntity).toList();
     }
 
-    // ✅ Obtener usuario por ID (ya filtrado por tenant y deleted)
+    // ✅ Obtener usuario por ID (con validación explícita de tenant)
     @Transactional(readOnly = true)
     public UserDto getUserById(Long userId) {
+        Long currentHotelId = getCurrentTenantId();
+        
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found or not accessible"));
+                .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado con ID: " + userId));
+
+        // Validación explícita de multi-tenancy
+        if (currentHotelId != null && !currentHotelId.equals(user.getHotelId())) {
+            throw new UserAccessDeniedException(userId);
+        }
+
         return userMapper.fromEntity(user);
     }
 

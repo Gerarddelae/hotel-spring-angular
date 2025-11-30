@@ -7,6 +7,7 @@ import com.hotelsa.backend.hotel.model.Hotel;
 import com.hotelsa.backend.hotel.repository.HotelRepository;
 import com.hotelsa.backend.guest.dto.GuestRequestDTO;
 import com.hotelsa.backend.guest.dto.GuestResponseDTO;
+import com.hotelsa.backend.guest.exception.GuestAccessDeniedException;
 import com.hotelsa.backend.guest.exception.GuestNotFoundException;
 import com.hotelsa.backend.guest.mapper.GuestMapper;
 import com.hotelsa.backend.guest.model.Guest;
@@ -60,8 +61,15 @@ public class GuestService {
 
     @Transactional(readOnly = true)
     public GuestResponseDTO getGuestById(Long guestId) {
+        Long currentHotelId = getCurrentHotelId();
+        
         Guest guest = guestRepository.findById(guestId)
-                .orElseThrow(() -> new GuestNotFoundException("Huésped no encontrado o no pertenece a tu hotel"));
+                .orElseThrow(() -> new GuestNotFoundException("Huésped no encontrado con ID: " + guestId));
+
+        // Validación explícita de multi-tenancy
+        if (currentHotelId != null && !currentHotelId.equals(guest.getHotelId())) {
+            throw new GuestAccessDeniedException(guestId);
+        }
 
         return guestMapper.fromEntity(guest);
     }

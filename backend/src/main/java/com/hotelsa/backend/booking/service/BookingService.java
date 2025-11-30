@@ -5,6 +5,7 @@ import com.hotelsa.backend.auth.service.AuthService;
 import com.hotelsa.backend.booking.dto.BookingRequestDTO;
 import com.hotelsa.backend.booking.dto.BookingResponseDTO;
 import com.hotelsa.backend.booking.dto.BookingReplaceRequestDTO;
+import com.hotelsa.backend.booking.exception.BookingAccessDeniedException;
 import com.hotelsa.backend.booking.exception.BookingNotFoundException;
 import com.hotelsa.backend.booking.exception.BookingAddonNotFoundException;
 import com.hotelsa.backend.booking.mapper.BookingMapper;
@@ -151,8 +152,15 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public BookingResponseDTO findById(Long id) {
+        Long currentHotelId = getCurrentHotelId();
+        
         Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel"));
+                .orElseThrow(() -> new BookingNotFoundException("Reserva no encontrada con ID: " + id));
+
+        // Validación explícita de multi-tenancy
+        if (currentHotelId != null && !currentHotelId.equals(booking.getHotelId())) {
+            throw new BookingAccessDeniedException(id);
+        }
 
         return bookingMapper.fromEntity(booking, true);
     }
