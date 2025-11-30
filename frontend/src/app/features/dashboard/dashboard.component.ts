@@ -132,6 +132,7 @@ export class DashboardComponent implements OnInit {
 
   /**
    * Filter rooms by date range - shows only available rooms for the selected dates
+   * Excludes rooms in MAINTENANCE status
    */
   onFilterByDates(event: DateFilterEvent): void {
     this.isLoadingRooms = true;
@@ -142,15 +143,18 @@ export class DashboardComponent implements OnInit {
 
     this.roomService.getAvailableRooms(event.checkIn, event.checkOut).subscribe({
       next: (availableRooms) => {
-        // Map Room[] to RoomDashboardSummary[] - all returned rooms are available
-        this.rooms = availableRooms.map(room => ({
-          roomId: room.id!,
-          number: room.number,
-          status: 'AVAILABLE' as const,
-          roomTypeName: room.type,
-          currentBookingId: null,
-          capacity: room.capacity
-        }));
+        // Map Room[] to RoomDashboardSummary[]
+        // Filter out rooms in MAINTENANCE status - they should never appear as available
+        this.rooms = availableRooms
+          .filter(room => room.status !== 'MAINTENANCE')
+          .map(room => ({
+            roomId: room.id!,
+            number: room.number,
+            status: 'AVAILABLE' as const,
+            roomTypeName: room.type,
+            currentBookingId: null,
+            capacity: room.capacity
+          }));
         this.isRoomsFiltered = true;
         this.isLoadingRooms = false;
       },

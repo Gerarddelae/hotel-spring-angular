@@ -17,6 +17,7 @@ import { BookingService } from '../../services/booking.service';
 import { BookingModalFormComponent } from '../../../../shared/components/booking-modal-form/booking-modal-form.component';
 import { BillService } from '../../../billing/services/bill.service';
 import { Bill } from '../../../billing/models';
+import { AuthService } from '../../../../auth/auth.service';
 
 @Component({
   selector: 'app-booking-detail',
@@ -54,7 +55,8 @@ export class BookingDetailComponent implements OnInit {
     private roomService: RoomService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
-    private billService: BillService
+    private billService: BillService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -150,6 +152,15 @@ export class BookingDetailComponent implements OnInit {
     this.isLoading = true;
     this.bookingService.getById(this.bookingId).subscribe({
       next: (booking) => {
+            // Validar que la reserva pertenece al hotel del usuario actual
+            const currentHotelId = this.authService.getHotelId();
+            if (currentHotelId && booking.hotelId && booking.hotelId !== currentHotelId) {
+              this.showError('No tienes permiso para ver esta reserva');
+              this.isLoading = false;
+              this.router.navigate(['/bookings']);
+              return;
+            }
+
             this.booking = booking;
 
             // If backend did not return an accommodation subtotal, try to derive it from the room's pricePerNight

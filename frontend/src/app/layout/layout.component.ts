@@ -15,6 +15,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CurrentUser } from '../auth/interfaces/current-user.interface';
 import { UsersService } from '../features/users/users.service';
 import { RoomService } from '../features/rooms/rooms.service';
+import { BookingService } from '../features/bookings/services/booking.service';
 
 @Component({
   selector: 'app-layout',
@@ -44,7 +45,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
     private activatedRoute: ActivatedRoute,
     private authService: AuthService,
     private usersService: UsersService,
-    private roomService: RoomService
+    private roomService: RoomService,
+    private bookingService: BookingService
   ) {}
 
   @HostListener('window:resize', ['$event'])
@@ -158,9 +160,10 @@ export class LayoutComponent implements OnInit, OnDestroy {
     localStorage.removeItem('hotelName');
     localStorage.removeItem('username');
 
-    // Limpiar los datos de usuarios y habitaciones
+    // Limpiar los datos de usuarios, habitaciones y reservas
     this.usersService.clearUsers();
     this.roomService.clearRooms();
+    this.bookingService.clearBookings();
 
     // Navigate to login
     this.router.navigate(['/auth/login']);

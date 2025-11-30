@@ -29,6 +29,13 @@ export class BookingService {
   private bookingsSubject = new BehaviorSubject<Booking[] | null>(null);
 
   /**
+   * Limpia el cache de reservas (llamar al hacer logout)
+   */
+  clearBookings(): void {
+    this.bookingsSubject.next(null);
+  }
+
+  /**
    * Dashboard: Obtiene el conteo de reservas por estado
    */
   getBookingStatusCount(): Observable<BookingStatusCountResponse> {

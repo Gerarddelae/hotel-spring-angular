@@ -20,14 +20,14 @@
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
     @for (kpi of kpis; track kpi.label; let i = $index) {
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow duration-200">
-        <div class="flex items-start justify-between gap-4">
+        <div class="flex items-start justify-between gap-3">
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-normal break-words">{{ kpi.label }}</p>
-            <p class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ kpi.value }}</p>
+            <p class="text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-normal break-words">{{ kpi.label }}</p>
+            <p class="text-base md:text-lg font-bold text-gray-900 dark:text-white mt-1">{{ kpi.value }}</p>
           </div>
           @if (kpi.icon) {
-            <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center" [ngClass]="getColorClasses(i).bg">
-              <i [ngClass]="[kpi.icon, 'text-base', getColorClasses(i).icon]"></i>
+            <div class="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" [ngClass]="getColorClasses(i).bg">
+              <i [ngClass]="[kpi.icon, 'text-sm', getColorClasses(i).icon]"></i>
             </div>
           }
         </div>
