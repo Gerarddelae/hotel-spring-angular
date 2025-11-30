@@ -22,6 +22,8 @@ import { CountryService, Country } from '../../shared/services/country.service';
 export class RegisterComponent implements OnInit {
   form!: FormGroup;
   isDarkMode = false;
+  showPassword = false;
+  showConfirmPassword = false;
   authError: string | null = null;
 
   countries: Country[] = [];

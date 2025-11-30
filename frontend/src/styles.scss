@@ -6,6 +6,15 @@
 // 2. PrimeIcons
 @import "primeicons/primeicons.css";
 
+// Animation delay utilities for blob animation
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
 // 3. Define tema claro
 $light-theme: mat.define-theme((
   color: (

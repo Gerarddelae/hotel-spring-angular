@@ -1,0 +1,20 @@
+/* Styles for the genie SVG used in the visual panel */
+.genie-login {
+	width: 1.75rem; /* ~28px — smaller and more proportional */
+	height: 1.75rem;
+	display: block;
+	margin: 0 0 0.1rem auto; /* centered with a little space below */
+	fill: #ffffff !important; /* force white */
+	color: #ffffff !important;
+	opacity: 0.95;
+	filter: drop-shadow(0 6px 12px rgba(0,0,0,0.12));
+	transform: translateY(8px); /* bajar ligeramente la lámpara */
+}
+
+@media (max-width: 767px) {
+	.genie-login {
+		width: 1.25rem; /* ~20px on small screens */
+		height: 1.25rem;
+		transform: translateY(6px);
+	}
+}

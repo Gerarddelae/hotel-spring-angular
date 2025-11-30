@@ -90,8 +90,14 @@ export class AuthService {
     const hotelName = localStorage.getItem('hotelName');
 
     if (!token || !this.isTokenValid(token)) {
-        this.logout(); // Usar el método logout existente para limpiar todo
-        return;
+      // No navegar desde el constructor/initializer: limpiar storage y estado
+      localStorage.removeItem('token');
+      localStorage.removeItem('authorities');
+      localStorage.removeItem('hotelName');
+      localStorage.removeItem('hotelId');
+      localStorage.removeItem('username');
+      this.userSubject.next(null);
+      return;
     }
 
     try {
@@ -103,8 +109,14 @@ export class AuthService {
         console.log('Usuario cargado del storage:', user);
         this.userSubject.next(user);
     } catch (e) {
-        console.error('Error al cargar usuario desde storage:', e);
-        this.logout();
+      console.error('Error al cargar usuario desde storage:', e);
+      // Evitar navegación desde el constructor: limpiar estado sin redirigir
+      localStorage.removeItem('token');
+      localStorage.removeItem('authorities');
+      localStorage.removeItem('hotelName');
+      localStorage.removeItem('hotelId');
+      localStorage.removeItem('username');
+      this.userSubject.next(null);
     }
   }
 

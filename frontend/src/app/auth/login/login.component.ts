@@ -26,6 +26,7 @@ export class LoginComponent implements OnInit {
   }>;
 
   isDarkMode = false;
+  showPassword = false;
 
   authError: string | null = null;
 
