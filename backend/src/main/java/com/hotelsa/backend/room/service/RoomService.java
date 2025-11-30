@@ -8,6 +8,7 @@ import com.hotelsa.backend.hotel.repository.HotelRepository;
 import com.hotelsa.backend.room.dto.RoomRequestDTO;
 import com.hotelsa.backend.room.dto.RoomResponseDTO;
 import com.hotelsa.backend.room.enums.RoomType;
+import com.hotelsa.backend.room.exception.RoomAccessDeniedException;
 import com.hotelsa.backend.room.exception.RoomNotFoundException;
 import com.hotelsa.backend.room.mapper.RoomMapper;
 import com.hotelsa.backend.room.model.Room;
@@ -59,8 +60,15 @@ public class RoomService {
 
     @Transactional(readOnly = true)
     public RoomResponseDTO getRoomById(Long roomId) {
+        Long currentHotelId = getCurrentHotelId();
+        
         Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RoomNotFoundException("Habitación no encontrada o no pertenece a tu hotel"));
+                .orElseThrow(() -> new RoomNotFoundException("Habitación no encontrada con ID: " + roomId));
+
+        // Validación explícita de multi-tenancy
+        if (currentHotelId != null && !currentHotelId.equals(room.getHotelId())) {
+            throw new RoomAccessDeniedException(roomId);
+        }
 
         return roomMapper.fromEntity(room);
     }

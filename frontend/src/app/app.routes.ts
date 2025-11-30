@@ -112,6 +112,19 @@ export const routes: Routes = [
         },
       },
       {
+        path: 'calendar',
+        loadChildren: () =>
+          import('./features/calendar-entries/calendar-entries.routes').then(
+            (m) => m.calendarEntriesRoutes
+          ),
+        canActivate: [() => roleGuard(['ADMIN', 'EMPLOYEE', 'USER'])],
+        data: {
+          title: 'Calendario',
+          subtitle: 'Check-ins y Check-outs del hotel',
+          icon: 'pi-calendar',
+        },
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full',

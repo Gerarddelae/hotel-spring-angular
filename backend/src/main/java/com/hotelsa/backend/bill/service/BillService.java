@@ -4,6 +4,7 @@ import com.hotelsa.backend.aop.annotation.AdminOnly;
 import com.hotelsa.backend.auth.service.AuthService;
 import com.hotelsa.backend.bill.dto.BillRequestDTO;
 import com.hotelsa.backend.bill.dto.BillResponseDTO;
+import com.hotelsa.backend.bill.exception.BillAccessDeniedException;
 import com.hotelsa.backend.bill.exception.BillNotFoundException;
 import com.hotelsa.backend.bill.mapper.BillMapper;
 import com.hotelsa.backend.bill.model.Bill;
@@ -17,8 +18,8 @@ import com.hotelsa.backend.bill.repository.BillRepository;
 import com.hotelsa.backend.booking.model.Booking;
 import com.hotelsa.backend.booking.repository.BookingRepository;
 import com.hotelsa.backend.bookingaddon.entity.BookingAddon;
-import com.hotelsa.backend.bookingaddon.entity.BookingAddonId;
 import com.hotelsa.backend.bookingaddon.repository.BookingAddonRepository;
+import com.hotelsa.backend.room.model.Room;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -85,19 +86,32 @@ public class BillService {
             return billAddonRepository.save(b);
         }).collect(Collectors.toList());
 
-        // Calcular total = estadía (del booking) + addons
-        BigDecimal bookingTotal = booking.getTotalAmount() != null ? booking.getTotalAmount() : BigDecimal.ZERO;
+        // Calcular total = estadía (noches × precio_noche) + addons de la factura
+        // NO usar booking.getTotalAmount() porque ya incluye addons del booking
+        Room room = booking.getRoom();
+        BigDecimal roomPricePerNight = room != null && room.getPricePerNight() != null
+            ? BigDecimal.valueOf(room.getPricePerNight())
+            : BigDecimal.ZERO;
+
+        long nights = java.time.temporal.ChronoUnit.DAYS.between(
+            booking.getCheckInDate(),
+            booking.getCheckOutDate()
+        );
+
+        BigDecimal accommodationSubtotal = roomPricePerNight.multiply(BigDecimal.valueOf(nights));
+
         BigDecimal addonsTotal = persistedAddons.stream()
                 .map(ba -> ba.getTotalPrice() == null ? BigDecimal.ZERO : ba.getTotalPrice())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal total = bookingTotal.add(addonsTotal);
+        BigDecimal total = accommodationSubtotal.add(addonsTotal);
 
         saved.setTotalAmount(total);
         saved.setAddons(persistedAddons);
         billRepository.save(saved);
 
-        log.debug("💰 Bill total calculated: Booking={}, Addons={}, Total={}", bookingTotal, addonsTotal, total);
+        log.debug("💰 Bill total calculated: Accommodation={}×{}={}, Addons={}, Total={}",
+            nights, roomPricePerNight, accommodationSubtotal, addonsTotal, total);
 
         // Recargar la factura con todas las relaciones
         Bill finalSaved = billRepository.findByIdWithRelations(saved.getId())
@@ -110,11 +124,11 @@ public class BillService {
     @Transactional(readOnly = true)
     public BillResponseDTO findById(Long id) {
         Bill bill = billRepository.findByIdWithRelations(id)
-                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel"));
+                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada con ID: " + id));
 
         Long currentHotelId = getCurrentHotelId();
         if (currentHotelId != null && !currentHotelId.equals(bill.getHotelId())) {
-            throw new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel");
+            throw new BillAccessDeniedException(id);
         }
 
         return billMapper.fromEntity(bill);
@@ -130,11 +144,11 @@ public class BillService {
     @Transactional
     public BillResponseDTO updateStatus(Long billId, BillStatus status) {
         Bill bill = billRepository.findById(billId)
-                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel"));
+                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada con ID: " + billId));
 
         Long currentHotelId = getCurrentHotelId();
         if (currentHotelId != null && !currentHotelId.equals(bill.getHotelId())) {
-            throw new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel");
+            throw new BillAccessDeniedException(billId);
         }
 
         bill.setStatus(status);
@@ -147,11 +161,11 @@ public class BillService {
     @Transactional
     public BillResponseDTO updatePaymentMethod(Long billId, PaymentMethod paymentMethod) {
         Bill bill = billRepository.findById(billId)
-                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel"));
+                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada con ID: " + billId));
 
         Long currentHotelId = getCurrentHotelId();
         if (currentHotelId != null && !currentHotelId.equals(bill.getHotelId())) {
-            throw new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel");
+            throw new BillAccessDeniedException(billId);
         }
 
         bill.setPaymentMethod(paymentMethod);
@@ -164,11 +178,11 @@ public class BillService {
     @Transactional
     public void delete(Long id) {
         Bill bill = billRepository.findById(id)
-                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel"));
+                .orElseThrow(() -> new BillNotFoundException("Factura no encontrada con ID: " + id));
 
         Long currentHotelId = getCurrentHotelId();
         if (currentHotelId != null && !currentHotelId.equals(bill.getHotelId())) {
-            throw new BillNotFoundException("Factura no encontrada o no pertenece a tu hotel");
+            throw new BillAccessDeniedException(id);
         }
 
         bill.setDeleted(true);
@@ -199,3 +213,8 @@ public class BillService {
         return new com.hotelsa.backend.bill.dto.RevenueDTO(total, "USD");
     }
 }
+
+
+
+
+

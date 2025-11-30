@@ -1,12 +1,19 @@
 /* stylelint-disable at-rule-no-unknown */
-// 1. Tailwind + PrimeIcons
-@use 'tailwindcss/base';
-@use 'tailwindcss/components';
-@use 'tailwindcss/utilities';
-@use "primeicons/primeicons.css";
 
-// 2. Angular Material
+// 1. Angular Material
 @use '@angular/material' as mat;
+
+// 2. PrimeIcons
+@import "primeicons/primeicons.css";
+
+// Animation delay utilities for blob animation
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
 
 // 3. Define tema claro
 $light-theme: mat.define-theme((
@@ -47,12 +54,20 @@ html, body {
 body {
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
-  @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+  background-color: #f9fafb; // bg-gray-50
+  color: #111827; // text-gray-900
+}
+
+.dark body {
+  background-color: #111827; // bg-gray-900
+  color: #f3f4f6; // text-gray-100
 }
 
 // 8. Ajustes para tablas y paginador
 .table.mat-mdc-table {
-  @apply w-full text-left border-collapse;
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
 }
 
 .mat-mdc-header-cell {
@@ -61,11 +76,21 @@ body {
 }
 
 .mat-mdc-cell {
-  @apply text-gray-800 dark:text-gray-100;
+  color: #1f2937; // text-gray-800
+}
+
+.dark .mat-mdc-cell {
+  color: #f3f4f6; // text-gray-100
 }
 
 .mat-mdc-paginator {
-  @apply bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100;
+  background-color: #f9fafb; // bg-gray-50
+  color: #1f2937; // text-gray-800
+}
+
+.dark .mat-mdc-paginator {
+  background-color: #1f2937; // bg-gray-800
+  color: #f3f4f6; // text-gray-100
 }
 
 .dark .mat-mdc-table {
@@ -82,42 +107,95 @@ body {
 
 /* === Tabla compacta y minimalista === */
 table.mat-mdc-table {
-  @apply w-full text-xs text-left border-collapse;
+  width: 100%;
+  font-size: 0.75rem;
+  text-align: left;
+  border-collapse: collapse;
 }
 
 /* Cabeceras más compactas */
 .mat-mdc-header-cell {
-  @apply px-4 py-2 text-[11px] font-semibold uppercase tracking-wider;
+  padding: 0.5rem 1rem;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Celdas más reducidas */
 .mat-mdc-cell {
-  @apply px-4 py-2 text-gray-800 dark:text-gray-100 whitespace-nowrap;
+  padding: 0.5rem 1rem;
+  color: #1f2937; // text-gray-800
+  white-space: nowrap;
+}
+
+.dark .mat-mdc-cell {
+  color: #f3f4f6; // text-gray-100
 }
 
 /* Hover en filas */
 tr.mat-mdc-row {
-  @apply transition-colors hover:bg-gray-50 dark:hover:bg-gray-800;
+  transition: background-color 0.15s;
+}
+
+tr.mat-mdc-row:hover {
+  background-color: #f9fafb; // bg-gray-50
+}
+
+.dark tr.mat-mdc-row:hover {
+  background-color: #1f2937; // bg-gray-800
 }
 
 /* === Paginador minimalista === */
 .mat-mdc-paginator {
-  @apply flex flex-wrap justify-between items-center gap-2 p-1 bg-gray-50 dark:bg-gray-900 text-xs text-gray-700 dark:text-gray-300;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  background-color: #f9fafb; // bg-gray-50
+  font-size: 0.75rem;
+  color: #374151; // text-gray-700
+}
 
-  .mat-mdc-paginator-range-label,
-  .mat-mdc-paginator-page-size-label {
-    @apply text-xs text-gray-600 dark:text-gray-400;
-  }
+.dark .mat-mdc-paginator {
+  background-color: #111827; // bg-gray-900
+  color: #d1d5db; // text-gray-300
+}
 
-  .mat-mdc-icon-button {
-    width: 24px;
-    height: 24px;
-    @apply rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400;
-  }
+.mat-mdc-paginator .mat-mdc-paginator-range-label,
+.mat-mdc-paginator .mat-mdc-paginator-page-size-label {
+  font-size: 0.75rem;
+  color: #4b5563; // text-gray-600
+}
 
-  .mat-mdc-select-trigger {
-    @apply text-xs;
-  }
+.dark .mat-mdc-paginator .mat-mdc-paginator-range-label,
+.dark .mat-mdc-paginator .mat-mdc-paginator-page-size-label {
+  color: #9ca3af; // text-gray-400
+}
+
+.mat-mdc-paginator .mat-mdc-icon-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 0.25rem;
+  color: #6b7280; // text-gray-500
+}
+
+.mat-mdc-paginator .mat-mdc-icon-button:hover {
+  background-color: #f3f4f6; // bg-gray-100
+}
+
+.dark .mat-mdc-paginator .mat-mdc-icon-button {
+  color: #9ca3af; // text-gray-400
+}
+
+.dark .mat-mdc-paginator .mat-mdc-icon-button:hover {
+  background-color: #1f2937; // bg-gray-800
+}
+
+.mat-mdc-paginator .mat-mdc-select-trigger {
+  font-size: 0.75rem;
 }
 
 /* Ocultar botones extremos en pantallas chicas */
@@ -135,7 +213,23 @@ tr.mat-mdc-row {
   width: 28px !important;
   height: 28px !important;
   padding: 0 !important;
-  @apply rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563; // text-gray-600
+}
+
+.mat-mdc-paginator .mat-mdc-icon-button:hover {
+  background-color: #e5e7eb; // bg-gray-200
+}
+
+.dark .mat-mdc-paginator .mat-mdc-icon-button {
+  color: #d1d5db; // text-gray-300
+}
+
+.dark .mat-mdc-paginator .mat-mdc-icon-button:hover {
+  background-color: #374151; // bg-gray-700
 }
 
 /* Íconos dentro de los botones */
@@ -151,7 +245,10 @@ tr.mat-mdc-row {
 }
 
 .mat-dialog-container {
-  @apply bg-gray-900 text-white rounded-lg p-4;
+  background-color: #111827; // bg-gray-900
+  color: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
 }
 
 /* Estilos para el diálogo */
@@ -216,6 +313,29 @@ tr.mat-mdc-row {
 
 .mat-mdc-dialog-surface {
   overflow: hidden !important;
+}
+
+// Angular Calendar Dark Mode Overrides
+.dark {
+  .cal-open-day-events {
+    background-color: #1e293b !important; // slate-800
+    border-color: #334155 !important; // slate-700
+    color: #e2e8f0 !important; // slate-200
+
+    > div {
+      background-color: #1e293b !important; // slate-800
+      border-color: #334155 !important; // slate-700
+      color: #e2e8f0 !important; // slate-200
+
+      &:hover {
+        background-color: #334155 !important; // slate-700
+      }
+
+      .cal-event-title {
+        color: #e2e8f0 !important; // slate-200
+      }
+    }
+  }
 }
 
 

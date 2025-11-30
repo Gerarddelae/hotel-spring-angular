@@ -1,0 +1,106 @@
+<div class="calendar-entries-container">
+  <!-- Header -->
+  <div class="calendar-header">
+    <div class="flex items-center gap-4 flex-wrap">
+      <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">
+        Calendario de Entradas
+      </h2>
+      <span class="text-lg text-gray-600 dark:text-gray-400 capitalize">
+        {{ currentMonthLabel() }}
+      </span>
+      
+      <!-- Inline Legend -->
+      <div class="flex items-center gap-3 ml-4">
+        <div class="flex items-center gap-1.5">
+          <span class="legend-color-inline bg-emerald-500"></span>
+          <span class="legend-text-inline">Check-in</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="legend-color-inline bg-amber-500"></span>
+          <span class="legend-text-inline">Check-out</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Controls -->
+    <div class="flex items-center gap-2">
+      <button
+        class="nav-button"
+        (click)="previousMonth()"
+        title="Mes anterior"
+      >
+        <i class="pi pi-chevron-left"></i>
+      </button>
+
+      <button
+        class="today-button"
+        (click)="goToToday()"
+      >
+        Hoy
+      </button>
+
+      <button
+        class="nav-button"
+        (click)="nextMonth()"
+        title="Mes siguiente"
+      >
+        <i class="pi pi-chevron-right"></i>
+      </button>
+
+      <button
+        class="refresh-button ml-4"
+        (click)="loadEntries()"
+        [disabled]="loading()"
+        title="Actualizar"
+      >
+        <i class="pi pi-refresh" [class.animate-spin]="loading()"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="loading-spinner">
+        <i class="pi pi-spin pi-spinner text-4xl text-cyan-500"></i>
+        <span class="mt-2 text-gray-600 dark:text-gray-400">Cargando calendario...</span>
+      </div>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-message">
+      <i class="pi pi-exclamation-triangle text-2xl"></i>
+      <span>{{ error() }}</span>
+      <button class="retry-button" (click)="loadEntries()">
+        <i class="pi pi-refresh mr-2"></i>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  <!-- Calendar -->
+  <div class="calendar-wrapper" [class.loading]="loading()">
+    <mwl-calendar-month-view
+      [viewDate]="viewDate()"
+      [events]="events()"
+      [refresh]="refresh"
+      [activeDayIsOpen]="activeDayIsOpen()"
+      (dayClicked)="onDayClicked($event)"
+      (eventClicked)="onEventClicked($event.event)"
+      [weekStartsOn]="1"
+    >
+    </mwl-calendar-month-view>
+  </div>
+
+  <!-- Empty State -->
+  @if (!loading() && !error() && events().length === 0) {
+    <div class="empty-state">
+      <i class="pi pi-calendar text-6xl text-gray-300 dark:text-gray-600"></i>
+      <p class="mt-4 text-lg text-gray-500 dark:text-gray-400">
+        No hay check-ins ni check-outs para este mes
+      </p>
+    </div>
+  }
+</div>

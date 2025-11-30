@@ -74,6 +74,11 @@ export class BookingModalFormComponent implements OnInit {
   currentUser: any;
   minDate: Date | null = null;
   isEditMode: boolean;
+  // Minimum allowed date for check-out (based on selected check-in)
+  checkOutMin: Date | null = null;
+  // Start date shown when opening the check-out datepicker (not used when not auto-opening)
+  // kept only for potential future use
+  // startAtCheckOut: Date | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -186,9 +191,21 @@ export class BookingModalFormComponent implements OnInit {
    */
   private setupRoomAvailabilityCheck(): void {
     // Monitorear cambios en fechas
-    this.bookingForm.get('checkInDate')?.valueChanges.subscribe(() => {
+    this.bookingForm.get('checkInDate')?.valueChanges.subscribe((value: any) => {
       this.loadAvailableRooms();
       this.checkRoomAvailability();
+
+      // Cuando se selecciona check-in en modo creación, fijar la mínima fecha
+      // para check-out y preparar el datepicker para abrir mostrando la fecha seleccionada.
+      if (value) {
+        const selected = new Date(value);
+        this.checkOutMin = selected;
+        // Si la fecha de check-out actual es anterior a la mínima, limpiarla
+        const currentOut = this.bookingForm.get('checkOutDate')?.value;
+        if (currentOut && new Date(currentOut) <= selected) {
+          this.bookingForm.get('checkOutDate')?.setValue('');
+        }
+      }
     });
 
     this.bookingForm.get('checkOutDate')?.valueChanges.subscribe(() => {

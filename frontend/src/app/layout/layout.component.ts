@@ -15,6 +15,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CurrentUser } from '../auth/interfaces/current-user.interface';
 import { UsersService } from '../features/users/users.service';
 import { RoomService } from '../features/rooms/rooms.service';
+import { BookingService } from '../features/bookings/services/booking.service';
 
 @Component({
   selector: 'app-layout',
@@ -44,7 +45,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
     private activatedRoute: ActivatedRoute,
     private authService: AuthService,
     private usersService: UsersService,
-    private roomService: RoomService
+    private roomService: RoomService,
+    private bookingService: BookingService
   ) {}
 
   @HostListener('window:resize', ['$event'])
@@ -158,9 +160,10 @@ export class LayoutComponent implements OnInit, OnDestroy {
     localStorage.removeItem('hotelName');
     localStorage.removeItem('username');
 
-    // Limpiar los datos de usuarios y habitaciones
+    // Limpiar los datos de usuarios, habitaciones y reservas
     this.usersService.clearUsers();
     this.roomService.clearRooms();
+    this.bookingService.clearBookings();
 
     // Navigate to login
     this.router.navigate(['/auth/login']);
@@ -253,11 +256,11 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (data && data['title']) {
       this.currentPageTitle = data['title'];
       this.currentPageSubtitle = data['subtitle'] || '';
-      this.titleService.setTitle(`${data['title']} - Hotel SPA`);
+      this.titleService.setTitle(`${data['title']} - Maguestic`);
     } else {
-      this.currentPageTitle = 'Hotel SPA';
+      this.currentPageTitle = 'Maguestic';
       this.currentPageSubtitle = 'Sistema de gestión hotelera';
-      this.titleService.setTitle('Hotel SPA - Management System');
+      this.titleService.setTitle('Maguestic - Management System');
     }
   }
 
@@ -272,6 +275,14 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   hasRole(role: string): boolean {
-    return this.user?.authorities?.includes(role) || false;
+    if (!this.user?.authorities) {
+      console.log('hasRole: No user or authorities', this.user);
+      return false;
+    }
+    // Check for both formats: 'ADMIN' and 'ROLE_ADMIN'
+    const hasIt = this.user.authorities.includes(role) || 
+           this.user.authorities.includes(`ROLE_${role}`);
+    console.log(`hasRole(${role}):`, hasIt, 'authorities:', this.user.authorities);
+    return hasIt;
   }
 }

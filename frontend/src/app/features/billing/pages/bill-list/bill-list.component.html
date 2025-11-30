@@ -116,18 +116,22 @@
         class="table-row"
         (click)="viewDetails(row)">
       </tr>
-    </table>
 
+      <!-- Mensaje cuando no hay datos -->
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell no-data" [attr.colspan]="displayedColumns.length">
+          <div class="no-data-message">
+            <mat-icon>receipt_long</mat-icon>
+            <p>No hay facturas para mostrar</p>
+          </div>
+        </td>
+      </tr>
+    </table>
+    
     <mat-paginator
       [pageSizeOptions]="[5, 10, 25]"
       showFirstLastButtons
       aria-label="Paginador de facturas">
     </mat-paginator>
-
-    <!-- Mensaje si no hay datos -->
-    <div class="empty-state" *ngIf="filteredBills().length === 0">
-      <mat-icon>receipt_long</mat-icon>
-      <p>No hay facturas para mostrar</p>
-    </div>
   </div>
 </div>

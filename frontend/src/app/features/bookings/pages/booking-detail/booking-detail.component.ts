@@ -10,12 +10,14 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Booking, BOOKING_STATUS_OPTIONS } from '../../models/booking.interface';
 import { RoomService } from '../../../rooms/rooms.service';
 import { BookingService } from '../../services/booking.service';
 import { BookingModalFormComponent } from '../../../../shared/components/booking-modal-form/booking-modal-form.component';
 import { BillService } from '../../../billing/services/bill.service';
 import { Bill } from '../../../billing/models';
+import { AuthService } from '../../../../auth/auth.service';
 
 @Component({
   selector: 'app-booking-detail',
@@ -30,7 +32,8 @@ import { Bill } from '../../../billing/models';
     MatDividerModule,
     MatListModule,
     MatSnackBarModule,
-    MatDialogModule
+    MatDialogModule,
+    MatTooltipModule
   ],
   templateUrl: './booking-detail.component.html',
   styleUrls: ['./booking-detail.component.scss']
@@ -52,7 +55,8 @@ export class BookingDetailComponent implements OnInit {
     private roomService: RoomService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
-    private billService: BillService
+    private billService: BillService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -120,10 +124,25 @@ export class BookingDetailComponent implements OnInit {
 
   /**
    * Verifica si se puede generar factura
+   * Solo se permite cuando el estado es CHECKED_OUT o COMPLETED
    */
   canGenerateBill(): boolean {
     if (!this.booking) return false;
-    return this.booking.status !== 'CANCELLED' && !this.existingBill;
+    const allowedStatuses = ['CHECKED_OUT', 'COMPLETED'];
+    return allowedStatuses.includes(this.booking.status) && !this.existingBill;
+  }
+
+  /**
+   * Obtiene el mensaje del tooltip para el botón de generar factura
+   */
+  getBillButtonTooltip(): string {
+    if (!this.booking) return '';
+    if (this.existingBill) return 'Ya existe una factura para esta reserva';
+    const allowedStatuses = ['CHECKED_OUT', 'COMPLETED'];
+    if (!allowedStatuses.includes(this.booking.status)) {
+      return 'Solo se puede generar factura cuando el estado es Check-out o Completada';
+    }
+    return 'Generar factura para esta reserva';
   }
 
   /**
@@ -133,6 +152,15 @@ export class BookingDetailComponent implements OnInit {
     this.isLoading = true;
     this.bookingService.getById(this.bookingId).subscribe({
       next: (booking) => {
+            // Validar que la reserva pertenece al hotel del usuario actual
+            const currentHotelId = this.authService.getHotelId();
+            if (currentHotelId && booking.hotelId && booking.hotelId !== currentHotelId) {
+              this.showError('No tienes permiso para ver esta reserva');
+              this.isLoading = false;
+              this.router.navigate(['/bookings']);
+              return;
+            }
+
             this.booking = booking;
 
             // If backend did not return an accommodation subtotal, try to derive it from the room's pricePerNight

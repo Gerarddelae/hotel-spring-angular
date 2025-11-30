@@ -238,36 +238,50 @@ export class BillDetailComponent implements OnInit {
 
   /**
    * Calcula el total real sumando hospedaje + addons
-   * Usa el totalAmount del backend si incluye todo, sino calcula manualmente
+   * Prioriza los datos del backend, pero calcula si no están disponibles
    */
   calculateGrandTotal(): number {
     const billData = this.bill();
+    if (!billData) return 0;
+    
+    // Si el backend devuelve totalAmount, usarlo directamente
+    // ya que el backend es la fuente de verdad
+    if (billData.totalAmount !== undefined && billData.totalAmount !== null && billData.totalAmount > 0) {
+      return billData.totalAmount;
+    }
+    
+    // Si no hay totalAmount, calcular manualmente
     const accommodationSubtotal = this.calculateAccommodationSubtotal();
     const addonsTotal = this.calculateAddonsTotal();
-    
-    // Si el backend ya devuelve el total correcto (hospedaje + addons), usarlo
-    const backendTotal = billData?.totalAmount || 0;
-    const calculatedTotal = accommodationSubtotal + addonsTotal;
-    
-    // Usar el mayor de los dos (para manejar casos donde backend no incluye hospedaje)
-    return Math.max(backendTotal, calculatedTotal);
+    return accommodationSubtotal + addonsTotal;
   }
 
   calculateAccommodationSubtotal(): number {
     const billData = this.bill();
-    // Si viene directo del backend
-    if (billData?.accommodationSubtotal !== undefined && billData.accommodationSubtotal !== null) {
+    if (!billData) return 0;
+    
+    // 1. Priorizar si viene directo del backend
+    if (billData.accommodationSubtotal !== undefined && billData.accommodationSubtotal !== null) {
       return billData.accommodationSubtotal;
     }
-    // Intentar calcular con noches y precio por noche
-    if (billData?.roomPricePerNight) {
+    
+    // 2. Calcular con noches y precio por noche si están disponibles
+    if (billData.roomPricePerNight && billData.roomPricePerNight > 0) {
       const nights = this.calculateNights();
-      return nights * billData.roomPricePerNight;
+      if (nights > 0) {
+        return nights * billData.roomPricePerNight;
+      }
     }
-    // Derivar del total menos addons
-    const totalAmount = billData?.totalAmount || 0;
+    
+    // 3. Si hay addonsSubtotal del backend, derivar del total
+    if (billData.addonsSubtotal !== undefined && billData.addonsSubtotal !== null) {
+      return (billData.totalAmount || 0) - billData.addonsSubtotal;
+    }
+    
+    // 4. Derivar del total menos addons calculados
+    const totalAmount = billData.totalAmount || 0;
     const addonsTotal = this.calculateAddonsTotal();
-    return totalAmount - addonsTotal;
+    return Math.max(0, totalAmount - addonsTotal);
   }
 
   getRoomPricePerNight(): number | null {

@@ -167,3 +167,25 @@ main > header {
     margin-left: 0;
   }
 }
+
+/* Sidebar logo styles */
+.sidebar-logo {
+  width: 2rem; /* 32px — slightly larger to be more visible */
+  height: 2rem;
+  display: block;
+  fill: #ffffff; /* force SVG paths to white */
+  color: #ffffff; /* for SVGs using currentColor */
+}
+
+/* Shrink logo when sidebar is collapsed */
+.sidebar-desktop-collapsed .sidebar-logo,
+.sidebar-mobile-closed .sidebar-logo {
+  width: 1.5rem; /* 24px for collapsed state */
+  height: 1.5rem;
+}
+
+/* Ensure white logo in dark and light modes */
+.dark .sidebar-logo,
+.sidebar-logo {
+  fill: #ffffff !important;
+}
