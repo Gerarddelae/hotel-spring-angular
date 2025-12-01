@@ -6,9 +6,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { FormsModule } from '@angular/forms';
 import { AddonsFormModalComponent } from './addons-form-modal.component';
 import { AddonResponse } from './models/addon-response.interface';
 
@@ -19,10 +16,7 @@ import { AddonResponse } from './models/addon-response.interface';
     CommonModule,
     TableComponent,
     MatDialogModule,
-    MatButtonModule,
-    MatInputModule,
-    MatFormFieldModule,
-    FormsModule
+    MatButtonModule
   ],
   templateUrl: './addons.component.html',
   styleUrls: ['./addons.component.css']
@@ -46,9 +40,8 @@ export class AddonsComponent implements OnDestroy {
     price: (value: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(value)
   };
 
-  searchTerm: string = '';
-
   constructor(private dialog: MatDialog, private addonsService: AddonsService) {
+    this.addonsService.loadAddons();
     // Strip out fields we don't want displayed (e.g., createdAt) before passing to the table
     this.addons$ = this.addonsService.addons$.pipe(
       map(items => items.map(it => {
@@ -66,14 +59,6 @@ export class AddonsComponent implements OnDestroy {
 
   refresh() {
     this.addonsService.loadAddons();
-  }
-
-  onSearch() {
-    if (this.searchTerm.trim()) {
-      this.addonsService.search(this.searchTerm.trim());
-    } else {
-      this.refresh();
-    }
   }
 
   openForm(addon?: AddonResponse) {

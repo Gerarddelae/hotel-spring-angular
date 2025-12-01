@@ -11,12 +11,11 @@ export class AddonsService {
   private addonsSubject = new BehaviorSubject<AddonResponse[]>([]);
   addons$ = this.addonsSubject.asObservable();
 
-  constructor(private http: HttpClient) {
-    this.loadAddons();
-  }
+  constructor(private http: HttpClient) {}
 
   loadAddons(params?: any) {
-    this.http.get<AddonResponse[]>(this.apiUrl, { params }).subscribe((res) => this.addonsSubject.next(res || []));
+    this.http.get<AddonResponse[]>(this.apiUrl, { params })
+      .subscribe((res) => this.addonsSubject.next(res || []));
   }
 
   list(params?: any): Observable<AddonResponse[]> {
@@ -45,9 +44,7 @@ export class AddonsService {
     );
   }
 
-  search(name: string): Observable<AddonResponse[]> {
-    return this.http.get<AddonResponse[]>(`${this.apiUrl}/search`, { params: { name } }).pipe(
-      tap((res) => this.addonsSubject.next(res || []))
-    );
+  clearAddons(): void {
+    this.addonsSubject.next([]);
   }
 }
