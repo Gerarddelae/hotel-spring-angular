@@ -125,6 +125,19 @@ export const routes: Routes = [
         },
       },
       {
+        path: 'settings',
+        loadChildren: () =>
+          import('./features/settings/settings.routes').then(
+            (m) => m.settingsRoutes
+          ),
+        canActivate: [() => roleGuard(['ADMIN'])],
+        data: {
+          title: 'Configuración',
+          subtitle: 'Administra la información de tu hotel',
+          icon: 'pi-cog',
+        },
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full',
