@@ -1,0 +1,177 @@
+<div class="max-w-4xl mx-auto">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="flex justify-center items-center py-12">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Error Alert -->
+  <div
+    *ngIf="errorMessage"
+    class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg flex items-start gap-3"
+  >
+    <i class="pi pi-times-circle text-red-500 text-xl flex-shrink-0 mt-0.5"></i>
+    <div>
+      <h4 class="font-semibold text-red-800 dark:text-red-300 mb-1">Error</h4>
+      <p class="text-sm text-red-700 dark:text-red-400">{{ errorMessage }}</p>
+    </div>
+  </div>
+
+  <!-- Success Alert -->
+  <div
+    *ngIf="successMessage"
+    class="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-lg flex items-start gap-3"
+  >
+    <i class="pi pi-check-circle text-green-500 text-xl flex-shrink-0 mt-0.5"></i>
+    <div>
+      <h4 class="font-semibold text-green-800 dark:text-green-300 mb-1">Éxito</h4>
+      <p class="text-sm text-green-700 dark:text-green-400">{{ successMessage }}</p>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div
+    *ngIf="!loading"
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <form [formGroup]="hotelForm" (ngSubmit)="onSubmit()">
+      <div class="p-6 space-y-6">
+        <!-- Name Field -->
+        <div>
+          <label
+            for="name"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Nombre del Hotel <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="name"
+            type="text"
+            formControlName="name"
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
+            placeholder="Hotel Ejemplo"
+            [class.border-red-500]="name?.invalid && name?.touched"
+          />
+          <div
+            *ngIf="name?.invalid && name?.touched"
+            class="mt-1 text-sm text-red-600 dark:text-red-400"
+          >
+            <span *ngIf="name?.errors?.['required']">El nombre es obligatorio</span>
+          </div>
+        </div>
+
+        <!-- Address Field -->
+        <div>
+          <label
+            for="address"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Dirección
+          </label>
+          <input
+            id="address"
+            type="text"
+            formControlName="address"
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
+            placeholder="Calle Principal 123"
+          />
+        </div>
+
+        <!-- Phone Field -->
+        <div>
+          <label
+            for="phone"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Teléfono
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            formControlName="phone"
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
+            placeholder="+573001234567"
+            [class.border-red-500]="phone?.invalid && phone?.touched"
+          />
+          <div
+            *ngIf="phone?.invalid && phone?.touched"
+            class="mt-1 text-sm text-red-600 dark:text-red-400"
+          >
+            <span *ngIf="phone?.errors?.['pattern']">
+              El teléfono debe tener entre 7 y 15 dígitos (puede incluir + al inicio)
+            </span>
+          </div>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Formato: +código_país + número (ej: +573001234567)
+          </p>
+        </div>
+
+        <!-- Description Field -->
+        <div>
+          <label
+            for="description"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Descripción
+          </label>
+          <textarea
+            id="description"
+            formControlName="description"
+            rows="4"
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors resize-none"
+            placeholder="Descripción de tu hotel..."
+          ></textarea>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Breve descripción de las características y servicios de tu hotel
+          </p>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div
+        class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 rounded-b-lg flex flex-col sm:flex-row justify-end gap-3"
+      >
+        <button
+          type="button"
+          (click)="onReset()"
+          [disabled]="saving"
+          class="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <i class="pi pi-refresh mr-2"></i>
+          Restablecer
+        </button>
+
+        <button
+          type="submit"
+          [disabled]="hotelForm.invalid || saving"
+          class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          <span *ngIf="!saving">
+            <i class="pi pi-save mr-2"></i>
+            Guardar Cambios
+          </span>
+          <span *ngIf="saving" class="flex items-center gap-2">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            Guardando...
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Info Card -->
+  <div
+    class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+  >
+    <div class="flex items-start gap-3">
+      <i class="pi pi-info-circle text-blue-600 dark:text-blue-400 text-xl flex-shrink-0 mt-0.5"></i>
+      <div>
+        <h4 class="font-semibold text-blue-900 dark:text-blue-300 mb-1">Información</h4>
+        <ul class="text-sm text-blue-800 dark:text-blue-400 space-y-1">
+          <li>• Los campos marcados con <span class="text-red-500">*</span> son obligatorios</li>
+          <li>• Los cambios se aplicarán inmediatamente después de guardar</li>
+          <li>• El nombre del hotel se mostrará en el encabezado del sistema</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
