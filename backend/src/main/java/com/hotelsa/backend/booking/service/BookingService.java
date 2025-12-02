@@ -75,11 +75,19 @@ public class BookingService {
             throw new IllegalArgumentException("La fecha de check-out debe ser posterior a la fecha de check-in");
         }
 
+        // Calcular isRepeatedGuest ANTES de incrementar totalBookingsClient
+        // Si el huésped ya tiene reservas previas (totalBookingsClient > 0), es cliente repetido
+        boolean isRepeatedGuest = guest.getTotalBookingsClient() != null 
+                && guest.getTotalBookingsClient() > 0;
+        log.debug("👤 Huésped {} - totalBookingsClient: {}, isRepeatedGuest: {}", 
+                guest.getFullName(), guest.getTotalBookingsClient(), isRepeatedGuest);
+
         Booking booking = bookingMapper.fromRequestDto(dto);
         booking.setHotel(hotel);
         booking.setHotelId(hotelId);
         booking.setGuest(guest);
         booking.setRoom(room);
+        booking.setIsRepeatedGuest(isRepeatedGuest); // Establecer el valor calculado
 
         // Cambiar estado de la habitación a OCCUPIED
         room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.OCCUPIED);

@@ -451,6 +451,191 @@ class BookingServiceGuestStatsTest {
     }
 
     @Nested
+    @DisplayName("Tests para isRepeatedGuest al crear reserva")
+    class IsRepeatedGuestTests {
+
+        @Test
+        @DisplayName("Debe establecer isRepeatedGuest=false cuando totalBookingsClient es 0 (primera reserva)")
+        void shouldSetIsRepeatedGuestFalseWhenFirstBooking() {
+            // Arrange
+            Guest guest = createTestGuest(0, 0);
+            Room room = createTestRoom();
+            Hotel hotel = createTestHotel();
+
+            BookingRequestDTO dto = new BookingRequestDTO();
+            dto.setGuestId(GUEST_ID);
+            dto.setRoomId(ROOM_ID);
+            dto.setCheckInDate(LocalDate.of(2025, 12, 1));
+            dto.setCheckOutDate(LocalDate.of(2025, 12, 5));
+            dto.setStatus(BookingStatus.CONFIRMED);
+
+            when(hotelRepository.findById(HOTEL_ID)).thenReturn(Optional.of(hotel));
+            when(guestRepository.findById(GUEST_ID)).thenReturn(Optional.of(guest));
+            when(roomRepository.findById(ROOM_ID)).thenReturn(Optional.of(room));
+            when(bookingMapper.fromRequestDto(any())).thenReturn(new Booking());
+            when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(guestRepository.save(any(Guest.class))).thenReturn(guest);
+            when(bookingMapper.fromEntity(any(Booking.class))).thenReturn(new BookingResponseDTO());
+
+            // Act
+            bookingService.create(dto);
+
+            // Assert
+            ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+            verify(bookingRepository).save(bookingCaptor.capture());
+            Booking savedBooking = bookingCaptor.getValue();
+            
+            assertFalse(savedBooking.getIsRepeatedGuest(), 
+                    "isRepeatedGuest debe ser false para primera reserva (totalBookingsClient=0)");
+        }
+
+        @Test
+        @DisplayName("Debe establecer isRepeatedGuest=true cuando totalBookingsClient es mayor a 0")
+        void shouldSetIsRepeatedGuestTrueWhenHasPreviousBookings() {
+            // Arrange
+            Guest guest = createTestGuest(3, 0); // Ya tiene 3 reservas previas
+            Room room = createTestRoom();
+            Hotel hotel = createTestHotel();
+
+            BookingRequestDTO dto = new BookingRequestDTO();
+            dto.setGuestId(GUEST_ID);
+            dto.setRoomId(ROOM_ID);
+            dto.setCheckInDate(LocalDate.of(2025, 12, 1));
+            dto.setCheckOutDate(LocalDate.of(2025, 12, 5));
+            dto.setStatus(BookingStatus.CONFIRMED);
+
+            when(hotelRepository.findById(HOTEL_ID)).thenReturn(Optional.of(hotel));
+            when(guestRepository.findById(GUEST_ID)).thenReturn(Optional.of(guest));
+            when(roomRepository.findById(ROOM_ID)).thenReturn(Optional.of(room));
+            when(bookingMapper.fromRequestDto(any())).thenReturn(new Booking());
+            when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(guestRepository.save(any(Guest.class))).thenReturn(guest);
+            when(bookingMapper.fromEntity(any(Booking.class))).thenReturn(new BookingResponseDTO());
+
+            // Act
+            bookingService.create(dto);
+
+            // Assert
+            ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+            verify(bookingRepository).save(bookingCaptor.capture());
+            Booking savedBooking = bookingCaptor.getValue();
+            
+            assertTrue(savedBooking.getIsRepeatedGuest(), 
+                    "isRepeatedGuest debe ser true cuando tiene reservas previas");
+        }
+
+        @Test
+        @DisplayName("Debe establecer isRepeatedGuest=false cuando totalBookingsClient es null")
+        void shouldSetIsRepeatedGuestFalseWhenTotalBookingsClientIsNull() {
+            // Arrange
+            Guest guest = createTestGuest(null, 0);
+            Room room = createTestRoom();
+            Hotel hotel = createTestHotel();
+
+            BookingRequestDTO dto = new BookingRequestDTO();
+            dto.setGuestId(GUEST_ID);
+            dto.setRoomId(ROOM_ID);
+            dto.setCheckInDate(LocalDate.of(2025, 12, 1));
+            dto.setCheckOutDate(LocalDate.of(2025, 12, 5));
+            dto.setStatus(BookingStatus.CONFIRMED);
+
+            when(hotelRepository.findById(HOTEL_ID)).thenReturn(Optional.of(hotel));
+            when(guestRepository.findById(GUEST_ID)).thenReturn(Optional.of(guest));
+            when(roomRepository.findById(ROOM_ID)).thenReturn(Optional.of(room));
+            when(bookingMapper.fromRequestDto(any())).thenReturn(new Booking());
+            when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(guestRepository.save(any(Guest.class))).thenReturn(guest);
+            when(bookingMapper.fromEntity(any(Booking.class))).thenReturn(new BookingResponseDTO());
+
+            // Act
+            bookingService.create(dto);
+
+            // Assert
+            ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+            verify(bookingRepository).save(bookingCaptor.capture());
+            Booking savedBooking = bookingCaptor.getValue();
+            
+            assertFalse(savedBooking.getIsRepeatedGuest(), 
+                    "isRepeatedGuest debe ser false cuando totalBookingsClient es null");
+        }
+
+        @Test
+        @DisplayName("Debe calcular isRepeatedGuest ANTES de incrementar totalBookingsClient")
+        void shouldCalculateIsRepeatedGuestBeforeIncrement() {
+            // Arrange - huésped con exactamente 1 reserva previa
+            Guest guest = createTestGuest(1, 0);
+            Room room = createTestRoom();
+            Hotel hotel = createTestHotel();
+
+            BookingRequestDTO dto = new BookingRequestDTO();
+            dto.setGuestId(GUEST_ID);
+            dto.setRoomId(ROOM_ID);
+            dto.setCheckInDate(LocalDate.of(2025, 12, 1));
+            dto.setCheckOutDate(LocalDate.of(2025, 12, 5));
+            dto.setStatus(BookingStatus.CONFIRMED);
+
+            when(hotelRepository.findById(HOTEL_ID)).thenReturn(Optional.of(hotel));
+            when(guestRepository.findById(GUEST_ID)).thenReturn(Optional.of(guest));
+            when(roomRepository.findById(ROOM_ID)).thenReturn(Optional.of(room));
+            when(bookingMapper.fromRequestDto(any())).thenReturn(new Booking());
+            when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(guestRepository.save(any(Guest.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(bookingMapper.fromEntity(any(Booking.class))).thenReturn(new BookingResponseDTO());
+
+            // Act
+            bookingService.create(dto);
+
+            // Assert
+            // isRepeatedGuest se calcula ANTES del incremento, así que con 1 reserva previa = true
+            ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+            verify(bookingRepository).save(bookingCaptor.capture());
+            Booking savedBooking = bookingCaptor.getValue();
+            
+            assertTrue(savedBooking.getIsRepeatedGuest(), 
+                    "isRepeatedGuest debe ser true porque ya tenía 1 reserva previa");
+            
+            // Y totalBookingsClient debe haberse incrementado a 2
+            assertEquals(2, guest.getTotalBookingsClient(), 
+                    "totalBookingsClient debe haberse incrementado a 2");
+        }
+
+        @Test
+        @DisplayName("Segunda reserva del mismo huésped debe tener isRepeatedGuest=true")
+        void shouldSetIsRepeatedGuestTrueOnSecondBooking() {
+            // Arrange - huésped que hizo su primera reserva (contador ya incrementado a 1)
+            Guest guest = createTestGuest(1, 0);
+            Room room = createTestRoom();
+            Hotel hotel = createTestHotel();
+
+            BookingRequestDTO dto = new BookingRequestDTO();
+            dto.setGuestId(GUEST_ID);
+            dto.setRoomId(ROOM_ID);
+            dto.setCheckInDate(LocalDate.of(2025, 12, 10));
+            dto.setCheckOutDate(LocalDate.of(2025, 12, 15));
+            dto.setStatus(BookingStatus.CONFIRMED);
+
+            when(hotelRepository.findById(HOTEL_ID)).thenReturn(Optional.of(hotel));
+            when(guestRepository.findById(GUEST_ID)).thenReturn(Optional.of(guest));
+            when(roomRepository.findById(ROOM_ID)).thenReturn(Optional.of(room));
+            when(bookingMapper.fromRequestDto(any())).thenReturn(new Booking());
+            when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(guestRepository.save(any(Guest.class))).thenReturn(guest);
+            when(bookingMapper.fromEntity(any(Booking.class))).thenReturn(new BookingResponseDTO());
+
+            // Act
+            bookingService.create(dto);
+
+            // Assert
+            ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+            verify(bookingRepository).save(bookingCaptor.capture());
+            Booking savedBooking = bookingCaptor.getValue();
+            
+            assertTrue(savedBooking.getIsRepeatedGuest(), 
+                    "Segunda reserva debe tener isRepeatedGuest=true");
+        }
+    }
+
+    @Nested
     @DisplayName("Tests de integración de estadísticas")
     class IntegrationTests {
 
@@ -489,6 +674,53 @@ class BookingServiceGuestStatsTest {
             // Assert
             assertEquals(3, guest.getTotalBookingsClient(), 
                     "totalBookingsClient debería ser 3 después de 3 reservas");
+        }
+
+        @Test
+        @DisplayName("Flujo completo: primera reserva false, siguientes true")
+        void shouldTrackIsRepeatedGuestAcrossMultipleBookings() {
+            // Arrange
+            Guest guest = createTestGuest(0, 0);
+            Room room = createTestRoom();
+            Hotel hotel = createTestHotel();
+
+            when(hotelRepository.findById(HOTEL_ID)).thenReturn(Optional.of(hotel));
+            when(guestRepository.findById(GUEST_ID)).thenReturn(Optional.of(guest));
+            when(roomRepository.findById(ROOM_ID)).thenReturn(Optional.of(room));
+            // Cada llamada a fromRequestDto debe retornar un nuevo Booking
+            when(bookingMapper.fromRequestDto(any())).thenAnswer(inv -> new Booking());
+            when(guestRepository.save(any(Guest.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(bookingMapper.fromEntity(any(Booking.class))).thenReturn(new BookingResponseDTO());
+
+            BookingRequestDTO dto = new BookingRequestDTO();
+            dto.setGuestId(GUEST_ID);
+            dto.setRoomId(ROOM_ID);
+            dto.setCheckInDate(LocalDate.of(2025, 12, 1));
+            dto.setCheckOutDate(LocalDate.of(2025, 12, 5));
+            dto.setStatus(BookingStatus.CONFIRMED);
+
+            java.util.List<Boolean> isRepeatedGuestValues = new java.util.ArrayList<>();
+            when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> {
+                Booking b = inv.getArgument(0);
+                b.setId((long) (isRepeatedGuestValues.size() + 1));
+                // Capturar el valor de isRepeatedGuest en el momento del save
+                isRepeatedGuestValues.add(b.getIsRepeatedGuest());
+                return b;
+            });
+
+            // Act - Crear 3 reservas
+            bookingService.create(dto);
+            bookingService.create(dto);
+            bookingService.create(dto);
+
+            // Assert
+            assertEquals(3, isRepeatedGuestValues.size());
+            assertFalse(isRepeatedGuestValues.get(0), 
+                    "Primera reserva debe tener isRepeatedGuest=false (totalBookingsClient era 0)");
+            assertTrue(isRepeatedGuestValues.get(1), 
+                    "Segunda reserva debe tener isRepeatedGuest=true (totalBookingsClient era 1)");
+            assertTrue(isRepeatedGuestValues.get(2), 
+                    "Tercera reserva debe tener isRepeatedGuest=true (totalBookingsClient era 2)");
         }
     }
 }

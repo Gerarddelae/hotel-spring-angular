@@ -53,6 +53,7 @@ public class BookingMapper {
                         .map(bookingAddonMapper::fromEntity)
                         .toList() : null)
                 .totalAmount(booking.getTotalAmount())
+                .isRepeatedGuest(booking.getIsRepeatedGuest())
                 .build();
     }
 }

@@ -79,4 +79,9 @@ public class Booking extends BaseEntity {
     // Total de la reserva (estadia + addons)
     @Column(name = "total_amount")
     private java.math.BigDecimal totalAmount;
+
+    // Indica si el huésped es cliente repetido (calculado automáticamente)
+    @NotNull
+    @Column(name = "is_repeated_guest", nullable = false)
+    private Boolean isRepeatedGuest;
 }
