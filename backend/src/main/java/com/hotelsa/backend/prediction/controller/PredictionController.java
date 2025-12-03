@@ -74,9 +74,9 @@ public class PredictionController {
      * GET /api/predictions/health
      */
     @GetMapping("/health")
-    public ResponseEntity<Map<String, String>> checkMLServiceHealth() {
+    public ResponseEntity<Map<String, Object>> checkMLServiceHealth() {
         log.info("Verificando estado del servicio ML");
-        Map<String, String> health = predictionService.checkMLServiceHealth();
+        Map<String, Object> health = predictionService.checkMLServiceHealth();
         return ResponseEntity.ok(health);
     }
 }

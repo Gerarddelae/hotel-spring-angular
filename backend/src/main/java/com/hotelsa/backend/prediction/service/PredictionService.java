@@ -102,7 +102,7 @@ public class PredictionService {
     /**
      * Verifica el estado del servicio ML
      */
-    public Map<String, String> checkMLServiceHealth() {
+    public Map<String, Object> checkMLServiceHealth() {
         return mlApiClient.healthCheck();
     }
     

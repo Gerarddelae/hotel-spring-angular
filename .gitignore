@@ -95,3 +95,15 @@ Thumbs.db
 # Misceláneos
 HELP.md
 frontend/src/generated-tailwind.css
+
+# ===============================
+# ML-API - Flask / Python
+# ===============================
+
+# Modelos entrenados
+*.pkl
+
+# Entorno virtual Python
+ml-api/venv/
+ml-api/__pycache__/
+ml-api/*.pyc

@@ -88,15 +88,15 @@ public class MLApiClient {
     /**
      * Verifica el estado del servicio ML
      */
-    public Map<String, String> healthCheck() {
+    public Map<String, Object> healthCheck() {
         log.debug("Verificando estado del servicio ML");
         
         try {
-            ResponseEntity<Map<String, String>> response = restTemplate.exchange(
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 mlApiUrl + "/health",
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<Map<String, String>>() {}
+                new ParameterizedTypeReference<Map<String, Object>>() {}
             );
             
             return response.getBody();
