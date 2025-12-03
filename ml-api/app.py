@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import joblib
 import numpy as np
+import pandas as pd
 
 app = Flask(__name__)
 CORS(app)
@@ -67,7 +68,7 @@ def predict():
     try:
         data = request.get_json()
         booking_id = data.get('bookingId')
-        features = np.array([extract_features(data)])
+        features = pd.DataFrame([extract_features(data)], columns=FEATURE_ORDER)
         
         probability = model.predict_proba(features)[0][1]
         will_cancel = probability >= threshold
@@ -97,7 +98,10 @@ def predict_batch():
         
         # Extraer IDs y features
         booking_ids = [b.get('bookingId') for b in bookings]
-        features_matrix = np.array([extract_features(b) for b in bookings])
+        features_matrix = pd.DataFrame(
+            [extract_features(b) for b in bookings],
+            columns=FEATURE_ORDER
+        )
         
         # Predicción batch
         probabilities = model.predict_proba(features_matrix)[:, 1]

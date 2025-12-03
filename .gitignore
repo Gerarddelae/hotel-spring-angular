@@ -107,3 +107,4 @@ frontend/src/generated-tailwind.css
 ml-api/venv/
 ml-api/__pycache__/
 ml-api/*.pyc
+frontend/src/generated-tailwind.css

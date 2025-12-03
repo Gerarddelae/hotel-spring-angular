@@ -4,3 +4,4 @@ export * from './occupied-count';
 export * from './revenue';
 export * from './room-dashboard-summary';
 export * from './kpi-data';
+export * from './cancellation-prediction';

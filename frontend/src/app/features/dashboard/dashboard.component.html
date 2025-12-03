@@ -2,7 +2,11 @@
   <!-- KPI Cards Section -->
   <section>
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Indicadores Clave</h2>
-    <app-kpi-cards [kpis]="kpis" [isLoading]="isLoadingKpis"></app-kpi-cards>
+    <app-kpi-cards 
+      [kpis]="kpis" 
+      [isLoading]="isLoadingKpis"
+      (aiPredictionsClick)="openPredictionsModal()">
+    </app-kpi-cards>
   </section>
 
   <!-- Room Grid Section -->
