@@ -214,11 +214,6 @@ export class DashboardComponent implements OnInit {
         icon: 'pi pi-calendar'
       },
       {
-        label: 'Habitaciones Ocupadas',
-        value: occupiedRooms.count,
-        icon: 'pi pi-home'
-      },
-      {
         label: 'Huéspedes Activos',
         value: activeGuests.count,
         icon: 'pi pi-users'
