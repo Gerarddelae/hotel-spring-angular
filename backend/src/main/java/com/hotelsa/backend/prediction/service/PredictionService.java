@@ -124,11 +124,13 @@ public class PredictionService {
         
         List<PredictionResultDTO> predictions = mlApiClient.predictBatch(request);
         
-        // Mapear predicciones a bookings
-        Map<Long, PredictionResultDTO> predictionMap = new HashMap<>();
-        for (int i = 0; i < features.size(); i++) {
-            predictionMap.put(features.get(i).getBookingId(), predictions.get(i));
-        }
+        // Mapear predicciones por bookingId (Flask ahora incluye el bookingId en la respuesta)
+        Map<Long, PredictionResultDTO> predictionMap = predictions.stream()
+            .collect(Collectors.toMap(
+                PredictionResultDTO::getBookingId,
+                p -> p,
+                (existing, replacement) -> existing
+            ));
         
         // Construir respuesta enriquecida
         List<BookingPredictionDetailDTO> results = bookings.stream()
@@ -145,10 +147,21 @@ public class PredictionService {
     private BookingPredictionDetailDTO enrichWithPrediction(Booking booking, PredictionResultDTO prediction) {
         Guest guest = booking.getGuest();
         
+        String guestName = "N/A";
+        String guestEmail = "N/A";
+        String guestPhone = "N/A";
+        
+        if (guest != null) {
+            guestName = guest.getFullName();
+            guestEmail = guest.getEmail() != null ? guest.getEmail() : "N/A";
+            guestPhone = guest.getPhone() != null ? guest.getPhone() : "N/A";
+        }
+        
         return BookingPredictionDetailDTO.builder()
             .bookingId(booking.getId())
-            .guestName(guest != null ? guest.getFullName() : "N/A")
-            .guestEmail(guest != null ? guest.getEmail() : "N/A")
+            .guestName(guestName)
+            .guestEmail(guestEmail)
+            .guestPhone(guestPhone)
             .roomNumber(booking.getRoom() != null ? booking.getRoom().getNumber() : "N/A")
             .checkInDate(booking.getCheckInDate())
             .checkOutDate(booking.getCheckOutDate())

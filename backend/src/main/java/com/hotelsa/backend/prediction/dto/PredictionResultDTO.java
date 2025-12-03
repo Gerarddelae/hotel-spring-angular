@@ -8,6 +8,9 @@ import lombok.*;
 @Builder
 public class PredictionResultDTO {
     
+    /** ID de la reserva (para mapear respuesta de Flask) */
+    private Long bookingId;
+    
     /** Probabilidad de cancelación (0.0 - 1.0) */
     private Double cancellationProbability;
     

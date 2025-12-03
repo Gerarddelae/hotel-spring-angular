@@ -19,6 +19,9 @@ public class BookingPredictionDetailDTO {
     /** Email del huésped */
     private String guestEmail;
     
+    /** Teléfono del huésped */
+    private String guestPhone;
+    
     /** Número de habitación */
     private String roomNumber;
     

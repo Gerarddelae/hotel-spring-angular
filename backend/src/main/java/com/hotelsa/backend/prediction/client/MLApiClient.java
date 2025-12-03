@@ -115,6 +115,7 @@ public class MLApiClient {
         
         return request.getBookings().stream()
             .map(b -> PredictionResultDTO.builder()
+                .bookingId(b.getBookingId())
                 .cancellationProbability(0.0)
                 .willCancel(false)
                 .riskLevel("UNKNOWN")
