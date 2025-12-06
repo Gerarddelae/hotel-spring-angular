@@ -29,4 +29,5 @@ public class BookingResponseDTO {
     private String notes;
     private List<BookingAddonResponse> addons;
     private BigDecimal totalAmount;
+    private Boolean isRepeatedGuest;
 }

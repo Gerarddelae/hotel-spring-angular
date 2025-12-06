@@ -5,6 +5,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { forkJoin, of, catchError } from 'rxjs';
 import { KpiCardsComponent } from './components/kpi-cards/kpi-cards.component';
 import { RoomGridComponent, DateFilterEvent } from './components/room-grid/room-grid.component';
+import { CancellationPredictionsModalComponent } from './components/cancellation-predictions-modal/cancellation-predictions-modal.component';
 import { BookingService } from '../bookings/services/booking.service';
 import { RoomService } from '../rooms/rooms.service';
 import { BillService } from '../billing/services/bill.service';
@@ -214,11 +215,6 @@ export class DashboardComponent implements OnInit {
         icon: 'pi pi-calendar'
       },
       {
-        label: 'Habitaciones Ocupadas',
-        value: occupiedRooms.count,
-        icon: 'pi pi-home'
-      },
-      {
         label: 'Huéspedes Activos',
         value: activeGuests.count,
         icon: 'pi pi-users'
@@ -294,6 +290,18 @@ export class DashboardComponent implements OnInit {
       if (result && result.booking) {
         this.createBookingFromModal(result);
       }
+    });
+  }
+
+  /**
+   * Open cancellation predictions modal
+   */
+  openPredictionsModal(): void {
+    this.dialog.open(CancellationPredictionsModalComponent, {
+      width: '1200px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: 'predictions-modal-panel'
     });
   }
 

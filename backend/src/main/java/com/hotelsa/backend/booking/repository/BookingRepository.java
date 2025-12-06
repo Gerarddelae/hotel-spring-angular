@@ -68,4 +68,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """)
     int countActiveGuestsTodayExplicit(@Param("today") java.time.LocalDate today,
                                        @Param("status") com.hotelsa.backend.booking.enums.BookingStatus status);
+
+    // === Métodos para módulo de predicción ===
+    
+    /**
+     * Encuentra reservas por lista de estados (para predicciones de reservas pendientes)
+     */
+    List<Booking> findByStatusIn(List<BookingStatus> statuses);
+    
+    /**
+     * Encuentra reservas en un rango de fechas y con estados específicos
+     */
+    List<Booking> findByCheckInDateBetweenAndStatusIn(
+        LocalDate startDate,
+        LocalDate endDate,
+        List<BookingStatus> statuses
+    );
 }

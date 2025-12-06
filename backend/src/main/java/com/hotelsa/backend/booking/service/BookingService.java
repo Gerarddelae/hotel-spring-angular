@@ -75,11 +75,19 @@ public class BookingService {
             throw new IllegalArgumentException("La fecha de check-out debe ser posterior a la fecha de check-in");
         }
 
+        // Calcular isRepeatedGuest ANTES de incrementar totalBookingsClient
+        // Si el huésped ya tiene reservas previas (totalBookingsClient > 0), es cliente repetido
+        boolean isRepeatedGuest = guest.getTotalBookingsClient() != null 
+                && guest.getTotalBookingsClient() > 0;
+        log.debug("👤 Huésped {} - totalBookingsClient: {}, isRepeatedGuest: {}", 
+                guest.getFullName(), guest.getTotalBookingsClient(), isRepeatedGuest);
+
         Booking booking = bookingMapper.fromRequestDto(dto);
         booking.setHotel(hotel);
         booking.setHotelId(hotelId);
         booking.setGuest(guest);
         booking.setRoom(room);
+        booking.setIsRepeatedGuest(isRepeatedGuest); // Establecer el valor calculado
 
         // Cambiar estado de la habitación a OCCUPIED
         room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.OCCUPIED);
@@ -91,6 +99,14 @@ public class BookingService {
         booking.setTotalAmount(nights.multiply(roomPrice));
 
         Booking savedBooking = bookingRepository.save(booking);
+
+        // Incrementar totalBookingsClient del huésped
+        int currentTotalBookings = guest.getTotalBookingsClient() != null ? guest.getTotalBookingsClient() : 0;
+        guest.setTotalBookingsClient(currentTotalBookings + 1);
+        guestRepository.save(guest);
+        log.debug("📊 Incrementado totalBookingsClient del huésped {} a {}", 
+                guest.getFullName(), guest.getTotalBookingsClient());
+
         log.debug("✅ Created booking {} for guest {} in room {} at hotel {}",
                 savedBooking.getId(), guest.getFullName(), room.getNumber(), hotelId);
 
@@ -120,11 +136,21 @@ public class BookingService {
         booking.setCheckInDate(dto.getCheckInDate());
         booking.setCheckOutDate(dto.getCheckOutDate());
 
-        // Si se cancela la reserva, liberar la habitación
+        // Si se cancela la reserva, liberar la habitación e incrementar previousCancellations
         if (dto.getStatus() == BookingStatus.CANCELLED && booking.getStatus() != BookingStatus.CANCELLED) {
             room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.AVAILABLE);
             roomRepository.save(room);
             log.debug("🔓 Habitación {} liberada por cancelación de booking {}", room.getNumber(), id);
+
+            // Incrementar previousCancellations del huésped
+            if (guest != null) {
+                int currentCancellations = guest.getPreviousCancellations() != null 
+                        ? guest.getPreviousCancellations() : 0;
+                guest.setPreviousCancellations(currentCancellations + 1);
+                guestRepository.save(guest);
+                log.debug("📊 Incrementado previousCancellations del huésped {} a {}", 
+                        guest.getFullName(), guest.getPreviousCancellations());
+            }
         }
         // Si se reactiva una reserva cancelada, ocupar la habitación
         else if (booking.getStatus() == BookingStatus.CANCELLED && dto.getStatus() != BookingStatus.CANCELLED) {
@@ -439,12 +465,26 @@ public class BookingService {
             throw new BookingNotFoundException("Reserva no encontrada o no pertenece a tu hotel");
         }
 
-        // Liberar la habitación al cancelar la reserva
-        Room room = booking.getRoom();
-        if (room != null && booking.getStatus() != BookingStatus.CANCELLED) {
-            room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.AVAILABLE);
-            roomRepository.save(room);
-            log.debug("🔓 Habitación {} liberada por cancelación de booking {}", room.getNumber(), id);
+        // Solo procesar si la reserva no está ya cancelada
+        if (booking.getStatus() != BookingStatus.CANCELLED) {
+            // Liberar la habitación al cancelar la reserva
+            Room room = booking.getRoom();
+            if (room != null) {
+                room.setStatus(com.hotelsa.backend.room.enums.RoomStatus.AVAILABLE);
+                roomRepository.save(room);
+                log.debug("🔓 Habitación {} liberada por cancelación de booking {}", room.getNumber(), id);
+            }
+
+            // Incrementar previousCancellations del huésped
+            Guest guest = booking.getGuest();
+            if (guest != null) {
+                int currentCancellations = guest.getPreviousCancellations() != null 
+                        ? guest.getPreviousCancellations() : 0;
+                guest.setPreviousCancellations(currentCancellations + 1);
+                guestRepository.save(guest);
+                log.debug("📊 Incrementado previousCancellations del huésped {} a {}", 
+                        guest.getFullName(), guest.getPreviousCancellations());
+            }
         }
 
         // Cambiar el estado a CANCELLED y persistir

@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { KpiData } from '../../models';
 
@@ -11,6 +11,7 @@ import { KpiData } from '../../models';
 export class KpiCardsComponent {
   @Input() kpis: KpiData[] = [];
   @Input() isLoading = false;
+  @Output() aiPredictionsClick = new EventEmitter<void>();
 
   /**
    * Returns the appropriate background and icon color classes based on the KPI index
@@ -26,5 +27,20 @@ export class KpiCardsComponent {
       { bg: 'bg-purple-100 dark:bg-purple-900/30', icon: 'text-purple-600 dark:text-purple-400' }
     ];
     return colors[index % colors.length];
+  }
+
+  /**
+   * Check if this KPI is "Reservas Pendientes"
+   */
+  isPendingBookingsKpi(kpi: KpiData): boolean {
+    return kpi.label === 'Reservas Pendientes';
+  }
+
+  /**
+   * Handle AI predictions icon click
+   */
+  onAiPredictionsClick(event: Event): void {
+    event.stopPropagation();
+    this.aiPredictionsClick.emit();
   }
 }

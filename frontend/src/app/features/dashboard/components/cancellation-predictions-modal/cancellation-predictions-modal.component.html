@@ -1,0 +1,125 @@
+<div class="predictions-modal">
+  <!-- Header -->
+  <div class="modal-header">
+    <div class="flex items-center gap-3">
+      <div class="icon-container">
+        <i class="pi pi-sparkles text-2xl"></i>
+      </div>
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          Predicciones de Cancelación
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Análisis de riesgo de cancelación con IA
+        </p>
+      </div>
+    </div>
+    <button mat-icon-button (click)="close()" class="close-button">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p class="mt-4 text-gray-600 dark:text-gray-400">Cargando predicciones...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="error-container">
+    <i class="pi pi-exclamation-triangle text-4xl text-red-500"></i>
+    <p class="mt-4 text-gray-700 dark:text-gray-300">{{ error }}</p>
+    <button mat-raised-button color="primary" (click)="loadPredictions()" class="mt-4">
+      Reintentar
+    </button>
+  </div>
+
+  <!-- Summary Cards -->
+  <div *ngIf="!isLoading && !error && summary" class="summary-cards">
+    <div class="summary-card">
+      <div class="summary-label">Total de Reservas</div>
+      <div class="summary-value">{{ summary.totalBookings }}</div>
+    </div>
+    <div class="summary-card high-risk">
+      <div class="summary-label">Riesgo Alto</div>
+      <div class="summary-value">{{ summary.highRiskCount }}</div>
+    </div>
+    <div class="summary-card medium-risk">
+      <div class="summary-label">Riesgo Medio</div>
+      <div class="summary-value">{{ summary.mediumRiskCount }}</div>
+    </div>
+    <div class="summary-card low-risk">
+      <div class="summary-label">Riesgo Bajo</div>
+      <div class="summary-value">{{ summary.lowRiskCount }}</div>
+    </div>
+    <div class="summary-card avg-prob">
+      <div class="summary-label">Probabilidad Promedio</div>
+      <div class="summary-value">{{ formatProbability(summary.averageCancellationProbability) }}</div>
+    </div>
+  </div>
+
+  <!-- Predictions Table -->
+  <div *ngIf="!isLoading && !error && predictions.length > 0" class="predictions-table-container">
+    <div class="table-wrapper">
+      <table class="predictions-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Riesgo</th>
+            <th>Probabilidad</th>
+            <th>Huésped</th>
+            <th>Habitación</th>
+            <th>Check-In</th>
+            <th>Check-Out</th>
+            <th>Monto Total</th>
+            <th>Contacto</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let prediction of predictions" class="table-row">
+            <td class="font-semibold text-gray-900 dark:text-white">{{ prediction.bookingId }}</td>
+            <td>
+              <span class="risk-badge" [ngClass]="getRiskColorClasses(prediction.riskLevel)">
+                {{ getRiskLevelLabel(prediction.riskLevel) }}
+              </span>
+            </td>
+            <td class="font-semibold">{{ formatProbability(prediction.cancellationProbability) }}</td>
+            <td>
+              <div class="guest-info">
+                <div class="font-medium text-gray-900 dark:text-white">{{ prediction.guestName }}</div>
+              </div>
+            </td>
+            <td class="font-medium">{{ prediction.roomNumber }}</td>
+            <td>{{ prediction.checkInDate }}</td>
+            <td>{{ prediction.checkOutDate }}</td>
+            <td class="font-semibold">$ {{ formatCurrency(prediction.totalAmount) }}</td>
+            <td>
+              <div class="contact-info">
+                <div class="text-sm">{{ prediction.guestEmail }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ prediction.guestPhone }}</div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && !error && predictions.length === 0" class="empty-state">
+    <i class="pi pi-check-circle text-5xl text-green-500"></i>
+    <p class="mt-4 text-lg font-medium text-gray-700 dark:text-gray-300">
+      No hay reservas pendientes para analizar
+    </p>
+    <p class="text-sm text-gray-500 dark:text-gray-400">
+      Todas las reservas han sido procesadas o no hay reservas pendientes en este momento.
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div class="modal-footer">
+    <button mat-raised-button (click)="close()">
+      Cerrar
+    </button>
+  </div>
+</div>
