@@ -85,6 +85,59 @@ https://github.com/user-attachments/assets/e7b7a5c6-c180-41a2-aab9-35a89ebc17b9
 - Asignación de roles y permisos
 - Configuración de cuentas
 
+## 🏢 Arquitectura Multi-Tenant
+
+El sistema implementa una arquitectura **multi-tenant** que permite que múltiples hoteles (tenants) utilicen la misma instancia de la aplicación manteniendo sus datos completamente aislados y seguros.
+
+### Características del Multi-Tenancy
+
+#### 🔒 Aislamiento de Datos
+Cada hotel opera como un tenant independiente con:
+- **Aislamiento automático a nivel de base de datos**: Los datos de cada hotel están completamente separados
+- **Filtrado transparente**: Las consultas SQL se filtran automáticamente por `hotel_id`
+- **Seguridad por diseño**: Imposible acceder a datos de otros hoteles
+
+#### 🔑 Identificación del Tenant
+- El `hotelId` se extrae automáticamente del **token JWT** en cada petición
+- El contexto del tenant se mantiene en `ThreadLocal` durante toda la petición
+- No requiere pasar manualmente el `hotelId` en cada operación
+
+#### ⚙️ Implementación Técnica
+
+El multi-tenancy se implementa mediante tres componentes principales:
+
+1. **TenantContext** (`ThreadLocal`)
+   - Almacena el `hotelId` actual en el hilo de ejecución
+   - Proporciona acceso thread-safe al tenant activo
+
+2. **TenantFilter** (Servlet Filter)
+   - Intercepta cada petición HTTP
+   - Extrae el `hotelId` del token JWT
+   - Inicializa el contexto del tenant antes de procesar la petición
+
+3. **HibernateFilterAspect** (AOP)
+   - Se aplica automáticamente en métodos `@Transactional`
+   - Habilita filtros de Hibernate:
+     - `tenantFilter`: Filtra por `hotel_id = :hotelId`
+     - `deletedFilter`: Excluye registros marcados como eliminados
+   - Garantiza que todas las consultas respeten el tenant activo
+
+#### 📊 BaseEntity
+Todas las entidades del sistema heredan de `BaseEntity`, que incluye:
+```java
+@Column(name = "hotel_id", nullable = false)
+private Long hotelId;
+```
+
+Esta columna asegura que cada registro pertenezca a un hotel específico y permite el filtrado automático.
+
+#### ✅ Ventajas
+- **Escalabilidad**: Agregar nuevos hoteles no requiere cambios en el código
+- **Mantenimiento simplificado**: Una sola base de datos para todos los tenants
+- **Costos reducidos**: Infraestructura compartida entre múltiples hoteles
+- **Seguridad**: Filtrado automático previene fugas de datos entre tenants
+- **Transparencia**: Los servicios no necesitan código específico para multi-tenancy
+
 ## 🛠️ Tecnologías Utilizadas
 
 ### Backend
